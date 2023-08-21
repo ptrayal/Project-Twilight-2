@@ -1,0 +1,1 @@
+[1;31m.o files removed from directory.[0;00m

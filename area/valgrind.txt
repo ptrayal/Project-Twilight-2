@@ -1,0 +1,336 @@
+==7806== Memcheck, a memory error detector
+==7806== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==7806== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
+==7806== Command: ../src/project 9080
+==7806== Parent PID: 2466
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x132C39: ProtocolNegotiate (protocol.c:1010)
+==7806==    by 0x139079: init_descriptor (comm.c:1251)
+==7806==    by 0x143480: game_loop_unix (comm.c:660)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x1324F7: Negotiate (protocol.c:1656)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x13250E: Negotiate (protocol.c:1657)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x132525: Negotiate (protocol.c:1658)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x13253C: Negotiate (protocol.c:1659)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x132553: Negotiate (protocol.c:1660)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x13256A: Negotiate (protocol.c:1661)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x132581: Negotiate (protocol.c:1662)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x132598: Negotiate (protocol.c:1663)
+==7806==    by 0x136028: PerformHandshake (protocol.c:1683)
+==7806==    by 0x136028: ProtocolInput (protocol.c:492)
+==7806==    by 0x13872C: read_from_descriptor (comm.c:1418)
+==7806==    by 0x143655: game_loop_unix (comm.c:691)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== Conditional jump or move depends on uninitialised value(s)
+==7806==    at 0x132313: ConfirmNegotiation (protocol.c:2183)
+==7806==    by 0x132C53: ProtocolNoEcho (protocol.c:1016)
+==7806==    by 0x13EE76: nanny (comm.c:2043)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 
+==7806== HEAP SUMMARY:
+==7806==     in use at exit: 49,807 bytes in 3,973 blocks
+==7806==   total heap usage: 36,344 allocs, 32,371 frees, 4,051,086 bytes allocated
+==7806== 
+==7806== 5 bytes in 1 blocks are definitely lost in loss record 5 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BC915: fread_string (db.c:4107)
+==7806==    by 0x1BEA54: load_org (db.c:673)
+==7806==    by 0x1C4C6C: boot_db (db.c:523)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 5 bytes in 1 blocks are definitely lost in loss record 6 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x164667: load_char_obj (save.c:834)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 5 bytes in 1 blocks are definitely lost in loss record 7 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1646E4: load_char_obj (save.c:838)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 6 bytes in 1 blocks are definitely lost in loss record 10 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BC915: fread_string (db.c:4107)
+==7806==    by 0x1BEA21: load_org (db.c:669)
+==7806==    by 0x1C4C6C: boot_db (db.c:523)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 8 bytes in 1 blocks are definitely lost in loss record 16 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BC915: fread_string (db.c:4107)
+==7806==    by 0x16088D: fread_char (save.c:1200)
+==7806==    by 0x1657DB: load_char_obj (save.c:952)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 14 bytes in 1 blocks are definitely lost in loss record 19 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x164783: load_char_obj (save.c:848)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 37 bytes in 1 blocks are definitely lost in loss record 22 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x164586: load_char_obj (save.c:823)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 54 bytes in 9 blocks are definitely lost in loss record 23 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1C7E2F: obj_from_char (handler.c:2037)
+==7806==    by 0x1C8BAE: extract_obj (handler.c:2513)
+==7806==    by 0x1C8CB4: extract_char (handler.c:2580)
+==7806==    by 0x137F2E: cleanup_mud (comm.c:386)
+==7806==    by 0x143D0F: main (comm.c:965)
+==7806== 
+==7806== 165 bytes in 9 blocks are definitely lost in loss record 26 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BD89B: create_object (db.c:3575)
+==7806==    by 0x1632E9: fread_obj (save.c:1853)
+==7806==    by 0x16580F: load_char_obj (save.c:954)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 200 bytes in 9 blocks are definitely lost in loss record 27 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BD87B: create_object (db.c:3574)
+==7806==    by 0x1632E9: fread_obj (save.c:1853)
+==7806==    by 0x16580F: load_char_obj (save.c:954)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 339 bytes in 9 blocks are definitely lost in loss record 29 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BDDFB: create_object (db.c:3577)
+==7806==    by 0x1632E9: fread_obj (save.c:1853)
+==7806==    by 0x16580F: load_char_obj (save.c:954)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 785 bytes in 123 blocks are definitely lost in loss record 33 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BC915: fread_string (db.c:4107)
+==7806==    by 0x1BFF73: load_mobiles (db.c:2331)
+==7806==    by 0x1C48B0: boot_db (db.c:419)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 840 bytes in 9 blocks are definitely lost in loss record 34 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BDE1C: create_object (db.c:3582)
+==7806==    by 0x1632E9: fread_obj (save.c:1853)
+==7806==    by 0x16580F: load_char_obj (save.c:954)
+==7806==    by 0x13ED7B: nanny (comm.c:2004)
+==7806==    by 0x143740: game_loop_unix (comm.c:738)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 984 bytes in 123 blocks are definitely lost in loss record 36 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19FADF: new_mob_index (recycle.c:1608)
+==7806==    by 0x1BFF1D: load_mobiles (db.c:2323)
+==7806==    by 0x1C48B0: boot_db (db.c:419)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 2,091 bytes in 123 blocks are definitely lost in loss record 37 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19FB6E: new_mob_index (recycle.c:1612)
+==7806==    by 0x1BFF1D: load_mobiles (db.c:2323)
+==7806==    by 0x1C48B0: boot_db (db.c:419)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 2,406 (144 direct, 2,262 indirect) bytes in 1 blocks are definitely lost in loss record 38 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x13279F: ProtocolCreate (protocol.c:291)
+==7806==    by 0x138F91: init_descriptor (comm.c:1196)
+==7806==    by 0x143480: game_loop_unix (comm.c:660)
+==7806==    by 0x143D04: main (comm.c:962)
+==7806== 
+==7806== 2,683 bytes in 245 blocks are definitely lost in loss record 39 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1C7E07: obj_from_char (handler.c:2032)
+==7806==    by 0x1C8BAE: extract_obj (handler.c:2513)
+==7806==    by 0x1C8CB4: extract_char (handler.c:2580)
+==7806==    by 0x137F2E: cleanup_mud (comm.c:386)
+==7806==    by 0x143D0F: main (comm.c:965)
+==7806== 
+==7806== 2,706 bytes in 123 blocks are definitely lost in loss record 40 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19FB25: new_mob_index (recycle.c:1610)
+==7806==    by 0x1BFF1D: load_mobiles (db.c:2323)
+==7806==    by 0x1C48B0: boot_db (db.c:419)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 2,829 bytes in 123 blocks are definitely lost in loss record 41 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19FB02: new_mob_index (recycle.c:1609)
+==7806==    by 0x1BFF1D: load_mobiles (db.c:2323)
+==7806==    by 0x1C48B0: boot_db (db.c:419)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 3,435 bytes in 687 blocks are definitely lost in loss record 42 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19ECF7: new_room_index (recycle.c:1350)
+==7806==    by 0x1BF7CE: load_rooms (db.c:1245)
+==7806==    by 0x1C49B4: boot_db (db.c:439)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 3,435 bytes in 687 blocks are definitely lost in loss record 43 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19ED43: new_room_index (recycle.c:1352)
+==7806==    by 0x1BF7CE: load_rooms (db.c:1245)
+==7806==    by 0x1C49B4: boot_db (db.c:439)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 7,824 bytes in 206 blocks are definitely lost in loss record 44 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x1BC915: fread_string (db.c:4107)
+==7806==    by 0x14E48B: load_social (social-edit.c:78)
+==7806==    by 0x14E543: load_social_table (social-edit.c:109)
+==7806==    by 0x1C4D4E: boot_db (db.c:562)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 8,931 bytes in 687 blocks are definitely lost in loss record 45 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19ECD1: new_room_index (recycle.c:1349)
+==7806==    by 0x1BF7CE: load_rooms (db.c:1245)
+==7806==    by 0x1C49B4: boot_db (db.c:439)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== 8,931 bytes in 687 blocks are definitely lost in loss record 46 of 46
+==7806==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7806==    by 0x4ED99B9: strdup (strdup.c:42)
+==7806==    by 0x1BC80F: _str_dup (db.c:5087)
+==7806==    by 0x19ED1D: new_room_index (recycle.c:1351)
+==7806==    by 0x1BF7CE: load_rooms (db.c:1245)
+==7806==    by 0x1C49B4: boot_db (db.c:439)
+==7806==    by 0x143CBA: main (comm.c:953)
+==7806== 
+==7806== LEAK SUMMARY:
+==7806==    definitely lost: 46,456 bytes in 3,867 blocks
+==7806==    indirectly lost: 2,262 bytes in 86 blocks
+==7806==      possibly lost: 0 bytes in 0 blocks
+==7806==    still reachable: 1,089 bytes in 20 blocks
+==7806==         suppressed: 0 bytes in 0 blocks
+==7806== Reachable blocks (those to which a pointer was found) are not shown.
+==7806== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==7806== 
+==7806== For counts of detected and suppressed errors, rerun with: -v
+==7806== Use --track-origins=yes to see where uninitialised values come from
+==7806== ERROR SUMMARY: 34 errors from 34 contexts (suppressed: 0 from 0)
