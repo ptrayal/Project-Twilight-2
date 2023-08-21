@@ -3,6 +3,11 @@
   <change>
     <imm>Rayal</imm>
     <date>21-Aug-2023</date>
+    <text>Added improved code for illegal or bad names.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>21-Aug-2023</date>
     <text>Added changes feature to be able to track changes in an XML file.</text>
   </change>
 </changes>

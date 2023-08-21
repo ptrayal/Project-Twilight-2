@@ -2797,137 +2797,137 @@ void do_weather( CHAR_DATA *ch, char *argument )
 
 void do_help( CHAR_DATA *ch, char *argument )
 {
-	HELP_DATA *pHelp;
-	BUFFER *output;
-	char argall[MIL]={'\0'};
-	char argone[MIL]={'\0'};
-	int level = 0;
-	bool found = FALSE;
-	time_t rawtime;
-	struct tm *info;
-	char buffer[80]={'\0'};
+    HELP_DATA *pHelp;
+    BUFFER *output;
+    char argall[MIL] = {'\0'};
+    char argone[MIL] = {'\0'};
+    int level = 0;
+    bool found = FALSE;
+    time_t rawtime;
+    struct tm *info;
+    char buffer[80] = {'\0'};
 
-	time( &rawtime );
+    time( &rawtime );
 
-	info = localtime( &rawtime );
+    info = localtime( &rawtime );
 
-	strftime(buffer,80,"%x", info);
+    strftime(buffer, 80, "%x", info);
 
-	CheckCH(ch);
+    CheckCH(ch);
 
-	output = new_buf();
+    output = new_buf();
 
-	if ( IS_NULLSTR(argument) )
-		argument = "summary";
+    if ( IS_NULLSTR(argument) )
+        argument = "summary";
 
-	/* this parts handles help a b so that it returns help 'a b' */
-	argall[0] = '\0';
-	while (!IS_NULLSTR(argument) )
-	{
-		argument = one_argument(argument,argone);
-		if (!IS_NULLSTR(argall))
-			strncat(argall," ", sizeof(argall) - strlen(argall) - 1 );
-		strncat(argall,argone, sizeof(argall) - strlen(argall) - 1 );
-	}
+    /* this parts handles help a b so that it returns help 'a b' */
+    argall[0] = '\0';
+    while (!IS_NULLSTR(argument) )
+    {
+        argument = one_argument(argument, argone);
+        if (!IS_NULLSTR(argall))
+            strncat(argall, " ", sizeof(argall) - strlen(argall) - 1 );
+        strncat(argall, argone, sizeof(argall) - strlen(argall) - 1 );
+    }
 
-	if ( strlen( argall ) == 1 )
-	{
-		add_buf(output, (char *)Format("Topics beginning with %s:\n\r", argall));
-	}
+    if ( strlen( argall ) == 1 )
+    {
+        add_buf(output, (char *)Format("Topics beginning with %s:\n\r", argall));
+    }
 
-	for ( pHelp = help_list; pHelp != NULL; pHelp = pHelp->next )
-	{
-		if(pHelp->level == -1) level = -1;
-		else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
+    for ( pHelp = help_list; pHelp != NULL; pHelp = pHelp->next )
+    {
+        if(pHelp->level == -1) level = -1;
+        else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
 
-		if (level >= get_trust( ch ) )
-			continue;
+        if (level >= get_trust( ch ) )
+            continue;
 
-		if ( is_name( argall, pHelp->keyword ) )
-		{
-			/* add seperator if found */
-			if (found && strlen( argall ) > 1 )
-				add_buf(output, "\n\r<================================BREAK===============================>\n\r\n\r");
-			if ( pHelp->level >= 0 && str_cmp( argall, "imotd" ) )
-			{
-				add_buf(output, "\tWKeywords:\tn ");
-				add_buf(output,pHelp->keyword);
-				add_buf(output,"\n\r");
-			}
+        if ( is_name( argall, pHelp->keyword ) )
+        {
+            /* add seperator if found */
+            if (found && strlen( argall ) > 1 )
+                add_buf(output, "\n\r<================================BREAK===============================>\n\r\n\r");
+            if ( pHelp->level >= 0 && str_cmp( argall, "imotd" ) )
+            {
+                add_buf(output, "\tWKeywords:\tn ");
+                add_buf(output, pHelp->keyword);
+                add_buf(output, "\n\r");
+            }
 
-			if(!IS_NULLSTR(pHelp->topic))
-			{
-				add_buf(output, "\tWTopic:\tn \tM");
-				add_buf(output, pHelp->topic);
-				add_buf(output,"\tn\n\r");
-			}
+            if(!IS_NULLSTR(pHelp->topic))
+            {
+                add_buf(output, "\tWTopic:\tn \tM");
+                add_buf(output, pHelp->topic);
+                add_buf(output, "\tn\n\r");
+            }
 
-			if(!IS_NULLSTR(pHelp->quote))
-			{
-				add_buf(output, "Quote:\n\r");
-				add_buf(output, pHelp->quote);
-				add_buf(output,"\n\r");
-			}
+            if(!IS_NULLSTR(pHelp->quote))
+            {
+                add_buf(output, "Quote:\n\r");
+                add_buf(output, pHelp->quote);
+                add_buf(output, "\n\r");
+            }
 
-			if(!IS_NULLSTR(pHelp->syntax))
-			{
-				add_buf(output, "\tWSyntax:\tn \tC");
-				add_buf(output, pHelp->syntax);
-				add_buf(output,"\tn\n\r");
-			}
+            if(!IS_NULLSTR(pHelp->syntax))
+            {
+                add_buf(output, "\tWSyntax:\tn \tC");
+                add_buf(output, pHelp->syntax);
+                add_buf(output, "\tn\n\r");
+            }
 
-			/*
-			 * Strip leading '.' to allow initial blanks.
-			 */
-			if(!IS_NULLSTR(pHelp->description))
-			{
-				add_buf(output, "\tWDescription:\tn\n\r ");
-				if ( pHelp->description[0] == '.' )
-					add_buf(output,pHelp->description+1);
-				else
-					add_buf(output,pHelp->description);
-			}
+            /*
+             * Strip leading '.' to allow initial blanks.
+             */
+            if(!IS_NULLSTR(pHelp->description))
+            {
+                add_buf(output, "\tWDescription:\tn\n\r ");
+                if ( pHelp->description[0] == '.' )
+                    add_buf(output, pHelp->description + 1);
+                else
+                    add_buf(output, pHelp->description);
+            }
 
-			if(!IS_NULLSTR(pHelp->website))
-			{
-				add_buf(output, "\tWWebsite:\tn ");
-				add_buf(output, pHelp->website);
-				add_buf(output,"\n\r");
-			}
+            if(!IS_NULLSTR(pHelp->website))
+            {
+                add_buf(output, "\tWWebsite:\tn ");
+                add_buf(output, pHelp->website);
+                add_buf(output, "\n\r");
+            }
 
-			if(!IS_NULLSTR(pHelp->see_also))
-			{
-				add_buf(output, "\tWSee Also:\tn \tC");
-				add_buf(output, pHelp->see_also);
-				add_buf(output,"\tn\n\r");
-			}
+            if(!IS_NULLSTR(pHelp->see_also))
+            {
+                add_buf(output, "\tWSee Also:\tn \tC");
+                add_buf(output, pHelp->see_also);
+                add_buf(output, "\tn\n\r");
+            }
 
-			/*
-			 * Strip leading '.' to allow initial blanks.
-			 */
-			if(!IS_NULLSTR(pHelp->unformatted))
-			{
-				if ( pHelp->unformatted[0] == '.' )
-					add_buf(output,pHelp->unformatted+1);
-				else
-					add_buf(output,pHelp->unformatted);
-			}
+            /*
+             * Strip leading '.' to allow initial blanks.
+             */
+            if(!IS_NULLSTR(pHelp->unformatted))
+            {
+                if ( pHelp->unformatted[0] == '.' )
+                    add_buf(output, pHelp->unformatted + 1);
+                else
+                    add_buf(output, pHelp->unformatted);
+            }
 
-			found = TRUE;
-			/* small hack :) */
-			if (ch->desc != NULL && ch->desc->connected != CON_PLAYING)
-				break;
-		}
-	}
+            found = TRUE;
+            /* small hack :) */
+            if (ch->desc != NULL && ch->desc->connected != CON_PLAYING)
+                break;
+        }
+    }
 
-	if (!found)
-	{
-		send_to_char( "\tWNo help on that word. Have you tried investigating or researching that?\tn\n\r", ch );
-		log_string(LOG_BUG, (char *)Format("[*****] HELP: No help for: %s [%s]", argall, buffer));
-	}
-	else
-		page_to_char(buf_string(output),ch);
-	free_buf(output);
+    if (!found)
+    {
+        send_to_char( "\tWNo help on that word. Have you tried investigating or researching that?\tn\n\r", ch );
+        log_string(LOG_BUG, (char *)Format("[*****] HELP: No help for: %s [%s]", argall, buffer));
+    }
+    else
+        page_to_char(buf_string(output), ch);
+    free_buf(output);
 }
 
 

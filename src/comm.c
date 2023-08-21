@@ -3223,133 +3223,161 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	return;
 }
 
+#define MAX_BAD_NAMES 2000 // Maximum number of bad names in the file
+#define MIN_NAME_LENGTH 2
+#define MAX_NAME_LENGTH 12
+
+
+// Function to read bad names from the file and store them in an array
+int read_bad_names(char bad_names[][MAX_NAME_LENGTH], const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        printf("Error opening file: %s\n", filename);
+        return 0;
+    }
+
+    int count = 0;
+    char buffer[MAX_NAME_LENGTH];
+    while (fgets(buffer, sizeof(buffer), file) != NULL && count < MAX_BAD_NAMES)
+    {
+        buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character, if present
+        strcpy(bad_names[count], buffer);
+        count++;
+    }
+
+    fclose(file);
+    return count;
+}
+
 
 /*
  * Parse a name for acceptability.
  */
 bool check_parse_name( char *name )
 {
-	int count = 0, clan = 0;
-	DESCRIPTOR_DATA *d;
-	DESCRIPTOR_DATA *dnext;
+    int count = 0, clan = 0;
+    DESCRIPTOR_DATA *d;
+    DESCRIPTOR_DATA *dnext;
 
-	/*
-	 * Reserved words.
-	 */
-	if ( is_exact_name( name,
-			"all auto immortal self someone something the you demise balance circle loner honor fuck sux sucks nosferatu malkavian jesus god none quit") )
-		return FALSE;
+    // Read bad names from the file and store them in an array
+    char bad_names[MAX_BAD_NAMES][MAX_NAME_LENGTH];
+    int num_bad_names = read_bad_names(bad_names, "../data/badnames.txt");
 
-	if ( is_exact_name( name, "accountsystem" ) )
-		return TRUE;
-
-	/* check clans */
-	for (clan = 0; clan < MAX_CLAN; clan++)
-	{
-		if (LOWER(name[0]) == LOWER(clan_table[clan].name[0])
-				&&  !str_cmp(name,clan_table[clan].name))
-			return FALSE;
-	}
-
-	/*
-	 * Length restrictions.
-	 */
-
-	if ( strlen(name) <  2 )
-		return FALSE;
-
-#if defined(__MSDOS__)
-	if ( strlen(name) >  8 )
-		return FALSE;
-#endif
-
-#if defined(Macintosh) || defined(__unix__)
-	if ( strlen(name) > 12 )
-		return FALSE;
-#endif
-
-	/*
-	 * Alphanumerics only.
-	 * Lock out IllIll twits.
-	 */
-	{
-		char *pc;
-		bool fIll,adjcaps = FALSE,cleancaps = FALSE;
-		int total_caps = 0;
-
-		fIll = TRUE;
-		for ( pc = name; *pc != '\0'; pc++ )
-		{
-			if ( !isalpha(*pc) )
-				return FALSE;
-
-			if ( isupper(*pc)) /* ugly anti-caps hack */
-			{
-				if (adjcaps)
-					cleancaps = TRUE;
-				total_caps++;
-				adjcaps = TRUE;
-			}
-			else
-				adjcaps = FALSE;
-
-			if ( LOWER(*pc) != 'i' && LOWER(*pc) != 'l' )
-				fIll = FALSE;
-		}
-
-		if ( fIll )
-			return FALSE;
-
-		if (cleancaps || (total_caps > (strlen(name)) / 2 && strlen(name) < 3))
-			return FALSE;
-	}
-
-	/*
-	 * Prevent players from naming themselves after mobs.
+    // Check for invalid names from the array
+    for (int i = 0; i < num_bad_names; i++)
     {
-	extern MOB_INDEX_DATA *mob_index_hash[MAX_KEY_HASH];
-	MOB_INDEX_DATA *pMobIndex;
-	int iHash;
-
-	for ( iHash = 0; iHash < MAX_KEY_HASH; iHash++ )
-	{
-	    for ( pMobIndex  = mob_index_hash[iHash];
-		  pMobIndex != NULL;
-		  pMobIndex  = pMobIndex->next )
-	    {
-		if ( is_name( name, pMobIndex->player_name ) )
-		    return FALSE;
-	    }
-	}
+        if (is_name(name, bad_names[i]))
+        {
+            return false;
+        }
     }
-	 */
 
-	/*
-	 * check names of people playing. Yes, this is necessary for multiple
-	 * newbies with the same name (thanks Saro)
-	 */
-	if (descriptor_list) {
-		count=0;
-		for (d = descriptor_list; d != NULL; d = dnext)
-		{
-			dnext=d->next;
-			if (d->connected!=CON_PLAYING&&d->character&&d->character->name
-					&& d->character->name[0] && !str_cmp(d->character->name,name)
-					&&!IS_SET(d->character->act, ACT_REINCARNATE))
-			{
-				count++;
-				close_socket(d);
-			}
-		}
-		if (count)
-		{
-			wiznet((char *)Format("\tY[WIZNET]\tn Double newbie alert (%s)",name),NULL,NULL,WIZ_LOGINS,0,0);
+    if ( is_exact_name( name, "accountsystem" ) )
+        return true;
 
-			return FALSE;
-		}
-	}
+    /* check clans */
+    for (clan = 0; clan < MAX_CLAN; clan++)
+    {
+        if (LOWER(name[0]) == LOWER(clan_table[clan].name[0])
+                &&  !str_cmp(name, clan_table[clan].name))
+            return false;
+    }
 
-	return TRUE;
+    /*
+     * Length restrictions.
+     */
+
+    if ( strlen(name) <  MIN_NAME_LENGTH )
+        return false;
+
+    if ( strlen(name) > MAX_NAME_LENGTH )
+        return false;
+
+    /*
+     * Alphanumerics only.
+     * Lock out IllIll twits.
+     */
+    {
+        char *pc;
+        bool fIll, adjcaps = false, cleancaps = false;
+        int total_caps = 0;
+
+        fIll = true;
+        for ( pc = name; *pc != '\0'; pc++ )
+        {
+            if ( !isalpha(*pc) )
+                return false;
+
+            if ( isupper(*pc)) /* ugly anti-caps hack */
+            {
+                if (adjcaps)
+                    cleancaps = true;
+                total_caps++;
+                adjcaps = true;
+            }
+            else
+                adjcaps = false;
+
+            if ( LOWER(*pc) != 'i' && LOWER(*pc) != 'l' )
+                fIll = false;
+        }
+
+        if ( fIll )
+            return false;
+
+        if (cleancaps || (total_caps > (strlen(name)) / 2 && strlen(name) < 3))
+            return false;
+    }
+
+    /*
+     * Prevent players from naming themselves after mobs.
+    {
+    extern MOB_INDEX_DATA *mob_index_hash[MAX_KEY_HASH];
+    MOB_INDEX_DATA *pMobIndex;
+    int iHash;
+
+    for ( iHash = 0; iHash < MAX_KEY_HASH; iHash++ )
+    {
+        for ( pMobIndex  = mob_index_hash[iHash];
+    	  pMobIndex != NULL;
+    	  pMobIndex  = pMobIndex->next )
+        {
+    	if ( is_name( name, pMobIndex->player_name ) )
+    	    return FALSE;
+        }
+    }
+    }
+     */
+
+    /*
+     * check names of people playing. Yes, this is necessary for multiple
+     * newbies with the same name (thanks Saro)
+     */
+    if (descriptor_list)
+    {
+        count = 0;
+        for (d = descriptor_list; d != NULL; d = dnext)
+        {
+            dnext = d->next;
+            if (d->connected != CON_PLAYING && d->character && d->character->name
+                    && d->character->name[0] && !str_cmp(d->character->name, name)
+                    && !IS_SET(d->character->act, ACT_REINCARNATE))
+            {
+                count++;
+                close_socket(d);
+            }
+        }
+        if (count)
+        {
+            wiznet((char *)Format("\tY[WIZNET]\tn Double newbie alert (%s)", name), NULL, NULL, WIZ_LOGINS, 0, 0);
+
+            return false;
+        }
+    }
+
+    return true;
 }
 
 
