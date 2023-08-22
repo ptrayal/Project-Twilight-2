@@ -3667,63 +3667,75 @@ void do_switchdesc(CHAR_DATA *ch, char *argument)
 }
 
 
-void do_password( CHAR_DATA *ch, char *argument )
+void do_password(CHAR_DATA *ch, char *argument)
 {
-	char arg1[MIL]={'\0'};
-	char arg2[MIL]={'\0'};
-	char *pwdnew;
-	char *p;
+    char arg1[MIL] = {'\0'};
+    char arg2[MIL] = {'\0'};
+    char *pwdnew;
+    char *p;
+    bool has_letter = false;
+    bool has_number = false;
 
-	CheckCH(ch);
-	CheckChNPC(ch);
+    CheckCH(ch);
+    CheckChNPC(ch);
 
-	/*
-	 * Can't use one_argument because it smashes case.
-	 * Since we're needing this in a few places there's exact_argument.
-	 */
-	argument = exact_argument(argument, arg1);
-	argument = exact_argument(argument, arg2);
+    argument = exact_argument(argument, arg1);
+    argument = exact_argument(argument, arg2);
 
-	if ( IS_NULLSTR(arg1) || IS_NULLSTR(arg2) )
-	{
-		send_to_char( "Syntax: password [old] [new].\n\r", ch );
-		return;
-	}
+    if (IS_NULLSTR(arg1) || IS_NULLSTR(arg2))
+    {
+        send_to_char("Syntax: password [old] [new].\n\r", ch);
+        return;
+    }
 
-	if ( str_cmp( crypt( arg1, ch->pcdata->pwd ), ch->pcdata->pwd ) )
-	{
-		WAIT_STATE( ch, 40 );
-		send_to_char( "Wrong password.  Wait 10 seconds.\n\r", ch );
-		return;
-	}
+    if (str_cmp(crypt(arg1, ch->pcdata->pwd), ch->pcdata->pwd))
+    {
+        WAIT_STATE(ch, 40);
+        send_to_char("Wrong password.  Wait 10 seconds.\n\r", ch);
+        return;
+    }
 
-	if ( strlen(arg2) < 5 )
-	{
-		send_to_char( "New password must be at least five characters long.\n\r", ch );
-		return;
-	}
+    if (strlen(arg2) < 6)
+    {
+        send_to_char("New password must be at least six characters long.\n\r", ch);
+        return;
+    }
 
-	/*
-	 * No tilde allowed because of player file format.
-	 */
-	pwdnew = crypt( arg2, ch->name );
-	for ( p = pwdnew; *p != '\0'; p++ )
-	{
-		if ( *p == '~' )
-		{
-			send_to_char( "New password not acceptable, try again.\n\r", ch );
-			log_string( LOG_SECURITY, Format("%s tried to change their password unsuccessfully.", ch->name));
-			return;
-		}
-	}
+    pwdnew = crypt(arg2, ch->name);
 
-	PURGE_DATA( ch->pcdata->pwd );
-	ch->pcdata->pwd = str_dup( pwdnew );
-	save_char_obj( ch );
-	log_string( LOG_SECURITY, Format("%s changed their password.", ch->name) );
-	send_to_char( "Ok.\n\r", ch );
-	return;
+    for (p = pwdnew; *p != '\0'; p++)
+    {
+        if (*p == '~')
+        {
+            send_to_char("New password not acceptable, try again.\n\r", ch);
+            log_string(LOG_SECURITY, Format("%s tried to change their password unsuccessfully.", ch->name));
+            return;
+        }
+
+        if (isdigit(*p))
+        {
+            has_number = true;
+        }
+        else if (isalpha(*p))
+        {
+            has_letter = true;
+        }
+    }
+
+    if (!has_number || !has_letter)
+    {
+        send_to_char("New password must contain at least one letter and one number.\n\r", ch);
+        return;
+    }
+
+    PURGE_DATA(ch->pcdata->pwd);
+    ch->pcdata->pwd = str_dup(pwdnew);
+    save_char_obj(ch);
+    log_string(LOG_SECURITY, Format("%s changed their password.", ch->name));
+    send_to_char("Ok.\n\r", ch);
+    return;
 }
+
 
 void do_research(CHAR_DATA *ch, char *argument)
 {
