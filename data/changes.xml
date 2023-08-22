@@ -3,6 +3,11 @@
   <change>
     <imm>Rayal</imm>
     <date>21-Aug-2023</date>
+    <text>All new characters passwords now requires 6 characters, one letter, and one number.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>21-Aug-2023</date>
     <text>The password command now requires 6 characters, one letter, and one number.</text>
   </change>
   <change>
