@@ -3227,7 +3227,6 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 #define MIN_NAME_LENGTH 2
 #define MAX_NAME_LENGTH 12
 
-
 // Function to read bad names from the file and store them in an array
 int read_bad_names(char bad_names[][MAX_NAME_LENGTH], const char *filename)
 {
