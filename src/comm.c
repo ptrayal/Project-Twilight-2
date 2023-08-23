@@ -5233,38 +5233,54 @@ void printf_to_char (CHAR_DATA *ch, char *fmt, ...)
     send_to_char(buf, ch);
 }
 
-/* Breaking out parts of the nanny code */
 void get_new_password(DESCRIPTOR_DATA *d, char *argument)
 {
-	CHAR_DATA *ch = d->character;
-	char *pwdnew;
-	char *p;
+    CHAR_DATA *ch = d->character;
+    char *pwdnew;
+    char *p;
+    bool has_letter = false;
+    bool has_number = false;
 
 #if defined(__unix__)
-	write_to_buffer( d, "\n\r", 2 );
+    write_to_buffer(d, "\n\r", 2);
 #endif
 
-	if ( strlen(argument) < 5 )
-	{
-		write_to_buffer( d,	"Password must be at least five characters long.\n\rPassword: ", 0 );
-		return;
-	}
+    if (strlen(argument) < 6)
+    {
+        write_to_buffer(d, "Password must be at least six characters long.\n\rPassword: ", 0);
+        return;
+    }
 
-	pwdnew = crypt( argument, ch->name );
-	for ( p = pwdnew; *p != '\0'; p++ )
-	{
-		if ( *p == '~' )
-		{
-			write_to_buffer( d,	"New password not acceptable, try again.\n\rPassword: ", 0 );
-			return;
-		}
-	}
+    pwdnew = crypt(argument, ch->name);
 
-	PURGE_DATA( ch->pcdata->pwd );
-	ch->pcdata->pwd	= str_dup( pwdnew );
-	write_to_buffer( d, "Please retype password: ", 0 );
-	d->connected = CON_CONFIRM_NEW_PASSWORD;
+    for (p = pwdnew; *p != '\0'; p++)
+    {
+        if (*p == '~')
+        {
+            write_to_buffer(d, "New password not acceptable, try again.\n\rPassword: ", 0);
+            return;
+        }
 
+        if (isdigit(*p))
+        {
+            has_number = true;
+        }
+        else if (isalpha(*p))
+        {
+            has_letter = true;
+        }
+    }
+
+    if (!has_number || !has_letter)
+    {
+        write_to_buffer(d, "New password must contain at least one letter and one number.\n\rPassword: ", 0);
+        return;
+    }
+
+    PURGE_DATA(ch->pcdata->pwd);
+    ch->pcdata->pwd = str_dup(pwdnew);
+    write_to_buffer(d, "Please retype password: ", 0);
+    d->connected = CON_CONFIRM_NEW_PASSWORD;
 }
 
 void confirm_new_password(DESCRIPTOR_DATA *d, char *argument)
