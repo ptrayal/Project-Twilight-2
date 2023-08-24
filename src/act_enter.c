@@ -1067,91 +1067,92 @@ void do_authflag(CHAR_DATA *ch, char *argument)
 
 void do_status(CHAR_DATA *ch, char *argument)
 {
-	char arg[MIL]={'\0'};
-	ORGMEM_DATA *mem, *chmem;
-	ORG_DATA *org;
-	int value = 0;
-	bool down = FALSE;
+    char arg[MIL] = {'\0'};
+    ORGMEM_DATA * mem, *chmem;
+    ORG_DATA *org;
+    int value = 0;
+    bool down = FALSE;
 
-	CheckCH(ch);
+    CheckCH(ch);
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Syntax: status\n\r", ch);
-		send_to_char("        status <org> <member> [<up/down>]\n\r", ch);
-		for(value = MAX_BACKGROUND; background_table[value].name; value++)
-		{
-			send_to_char(Format("%s%s:%4d ", value==0?pc_race_table[ch->race].clan_word:background_table[value].name,
-					value==3?"":" Status", ch->backgrounds[value]), ch);
-			if(value%4 == 0) send_to_char("\n\r",ch);
-		}
-		for(org = org_list; org; org = org->next)
-		{
-			if((mem = mem_lookup(org, ch->name)) != NULL) {
-				send_to_char(Format("%s Status:%4d ", org->name, mem->status), ch);
-			}
-			if(value%4 == 0) send_to_char("\n\r",ch);
-		}
-		return;
-	}
+    if(IS_NULLSTR(argument))
+    {
+        send_to_char("Syntax: status\n\r", ch);
+        send_to_char("        status <org> <member> [<up/down>]\n\r", ch);
+        for(value = MAX_BACKGROUND; background_table[value].name; value++)
+        {
+            send_to_char(Format("%s%s:%4d ", value == 0 ? pc_race_table[ch->race].clan_word : background_table[value].name,
+                                value == 3 ? "" : " Status", ch->backgrounds[value]), ch);
+            if(value % 4 == 0) send_to_char("\n\r", ch);
+        }
+        for(org = org_list; org; org = org->next)
+        {
+            if((mem = mem_lookup(org, ch->name)) != NULL)
+            {
+                send_to_char(Format("%s Status:%4d ", org->name, mem->status), ch);
+            }
+            if(value % 4 == 0) send_to_char("\n\r", ch);
+        }
+        return;
+    }
 
-	argument = one_argument(argument, arg);
-	if((org = org_lookup(arg)) == NULL)
-	{
-		send_to_char("No such organisation.\n\r", ch);
-		return;
-	}
+    argument = one_argument(argument, arg);
+    if((org = org_lookup(arg)) == NULL)
+    {
+        send_to_char("No such organisation.\n\r", ch);
+        return;
+    }
 
-	if((chmem = mem_lookup(org, ch->name)) == NULL)
-	{
-		send_to_char("You aren't even a member!\n\r", ch);
-		return;
-	}
+    if((chmem = mem_lookup(org, ch->name)) == NULL)
+    {
+        send_to_char("You aren't even a member!\n\r", ch);
+        return;
+    }
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char(Format("%s Status:%4d ", org->name, chmem->status), ch);
-		return;
-	}
+    if(IS_NULLSTR(argument))
+    {
+        send_to_char(Format("%s Status:%4d ", org->name, chmem->status), ch);
+        return;
+    }
 
-	if(!IS_SET(chmem->auth_flags, AUTH_STATUS))
-	{
-		send_to_char("You aren't in a position to affect their status.\n\r",ch);
-		return;
-	}
+    if(!IS_SET(chmem->auth_flags, AUTH_STATUS))
+    {
+        send_to_char("You aren't in a position to affect their status.\n\r", ch);
+        return;
+    }
 
-	argument = one_argument(argument, arg);
-	if((mem = mem_lookup(org, arg)) == NULL)
-	{
-		send_to_char("There is no member of that name.\n\r", ch);
-		return;
-	}
+    argument = one_argument(argument, arg);
+    if((mem = mem_lookup(org, arg)) == NULL)
+    {
+        send_to_char("There is no member of that name.\n\r", ch);
+        return;
+    }
 
-	if(IS_NULLSTR(argument) || !str_prefix(argument, "up"))
-	{
-		down = FALSE;
-	}
-	else if(!str_prefix(argument, "down"))
-	{
-		down = TRUE;
-	}
-	else
-	{
-		send_to_char("What are you trying to do to their status?\n\r", ch);
-		return;
-	}
+    if(IS_NULLSTR(argument) || !str_prefix(argument, "up"))
+    {
+        down = FALSE;
+    }
+    else if(!str_prefix(argument, "down"))
+    {
+        down = TRUE;
+    }
+    else
+    {
+        send_to_char("What are you trying to do to their status?\n\r", ch);
+        return;
+    }
 
-	value = chmem->status - mem->status;
+    value = chmem->status - mem->status;
 
-	if(value <= 1) value = 1;
-	else if(value <= 3) value = 3;
-	else if(value <= 5) value = 4;
+    if(value <= 1) value = 1;
+    else if(value <= 3) value = 3;
+    else if(value <= 5) value = 4;
 
-	if(down == TRUE) value *= -1;
+    if(down == TRUE) value *= -1;
 
-	act("You place your input on the status of $t.", ch, mem->name, NULL, TO_CHAR, 1);
+    act("You place your input on the status of $t.", ch, mem->name, NULL, TO_CHAR, 1);
 
-	fwrite_org(org);
+    fwrite_org(org);
 }
 
 void do_boot(CHAR_DATA *ch, char *argument)
@@ -1257,101 +1258,101 @@ void do_resign(CHAR_DATA *ch, char *argument)
 
 void do_members(CHAR_DATA *ch, char *argument)
 {
-	ORG_DATA *org;
-	ORGMEM_DATA *mem;
+    ORG_DATA *org;
+    ORGMEM_DATA *mem;
 
-	CheckCH(ch);
+    CheckCH(ch);
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Syntax: members [organisation]\n\r", ch);
-		for(org = org_list; org; org = org->next)
-		{
-			send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
-		}
-		return;
-	}
+    if(IS_NULLSTR(argument))
+    {
+        send_to_char("Syntax: members [organisation]\n\r", ch);
+        for(org = org_list; org; org = org->next)
+        {
+            send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
+        }
+        return;
+    }
 
-	if((org = org_lookup(argument)) == NULL)
-	{
-		send_to_char("No such organisation.\n\r", ch);
-		return;
-	}
+    if((org = org_lookup(argument)) == NULL)
+    {
+        send_to_char("No such organisation.\n\r", ch);
+        return;
+    }
 
-	if((mem = mem_lookup(org, ch->name)) == NULL && !IS_ADMIN(ch))
-	{
-		send_to_char("You don't even belong to that organisation!\n\r", ch);
-		return;
-	}
+    if((mem = mem_lookup(org, ch->name)) == NULL && !IS_ADMIN(ch))
+    {
+        send_to_char("You don't even belong to that organisation!\n\r", ch);
+        return;
+    }
 
-	if(!IS_ADMIN(ch) && !IS_SET(mem->auth_flags, AUTH_MEMBERS))
-	{
-		send_to_char( "You aren't in a position to see members of that organisation.\n\r", ch);
-		return;
-	}
+    if(!IS_ADMIN(ch) && !IS_SET(mem->auth_flags, AUTH_MEMBERS))
+    {
+        send_to_char( "You aren't in a position to see members of that organisation.\n\r", ch);
+        return;
+    }
 
-	if(org->members == NULL)
-	{
-		send_to_char("The organisation has no members.\n\r", ch);
-	} 
-	else 
-	{
-		send_to_char(Format("%-14s %-10s\n\r", "Name", "Status"), ch);
-		send_to_char("------------------------------------------------\n\r",ch);
-		for(mem = org->members; mem; mem = mem->next)
-		{
-			send_to_char(Format("\t<send href='whois %s'>%-14s\t</send> %-10d", mem->name,mem->name, mem->status), ch);
-		}
-		send_to_char("\n\r", ch);
-	}
+    if(org->members == NULL)
+    {
+        send_to_char("The organisation has no members.\n\r", ch);
+    }
+    else
+    {
+        send_to_char(Format("%-14s %-10s\n\r", "Name", "Status"), ch);
+        send_to_char("------------------------------------------------\n\r", ch);
+        for(mem = org->members; mem; mem = mem->next)
+        {
+            send_to_char(Format("\t<send href='whois %s'>%-14s\t</send> %-10d", mem->name, mem->name, mem->status), ch);
+        }
+        send_to_char("\n\r", ch);
+    }
 }
 
 void do_donate(CHAR_DATA *ch, char *argument)
 {
-	ORG_DATA *org;
-	ORGMEM_DATA *mem;
-	char arg[MIL]={'\0'};
-	int amount = 0;
+    ORG_DATA *org;
+    ORGMEM_DATA *mem;
+    char arg[MIL] = {'\0'};
+    int amount = 0;
 
-	CheckCH(ch);
+    CheckCH(ch);
 
-	argument = one_argument(argument, arg);
+    argument = one_argument(argument, arg);
 
-	if(IS_NULLSTR(argument) || IS_NULLSTR(arg))
-	{
-		send_to_char("Syntax: donate [organisation] [amount]\n\r", ch);
-		for(org = org_list; org; org = org->next)
-		{
-			send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
-		}
-		return;
-	}
+    if(IS_NULLSTR(argument) || IS_NULLSTR(arg))
+    {
+        send_to_char("Syntax: donate [organisation] [amount]\n\r", ch);
+        for(org = org_list; org; org = org->next)
+        {
+            send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
+        }
+        return;
+    }
 
-	if((org = org_lookup(argument)) == NULL)
-	{
-		send_to_char("No such organisation.\n\r", ch);
-		return;
-	}
+    if((org = org_lookup(argument)) == NULL)
+    {
+        send_to_char("No such organisation.\n\r", ch);
+        return;
+    }
 
-	if((mem = mem_lookup(org, ch->name)) == NULL && !IS_ADMIN(ch))
-	{
-		send_to_char("You don't even belong to that organisation!\n\r", ch);
-		return;
-	}
+    if((mem = mem_lookup(org, ch->name)) == NULL && !IS_ADMIN(ch))
+    {
+        send_to_char("You don't even belong to that organisation!\n\r", ch);
+        return;
+    }
 
-	if(!is_number(argument))
-	{
-		send_to_char("How much do you want to donate?\n\r", ch);
-		return;
-	}
+    if(!is_number(argument))
+    {
+        send_to_char("How much do you want to donate?\n\r", ch);
+        return;
+    }
 
-	if((amount = atoi(argument)) > ch->dollars)
-	{
-		send_to_char("You don't have that many dollars to donate.\n\r", ch);
-		return;
-	}
+    if((amount = atoi(argument)) > ch->dollars)
+    {
+        send_to_char("You don't have that many dollars to donate.\n\r", ch);
+        return;
+    }
 
-	ch->dollars -= amount;
-	org->funds += amount;
-	send_to_char(Format("You make a donation of $%d to %s.\n\r", amount, org->name), ch);
+    ch->dollars -= amount;
+    org->funds += amount;
+    send_to_char(Format("You make a donation of $%d to %s.\n\r", amount, org->name), ch);
 }

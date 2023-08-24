@@ -3331,26 +3331,6 @@ bool check_parse_name( char *name )
     }
 
     /*
-     * Prevent players from naming themselves after mobs.
-    {
-    extern MOB_INDEX_DATA *mob_index_hash[MAX_KEY_HASH];
-    MOB_INDEX_DATA *pMobIndex;
-    int iHash;
-
-    for ( iHash = 0; iHash < MAX_KEY_HASH; iHash++ )
-    {
-        for ( pMobIndex  = mob_index_hash[iHash];
-    	  pMobIndex != NULL;
-    	  pMobIndex  = pMobIndex->next )
-        {
-    	if ( is_name( name, pMobIndex->player_name ) )
-    	    return FALSE;
-        }
-    }
-    }
-     */
-
-    /*
      * check names of people playing. Yes, this is necessary for multiple
      * newbies with the same name (thanks Saro)
      */
@@ -3427,7 +3407,6 @@ bool check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
 }
 
 
-
 /*
  * Check if already playing.
  */
@@ -3475,65 +3454,6 @@ void stop_idling( CHAR_DATA *ch )
 	return;
 }
 
-
-
-/*
- * Write to one char, new colour version, by Lope.
- */
-/*void send_to_char( const char *txt, CHAR_DATA *ch )
-{
-	const	char 	*point;
-	char 	*point2;
-	char 	buf[ MSL*4 ]={'\0'};
-	int	skip = 0;
-
-	buf[0] = '\0';
-	point2 = buf;
-
-	if( txt && ch->desc )
-	{
-		if( IS_SET( ch->plr_flags, PLR_COLOUR ) )
-		{
-			for( point = txt ; *point ; point++ )
-			{
-				if( *point == '{' )
-				{
-					point++;
-					skip = colour( *point, ch, point2 );
-					while( skip-- > 0 )
-						++point2;
-					continue;
-				}
-				*point2 = *point;
-				*++point2 = '\0';
-			}
-			*point2 = '\0';
-			if( ch->desc != NULL )
-				write_to_buffer( ch->desc, buf, point2 - buf );
-			else
-				trigger_test(buf, ch, NULL);
-		}
-		else
-		{
-			for( point = txt ; *point ; point++ )
-			{
-				if( *point == '{' )
-				{
-					point++;
-					continue;
-				}
-				*point2 = *point;
-				*++point2 = '\0';
-			}
-			*point2 = '\0';
-			if( ch->desc != NULL )
-				write_to_buffer( ch->desc, buf, point2 - buf );
-			else
-				trigger_test(buf, ch, NULL);
-		}
-	}
-	return;
-}*/
 
 /*
  * Write to one char.

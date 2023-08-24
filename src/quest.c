@@ -48,103 +48,103 @@ const   struct  qt_type  quest_table[] =
 
 CHAR_DATA * evil_twin (CHAR_DATA *ch)
 {
-	CHAR_DATA * twin = create_mobile(get_mob_index(MOB_VNUM_BLANKY));
-	int i = 0;
+    CHAR_DATA *twin = create_mobile(get_mob_index(MOB_VNUM_BLANKY));
+    int i = 0;
 
-	twin->name		= ch->name;
-	twin->short_descr	= ch->name;
-	twin->act		= ACT_TWIN|ch->act;
-	twin->act2		= ch->act2;
-	for(i=0; i<MAX_STATS; i++)
-	{
-		twin->perm_stat[i]	= ch->perm_stat[i];
-	}
-	for(i=0; i<MAX_STATS; i++)
-	{
-		twin->mod_stat[i]	= ch->mod_stat[i];
-	}
-	twin->shape		= ch->shape;
-	twin->blood_timer	= 10;
-	twin->material	= ch->material;
-	twin->race		= ch->race;
-	twin->clan		= ch->clan;
-	twin->size		= ch->size;
-	twin->dam_type	= ch->dam_type;
-	twin->affected_by	= ch->affected_by;
-	twin->affected_by2	= ch->affected_by2;
-	twin->imm_flags	= ch->imm_flags;
-	twin->vuln_flags	= ch->vuln_flags;
-	twin->res_flags	= ch->res_flags;
-	twin->form		= ch->form;
-	twin->parts		= ch->parts;
-	for(i=0; i<MAX_ABIL; i++)
-	{
-		twin->ability[i].value = ch->ability[i].value;
-	}
-	for(i=0; i<MAX_DISC; i++)
-	{
-		twin->disc[i]	= ch->disc[i];
-	}
-	twin->health	= MAX_HEALTH;
-	twin->agghealth	= MAX_HEALTH;
-	twin->position	= P_STAND;
-	twin->in_room	= get_room_index(10000);
-	twin->RBPG		= ch->max_RBPG;
-	twin->max_RBPG	= ch->max_RBPG;
-	twin->GHB		= ch->max_GHB;
-	twin->max_GHB	= ch->max_GHB;
-	twin->willpower	= ch->max_willpower;
-	twin->max_willpower = ch->max_willpower;
-	twin->saving_throw	= ch->saving_throw;
-	twin->sex		= ch->sex;
-	twin->trust		= ch->trust;
-	for(i=0; i<(MAX_VIRTUES - 1); i++)
-	{
-		twin->virtues[i] = ch->virtues[i];
-	}
-	desc_gen(twin);
+    twin->name		= ch->name;
+    twin->short_descr	= ch->name;
+    twin->act		= ACT_TWIN | ch->act;
+    twin->act2		= ch->act2;
+    for(i = 0; i < MAX_STATS; i++)
+    {
+        twin->perm_stat[i]	= ch->perm_stat[i];
+    }
+    for(i = 0; i < MAX_STATS; i++)
+    {
+        twin->mod_stat[i]	= ch->mod_stat[i];
+    }
+    twin->shape		= ch->shape;
+    twin->blood_timer	= 10;
+    twin->material	= ch->material;
+    twin->race		= ch->race;
+    twin->clan		= ch->clan;
+    twin->size		= ch->size;
+    twin->dam_type	= ch->dam_type;
+    twin->affected_by	= ch->affected_by;
+    twin->affected_by2	= ch->affected_by2;
+    twin->imm_flags	= ch->imm_flags;
+    twin->vuln_flags	= ch->vuln_flags;
+    twin->res_flags	= ch->res_flags;
+    twin->form		= ch->form;
+    twin->parts		= ch->parts;
+    for(i = 0; i < MAX_ABIL; i++)
+    {
+        twin->ability[i].value = ch->ability[i].value;
+    }
+    for(i = 0; i < MAX_DISC; i++)
+    {
+        twin->disc[i]	= ch->disc[i];
+    }
+    twin->health	= MAX_HEALTH;
+    twin->agghealth	= MAX_HEALTH;
+    twin->position	= P_STAND;
+    twin->in_room	= get_room_index(10000);
+    twin->RBPG		= ch->max_RBPG;
+    twin->max_RBPG	= ch->max_RBPG;
+    twin->GHB		= ch->max_GHB;
+    twin->max_GHB	= ch->max_GHB;
+    twin->willpower	= ch->max_willpower;
+    twin->max_willpower = ch->max_willpower;
+    twin->saving_throw	= ch->saving_throw;
+    twin->sex		= ch->sex;
+    twin->trust		= ch->trust;
+    for(i = 0; i < (MAX_VIRTUES - 1); i++)
+    {
+        twin->virtues[i] = ch->virtues[i];
+    }
+    desc_gen(twin);
 
-	return twin;
+    return twin;
 }
 
 /* Mob should not be able to be a PC. */
 CHAR_DATA * get_random_mob(CHAR_DATA *ch)
 {
-	CHAR_DATA * mob = NULL;
-	/* 3000 is simply an arbitrarily chosen integer */
-	int i = number_range(1, 3000);
+    CHAR_DATA *mob = NULL;
+    /* 3000 is simply an arbitrarily chosen integer */
+    int i = number_range(1, 3000);
 
-	while(i>0)
-	{
-		for(mob = char_list; mob != NULL; mob = mob->next)
-		{
-			if(mob->fighting == NULL && mob != ch)
-			{
-				i--;
-			}
-			if(i<=0)
-			{
-				break;
-			}
-		}
-	}
+    while(i > 0)
+    {
+        for(mob = char_list; mob != NULL; mob = mob->next)
+        {
+            if(mob->fighting == NULL && mob != ch)
+            {
+                i--;
+            }
+            if(i <= 0)
+            {
+                break;
+            }
+        }
+    }
 
-	while(!IS_NPC(mob) || mob == ch)
-	{
-		mob = mob->next;
-		if(mob == NULL)
-		{
-			mob = char_list;
-		}
-	}
+    while(!IS_NPC(mob) || mob == ch)
+    {
+        mob = mob->next;
+        if(mob == NULL)
+        {
+            mob = char_list;
+        }
+    }
 
-	/* Mob should be on the same plane. */
-	if(!SAME_PLANE(ch, mob) || IS_ANIMAL(mob))
-	{
-		mob = get_random_mob(ch);
-	}
+    /* Mob should be on the same plane. */
+    if(!SAME_PLANE(ch, mob) || IS_ANIMAL(mob))
+    {
+        mob = get_random_mob(ch);
+    }
 
-	return mob;
+    return mob;
 }
 
 OBJ_DATA * get_random_obj()
@@ -386,243 +386,241 @@ void quest_none (CHAR_DATA *ch, int flag)
 
 void quest_courier (CHAR_DATA *ch, int flag)
 {
-	OBJ_DATA *new_obj;
+    OBJ_DATA *new_obj;
 
-	switch(flag)
-	{
-	case 0 :
-		/*package item*/
-		new_obj = create_object(ch->quest->obj->pIndexData);
-		clone_object(ch->quest->obj,new_obj);
-		ch->quest->obj = new_obj;
-		SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
-		if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
-			SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
-		if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
-				> can_carry_w(ch))
-			ch->quest->obj = 0;
-		/*aggressor makes offer;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			act("$N asks, \"Can you run $p to someone for me?\"\n\r", ch, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
-		}
-		else quest_none(ch,0);
-		break;
-	case 1 :
-		/*acceptance of offer;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			send_to_char("You accept the courier job.\n\r", ch);
-			if(ch->quest->victim != NULL)
-			{
-				act("$N says, \"I need you to run this to $t.\"", ch, PERS( ch->quest->victim, ch ),ch->quest->aggressor,TO_CHAR,1);
-				act("$N gives you $p.\n\r", ch, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
-				obj_to_char(ch->quest->obj, ch);
-			}
-			else
-			{
-				act("$N says, \"It doesn't matter anymore.\"", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-			}
-		}
-		else
-		{
-			act("The offer doesn't seem to be open anymore.", ch, NULL, NULL, TO_CHAR, 1);
-			quest_none(ch,0);
-		}
-		break;
-	case 2 :
-		/*mission success;*/
-		if(ch->quest->victim != NULL)
-		{
-			act("$N thanks you, giving you a COD payment.\n\r", ch, NULL, ch->quest->victim, TO_CHAR, 1);
-		}
-		else send_to_char("You succeed.\n\r", ch);
-		ch->exp++;
-		extract_obj(ch->quest->obj);
-		quest_none(ch, 0);
-		break;
-	case 3 :
-		/*mission fail;*/
-		if(ch->quest->state == 0)
-		{
-			if(ch->quest->aggressor != NULL)
-			{
-				act( "$N says, \"I guess I'll just find someone else to do it.\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-			}
-		}
-		else send_to_char("You fail to deliver the package.\n\r", ch);
-		extract_obj(ch->quest->obj);
-		quest_none(ch, 0);
-		break;
-	}
+    switch(flag)
+    {
+    case 0 :
+        /*package item*/
+        new_obj = create_object(ch->quest->obj->pIndexData);
+        clone_object(ch->quest->obj, new_obj);
+        ch->quest->obj = new_obj;
+        SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
+        if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
+            SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
+        if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
+                > can_carry_w(ch))
+            ch->quest->obj = 0;
+        /*aggressor makes offer;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            act("$N asks, \"Can you run $p to someone for me?\"\n\r", ch, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
+        }
+        else quest_none(ch, 0);
+        break;
+    case 1 :
+        /*acceptance of offer;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            send_to_char("You accept the courier job.\n\r", ch);
+            if(ch->quest->victim != NULL)
+            {
+                act("$N says, \"I need you to run this to $t.\"", ch, PERS( ch->quest->victim, ch ), ch->quest->aggressor, TO_CHAR, 1);
+                act("$N gives you $p.\n\r", ch, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
+                obj_to_char(ch->quest->obj, ch);
+            }
+            else
+            {
+                act("$N says, \"It doesn't matter anymore.\"", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+            }
+        }
+        else
+        {
+            act("The offer doesn't seem to be open anymore.", ch, NULL, NULL, TO_CHAR, 1);
+            quest_none(ch, 0);
+        }
+        break;
+    case 2 :
+        /*mission success;*/
+        if(ch->quest->victim != NULL)
+        {
+            act("$N thanks you, giving you a COD payment.\n\r", ch, NULL, ch->quest->victim, TO_CHAR, 1);
+        }
+        else send_to_char("You succeed.\n\r", ch);
+        ch->exp++;
+        extract_obj(ch->quest->obj);
+        quest_none(ch, 0);
+        break;
+    case 3 :
+        /*mission fail;*/
+        if(ch->quest->state == 0)
+        {
+            if(ch->quest->aggressor != NULL)
+            {
+                act( "$N says, \"I guess I'll just find someone else to do it.\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+            }
+        }
+        else send_to_char("You fail to deliver the package.\n\r", ch);
+        extract_obj(ch->quest->obj);
+        quest_none(ch, 0);
+        break;
+    }
 
-	if(ch->quest != NULL) ch->quest->state = flag;
+    if(ch->quest != NULL) ch->quest->state = flag;
 }
 
 void quest_hitman (CHAR_DATA *ch, int flag)
 {
 
-	switch(flag)
-	{
-	case 0 :
-		/*aggressor makes offer;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			act("$N asks, \"I need a professional hit... interested?\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-		}
-		else quest_none(ch,0);
-		break;
-	case 1 :
-		/*acceptance of offer;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			send_to_char("You accept the hitman job.\n\r", ch);
-			if(ch->quest->victim != NULL)
-			{
-				act("$N says, \"I need you to rub out $t.\"", ch, PERS( ch->quest->victim, ch ),ch->quest->aggressor,TO_CHAR,1);
-			}
-			else
-			{
-				act("$N says, \"It doesn't matter anymore.\"", ch, NULL, ch->quest->aggressor, TO_CHAR,1);
-			}
-		}
-		else
-		{
-			act("The offer doesn't seem to be open anymore.", ch, NULL, NULL, TO_CHAR, 1);
-			quest_none(ch,0);
-		}
-		break;
-	case 2 :
-		/*mission success;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			act("$N thanks you, delivering payment into your account.\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-		}
-		else send_to_char("You succeed.\n\r", ch);
-		ch->exp++;
-		quest_none(ch, 0);
-		break;
-	case 3 :
-		/*mission fail;*/
-		if(ch->quest->state == 0)
-		{
-			if(ch->quest->aggressor != NULL)
-			{
-				act( "$N says, \"I guess I'll just find someone else to do it.\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-			}
-		}
-		else send_to_char("You fail to eliminate the target.\n\r", ch);
-		quest_none(ch, 0);
-		break;
-	}
+    switch(flag)
+    {
+    case 0 :
+        /*aggressor makes offer;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            act("$N asks, \"I need a professional hit... interested?\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+        }
+        else quest_none(ch, 0);
+        break;
+    case 1 :
+        /*acceptance of offer;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            send_to_char("You accept the hitman job.\n\r", ch);
+            if(ch->quest->victim != NULL)
+            {
+                act("$N says, \"I need you to rub out $t.\"", ch, PERS( ch->quest->victim, ch ), ch->quest->aggressor, TO_CHAR, 1);
+            }
+            else
+            {
+                act("$N says, \"It doesn't matter anymore.\"", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+            }
+        }
+        else
+        {
+            act("The offer doesn't seem to be open anymore.", ch, NULL, NULL, TO_CHAR, 1);
+            quest_none(ch, 0);
+        }
+        break;
+    case 2 :
+        /*mission success;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            act("$N thanks you, delivering payment into your account.\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+        }
+        else send_to_char("You succeed.\n\r", ch);
+        ch->exp++;
+        quest_none(ch, 0);
+        break;
+    case 3 :
+        /*mission fail;*/
+        if(ch->quest->state == 0)
+        {
+            if(ch->quest->aggressor != NULL)
+            {
+                act( "$N says, \"I guess I'll just find someone else to do it.\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+            }
+        }
+        else send_to_char("You fail to eliminate the target.\n\r", ch);
+        quest_none(ch, 0);
+        break;
+    }
 
-	if(ch->quest != NULL) ch->quest->state = flag;
+    if(ch->quest != NULL) ch->quest->state = flag;
 
 }
 
 void quest_thief (CHAR_DATA *ch, int flag)
 {
-	OBJ_DATA *new_obj;
+    OBJ_DATA *new_obj;
 
-	switch(flag)
-	{
-	case 0 :
-		/*package item*/
-		new_obj = create_object(ch->quest->obj->pIndexData);
-		clone_object(ch->quest->obj,new_obj);
-		ch->quest->obj = new_obj;
-		SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
-		if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
-			SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
-		if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
-				> can_carry_w(ch))
-			ch->quest->obj = 0;
-		/*aggressor makes offer;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			act("$N asks, \"Can you... acquire something for me?\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-		}
-		else quest_none(ch,0);
-		break;
-	case 1 :
-		/*acceptance of offer;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			send_to_char("You accept the theft job.\n\r", ch);
-			if(ch->quest->victim != NULL)
-			{
-				act(Format("$N says, \"I need you to steal %s from $t.\"", format_obj_to_char( ch->quest->obj, ch, TRUE )), ch, PERS( ch->quest->victim, ch ),ch->quest->aggressor,TO_CHAR,1);
-				act("$N gives you $p.\n\r", ch->quest->victim,ch->quest->obj,ch->quest->aggressor, TO_CHAR, 1);
-				obj_to_char(ch->quest->obj, ch->quest->victim);
-			}
-			else
-			{
-				act("$N says, \"It doesn't matter anymore.\"", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-			}
-		}
-		else
-		{
-			act("The offer doesn't seem to be open anymore.", ch, NULL, NULL, TO_CHAR, 1);
-			quest_none(ch,0);
-		}
-		break;
-	case 2 :
-		/*mission success;*/
-		if(ch->quest->aggressor != NULL)
-		{
-			act("$N thanks you, giving you a COD payment.\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-		}
-		else send_to_char("You steal the item!\n\r", ch);
-		ch->exp++;
-		extract_obj(ch->quest->obj);
-		quest_none(ch, 0);
-		break;
-	case 3 :
-		/*mission fail;*/
-		if(ch->quest->state == 0)
-		{
-			if(ch->quest->aggressor != NULL)
-			{
-				act( "$N says, \"I guess I'll just find someone else to do it.\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
-			}
-		}
-		else send_to_char("You fail to acquire the item.\n\r", ch);
-		extract_obj(ch->quest->obj);
-		quest_none(ch, 0);
-		break;
-	}
+    switch(flag)
+    {
+    case 0 :
+        /*package item*/
+        new_obj = create_object(ch->quest->obj->pIndexData);
+        clone_object(ch->quest->obj, new_obj);
+        ch->quest->obj = new_obj;
+        SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
+        if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
+            SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
+        if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
+                > can_carry_w(ch))
+            ch->quest->obj = 0;
+        /*aggressor makes offer;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            act("$N asks, \"Can you... acquire something for me?\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+        }
+        else quest_none(ch, 0);
+        break;
+    case 1 :
+        /*acceptance of offer;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            send_to_char("You accept the theft job.\n\r", ch);
+            if(ch->quest->victim != NULL)
+            {
+                act(Format("$N says, \"I need you to steal %s from $t.\"", format_obj_to_char( ch->quest->obj, ch, TRUE )), ch, PERS( ch->quest->victim, ch ), ch->quest->aggressor, TO_CHAR, 1);
+                act("$N gives you $p.\n\r", ch->quest->victim, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
+                obj_to_char(ch->quest->obj, ch->quest->victim);
+            }
+            else
+            {
+                act("$N says, \"It doesn't matter anymore.\"", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+            }
+        }
+        else
+        {
+            act("The offer doesn't seem to be open anymore.", ch, NULL, NULL, TO_CHAR, 1);
+            quest_none(ch, 0);
+        }
+        break;
+    case 2 :
+        /*mission success;*/
+        if(ch->quest->aggressor != NULL)
+        {
+            act("$N thanks you, giving you a COD payment.\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+        }
+        else send_to_char("You steal the item!\n\r", ch);
+        ch->exp++;
+        extract_obj(ch->quest->obj);
+        quest_none(ch, 0);
+        break;
+    case 3 :
+        /*mission fail;*/
+        if(ch->quest->state == 0)
+        {
+            if(ch->quest->aggressor != NULL)
+            {
+                act( "$N says, \"I guess I'll just find someone else to do it.\"\n\r", ch, NULL, ch->quest->aggressor, TO_CHAR, 1);
+            }
+        }
+        else send_to_char("You fail to acquire the item.\n\r", ch);
+        extract_obj(ch->quest->obj);
+        quest_none(ch, 0);
+        break;
+    }
 
-	if(ch->quest != NULL) ch->quest->state = flag;
+    if(ch->quest != NULL) ch->quest->state = flag;
 
 }
 
 void quest_bodyguard (CHAR_DATA *ch, int flag)
 {
 
-	switch(flag)
-	{
-	case 0 :
-		/*victim makes offer;*/
-		send_to_char("You are offered a bodyguard job.\n\r", ch);
-		break;
-	case 1 :
-		/*acceptance of offer;*/
-		send_to_char("You accept the bodyguard job.\n\r", ch);
-		break;
-	case 2 :
-		/*mission success;*/
-		send_to_char("You succeed.\n\r", ch);
-		quest_none(ch, 0);
-		break;
-	case 3 :
-		/*mission fail;*/
-		send_to_char("You fail.\n\r", ch);
-		quest_none(ch, 0);
-		break;
-	}
-
-	if(ch->quest != NULL) ch->quest->state = flag;
-
+    switch(flag)
+    {
+    case 0 :
+        /*victim makes offer;*/
+        send_to_char("You are offered a bodyguard job.\n\r", ch);
+        break;
+    case 1 :
+        /*acceptance of offer;*/
+        send_to_char("You accept the bodyguard job.\n\r", ch);
+        break;
+    case 2 :
+        /*mission success;*/
+        send_to_char("You succeed.\n\r", ch);
+        quest_none(ch, 0);
+        break;
+    case 3 :
+        /*mission fail;*/
+        send_to_char("You fail.\n\r", ch);
+        quest_none(ch, 0);
+        break;
+    }
+    if(ch->quest != NULL) ch->quest->state = flag;
 }
 
 void quest_guard (CHAR_DATA *ch, int flag)
@@ -630,28 +628,26 @@ void quest_guard (CHAR_DATA *ch, int flag)
 
     switch(flag)
     {
-	case 0 :
-	    /*victim makes offer;*/
-	    send_to_char("You are offered a guard job.\n\r", ch);
-	    break;
-	case 1 :
-	    /*acceptance of offer;*/
-	    send_to_char("You accept the guard job.\n\r", ch);
-	    break;
-	case 2 :
-	    /*mission success;*/
-	    send_to_char("You succeed.\n\r", ch);
-	    quest_none(ch, 0);
-	    break;
-	case 3 :
-	    /*mission fail;*/
-	    send_to_char("You fail.\n\r", ch);
-	    quest_none(ch, 0);
-	    break;
+    case 0 :
+        /*victim makes offer;*/
+        send_to_char("You are offered a guard job.\n\r", ch);
+        break;
+    case 1 :
+        /*acceptance of offer;*/
+        send_to_char("You accept the guard job.\n\r", ch);
+        break;
+    case 2 :
+        /*mission success;*/
+        send_to_char("You succeed.\n\r", ch);
+        quest_none(ch, 0);
+        break;
+    case 3 :
+        /*mission fail;*/
+        send_to_char("You fail.\n\r", ch);
+        quest_none(ch, 0);
+        break;
     }
-
     if(ch->quest != NULL) ch->quest->state = flag;
-
 }
 
 void quest_rescue (CHAR_DATA *ch, int flag)
@@ -659,28 +655,26 @@ void quest_rescue (CHAR_DATA *ch, int flag)
 
     switch(flag)
     {
-	case 0 :
-	    /*"associated" mob makes offer;*/
-	    send_to_char("You are offered a rescue mission.\n\r", ch);
-	    break;
-	case 1 :
-	    /*acceptance of offer;*/
-	    send_to_char("You accept the rescue mission.\n\r", ch);
-	    break;
-	case 2 :
-	    /*mission success;*/
-	    send_to_char("You succeed.\n\r", ch);
-	    quest_none(ch, 0);
-	    break;
-	case 3 :
-	    /*mission fail;*/
-	    send_to_char("You fail.\n\r", ch);
-	    quest_none(ch, 0);
-	    break;
+    case 0 :
+        /*"associated" mob makes offer;*/
+        send_to_char("You are offered a rescue mission.\n\r", ch);
+        break;
+    case 1 :
+        /*acceptance of offer;*/
+        send_to_char("You accept the rescue mission.\n\r", ch);
+        break;
+    case 2 :
+        /*mission success;*/
+        send_to_char("You succeed.\n\r", ch);
+        quest_none(ch, 0);
+        break;
+    case 3 :
+        /*mission fail;*/
+        send_to_char("You fail.\n\r", ch);
+        quest_none(ch, 0);
+        break;
     }
-
     if(ch->quest != NULL) ch->quest->state = flag;
-
 }
 
 void goal_obtain_item(CHAR_DATA *ch, int flag)

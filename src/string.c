@@ -785,39 +785,42 @@ char *desc_pretty( char *string, int start, int lines, bool no_free )
 	return str_dup( buf );
 }
 
-char *get_line( char *str, char *buf )
+char *get_line(char *str, char *buf)
 {
-	int tmp = 0;
-	bool found = FALSE;
+    int tmp = 0;
+    bool found = false; // Changed FALSE to false
 
-	while ( *str )
-	{
-		if ( *str == '\n' )
-		{
-			found = TRUE;
-			break;
-		}
+    while (*str)
+    {
+        if (*str == '\n')
+        {
+            found = true; // Changed TRUE to true
+            break;
+        }
 
-		buf[tmp++] = *(str++);
-	}
+        buf[tmp++] = *(str++);
+    }
 
-	if ( found )
-	{
-		if ( *(str + 1) == '\r' )
-			str += 2;
-		else
-			str += 1;
-	} /* para que quedemos en el inicio de la prox linea */
+    if (found)
+    {
+        if (*(str + 1) == '\r')
+        {
+            str += 2;
+        }
+        else
+        {
+            str += 1;
+        } // To position at the start of the next line
+    }
 
-	buf[tmp] = '\0';
+    buf[tmp] = '\0';
 
-	return str;
+    return str;
 }
 
-
-char *numlineas(char *string)
+char *numlines(char *string)   // Renamed function for clarity
 {
-    static char buf[MAX_STRING_LENGTH*2];
+    static char buf[MAX_STRING_LENGTH * 2];
     char buf2[MSL] = {'\0'};
     char tmpb[MSL] = {'\0'};
     int cnt = 1;
