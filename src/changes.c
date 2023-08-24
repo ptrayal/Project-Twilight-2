@@ -18,10 +18,10 @@ int changecount = 0;
 
 void load_changes();
 void save_changes();
-char *strip_ansi(char *str);
+char *strip_ansi(char *str, size_t buf_size);
 char *str_strip(char *str);
 char *current_date();
-void do_addchange(CHAR_DATA *ch, char *argument);
+void do_addchange(CHAR_DATA *ch, const char *argument);
 void do_nchange(CHAR_DATA *ch, char *argument);
 bool remove_change(int i);
 
@@ -30,23 +30,39 @@ bool remove_change(int i);
  * should only be called at boot time. Add this
  * call to db.c's boot function.
  */
-char *strip_ansi(char *str)
+char *strip_ansi(char *str, size_t buf_size)
 {
-    static char buf[MSL];
-    char *ptr;
+    static char buf[MSL];  // Assuming MSL is a constant defined elsewhere
+    char *ptr = buf;
+    size_t remaining_space = buf_size;
 
-    buf[0] = '\0';
-    ptr = buf;
-
-    while (*str != '\0')
+    while (*str != '\0' && remaining_space > 1)  // Leave space for null terminator
     {
         if (*str != '^')
         {
             *ptr++ = *str++;
+            remaining_space--;
         }
-        else if (*(++str) != '\0')
+        else
         {
+            // Skip '^' character
             str++;
+
+            // Skip the rest of the sequence
+            bool in_escape_sequence = false;
+            while (*str != '\0')
+            {
+                if (in_escape_sequence)
+                {
+                    if (*str >= 'A' && *str <= 'Z')
+                        in_escape_sequence = false;
+                }
+                else if (*str == '[')
+                {
+                    in_escape_sequence = true;
+                }
+                str++;
+            }
         }
     }
     *ptr = '\0';
@@ -163,7 +179,6 @@ void load_changes()
 }
 
 
-
 // Function to save changes
 void save_changes()
 {
@@ -234,10 +249,9 @@ char *current_date()
  * will also be added to the list, as well as the
  * date the change was added.
  */
-void do_addchange(CHAR_DATA *ch, char *argument)
+void do_addchange(CHAR_DATA *ch, const char *argument)
 {
-    CHANGE_DATA *change;
-    char buf[MSL] = {'\0'};
+    if (!ch) return;  // Check if 'ch' is NULL
 
     CheckChNPC(ch);
 
@@ -249,25 +263,21 @@ void do_addchange(CHAR_DATA *ch, char *argument)
     }
 
     /* Allocate memory for the change structure */
-    change = (CHANGE_DATA *)malloc(sizeof(CHANGE_DATA));
+    CHANGE_DATA *change = (CHANGE_DATA *)malloc(sizeof(CHANGE_DATA));
     if (!change)
     {
         send_to_char("Memory allocation error.\n\r", ch);
         return;
     }
 
-    /* Initialize change data to NULL */
-    change->imm = NULL;
-    change->date = NULL;
-    change->text = NULL;
-
-    /* Allocate and copy data for the change */
+    /* Initialize change data */
     change->imm = str_dup(ch->name);
     change->text = str_dup(argument);
     change->date = current_date();
+    change->next = NULL;
+    change->prev = NULL;
 
     /* Add the change to the linked list */
-    change->next = NULL;
     if (change_last)
     {
         change_last->next = change;
@@ -276,15 +286,14 @@ void do_addchange(CHAR_DATA *ch, char *argument)
     else
     {
         change_list = change;
-        change->prev = NULL;
     }
     change_last = change;
 
     changecount++;
     send_to_char("Change added.\n\r", ch);
     save_changes();
-    return;
 }
+
 
 int num_changes (void)
 {
