@@ -88,7 +88,18 @@ char *str_strip(char *str)
     return str;
 }
 
+// Define the function to free allocated memory
+void free_change(struct change_data *change)
+{
+    // Add code to free individual members of 'change'
+    free(change->imm);
+    free(change->date);
+    free(change->text);
+    free(change);
+}
 
+
+// Define the function to parse and load changes
 void load_changes()
 {
     FILE *fp;
@@ -105,8 +116,7 @@ void load_changes()
         return;
     }
 
-
-    if ((fp = fopen(CHANGE_FILE, "r")) == NULL) 
+    if ((fp = fopen(CHANGE_FILE, "r")) == NULL)
     {
         fprintf(debug_file, "Non-fatal error: changes.xml not found!\n");
         fclose(debug_file);
@@ -176,6 +186,13 @@ void load_changes()
     }
 
     fclose(fp);
+    fclose(debug_file); // Close the debug log file
+
+    // Free memory allocated for 'change'
+    if (change)
+    {
+        free_change(change);
+    }
 }
 
 
@@ -215,25 +232,25 @@ void save_changes()
 
 char *current_date()
 {
-    time_t nowtime = time(NULL);
-    struct tm *t = localtime(&nowtime);
-
-    if (t == NULL)
-    {
-        // Error handling if localtime fails
-        return NULL;
-    }
-
-    char *buf = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
+    char *buf = (char *)malloc(MAX_BUFFER_SIZE);
     if (buf == NULL)
     {
-        // Error handling if memory allocation fails
+        log_string(LOG_ERR, "Memory allocation failed");
         return NULL;
     }
 
-    if (strftime(buf, MAX_BUFFER_SIZE, "%d-%b-%Y", t) == 0)
+    time_t nowtime = time(NULL);
+    struct tm t;
+    if (localtime_r(&nowtime, &t) == NULL)
     {
-        // Error handling if strftime fails
+        log_string(LOG_ERR, "Failed to get local time");
+        free(buf);
+        return NULL;
+    }
+
+    if (strftime(buf, MAX_BUFFER_SIZE, "%d-%b-%Y", &t) == 0)
+    {
+        log_string(LOG_ERR, "strftime failed");
         free(buf);
         return NULL;
     }
@@ -251,18 +268,21 @@ char *current_date()
  */
 void do_addchange(CHAR_DATA *ch, const char *argument)
 {
-    if (!ch) return;  // Check if 'ch' is NULL
+    if (!ch)
+    {
+        return;  // Check if 'ch' is NULL
+    }
 
     CheckChNPC(ch);
 
-    /* Check if the argument is provided and has sufficient length */
+    // Check if the argument is provided and has sufficient length
     if (IS_NULLSTR(argument) || strlen(argument) < 5)
     {
         send_to_char("What did you change?\n\r", ch);
         return;
     }
 
-    /* Allocate memory for the change structure */
+    // Allocate memory for the change structure
     CHANGE_DATA *change = (CHANGE_DATA *)malloc(sizeof(CHANGE_DATA));
     if (!change)
     {
@@ -270,14 +290,14 @@ void do_addchange(CHAR_DATA *ch, const char *argument)
         return;
     }
 
-    /* Initialize change data */
+    // Initialize change data
     change->imm = str_dup(ch->name);
     change->text = str_dup(argument);
     change->date = current_date();
     change->next = NULL;
     change->prev = NULL;
 
-    /* Add the change to the linked list */
+    // Add the change to the linked list
     if (change_last)
     {
         change_last->next = change;
@@ -295,22 +315,33 @@ void do_addchange(CHAR_DATA *ch, const char *argument)
 }
 
 
-int num_changes (void)
+
+int num_changes(void)
 {
     CHANGE_DATA *change;
-    char *test;
+    const char *currentDate;
     int today = 0;
-    test = current_date ();
+
+    currentDate = current_date();
+
+    if (currentDate == NULL)
+    {
+        // Handle the error, e.g., print an error message or return an error code.
+        // For now, let's just return -1 to indicate an error.
+        return -1;
+    }
 
     for (change = change_list; change; change = change->next)
     {
-        if (!str_cmp (test, change->date))
+        if (!str_cmp(currentDate, change->date))
         {
             today++;
         }
     }
+
     return today;
 }
+
 
 char *cline_indent (char *text, int wBegin, int wMax)
 {
