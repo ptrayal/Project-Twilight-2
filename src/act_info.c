@@ -5446,18 +5446,28 @@ void do_hunted(CHAR_DATA *ch, char *argument)
 
 void do_celebs(CHAR_DATA *ch, char *argument)
 {
-	CHAR_DATA *vch;
+    CheckCH(ch);
 
-	CheckCH(ch);
+    bool anyCelebsOnline = false;
 
-	send_to_char("\tWCelebrities currently online are:\tn\n\r", ch);
+    send_to_char("\tWCelebrities currently online are:\tn\n\r", ch);
 
-	for(vch = char_list; vch != NULL; vch = vch->next)
-	{
-		if(IS_NPC(vch) || vch->backgrounds[FAME_STATUS] == 0) continue;
+    for (CHAR_DATA *vch = char_list; vch != NULL; vch = vch->next)
+    {
+        if (IS_NPC(vch) || vch->backgrounds[FAME_STATUS] == 0)
+        {
+            continue;
+        }
 
-		send_to_char(Format("\tY%15s - %s\tn\n\r", vch->name, fame_table[vch->backgrounds[FAME_STATUS]].name), ch);
-	}
+        anyCelebsOnline = true;
+
+        send_to_char(Format("\tY%15s - %s\tn\n\r", vch->name, fame_table[vch->backgrounds[FAME_STATUS]].name), ch);
+    }
+
+    if (!anyCelebsOnline)
+    {
+        send_to_char("\tYNo celebrities are currently online\tn.\n\r", ch);
+    }
 }
 
 void do_nocommand(CHAR_DATA *ch, char *argument)
@@ -5507,7 +5517,7 @@ void do_surname(CHAR_DATA *ch, char *argument)
 
 	if( strlen(argument) > 15 )
 	{
-		send_to_char("Last names cannot be longer than 15 characters.", ch);
+		send_to_char("\tRWarning:\tn Last names cannot be longer than 15 characters.", ch);
 		return;
 	}
 
@@ -6593,7 +6603,6 @@ void do_snippets( CHAR_DATA *ch, char *argument )
 // This function is to check the length of an array to make sure we are sizing them correctly.
 void do_testarray (CHAR_DATA *ch, char *argument)
 {
-	// OBJ_DATA *obj;
 	ROOM_INDEX_DATA *pRoomIndex;
 	CheckCH(ch);
 

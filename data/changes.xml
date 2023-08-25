@@ -2,6 +2,16 @@
 <changes>
   <change>
     <imm>Rayal</imm>
+    <date>24-Aug-2023</date>
+    <text>Modified celebs command to tell explicitly if there are no famous people online.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>24-Aug-2023</date>
+    <text>Numerous improvements to changes code.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
     <date>21-Aug-2023</date>
     <text>All new characters passwords now requires 6 characters, one letter, and one number.</text>
   </change>
