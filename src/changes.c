@@ -196,7 +196,15 @@ void load_changes()
 }
 
 
-// Function to save changes
+void write_change(FILE *fp, const CHANGE_DATA *change)
+{
+    fprintf(fp, "  <change>\n");
+    fprintf(fp, "    <imm>%s</imm>\n", change->imm);
+    fprintf(fp, "    <date>%s</date>\n", change->date);
+    fprintf(fp, "    <text>%s</text>\n", change->text);
+    fprintf(fp, "  </change>\n");
+}
+
 void save_changes()
 {
     FILE *fp;
@@ -211,24 +219,20 @@ void save_changes()
     fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     fprintf(fp, "<changes>\n");
 
-    log_string(LOG_GAME, Format("DEBUG: change_list = %p, change_last = %p\n", (void *)change_list, (void *)change_last));
+    log_string(LOG_GAME, "DEBUG: change_list = %p, change_last = %p\n", (void *)change_list, (void *)change_last);
 
+    // This is where the changes are written using the 'write_change' function
     for (change = change_last; change; change = change->prev)
     {
         if (change->imm && change->date && change->text)
         {
-            fprintf(fp, "  <change>\n");
-            fprintf(fp, "    <imm>%s</imm>\n", change->imm);
-            fprintf(fp, "    <date>%s</date>\n", change->date);
-            fprintf(fp, "    <text>%s</text>\n", change->text);
-            fprintf(fp, "  </change>\n");
+            write_change(fp, change);
         }
     }
 
     fprintf(fp, "</changes>\n");
     fclose(fp);
 }
-
 
 char *current_date()
 {
@@ -343,25 +347,23 @@ int num_changes(void)
 }
 
 
-char *cline_indent (char *text, int wBegin, int wMax)
+char *cline_indent(char *text, int wBegin, int wMax)
 {
     static char buf[MSL];
-    char *ptr;
-    char *ptr2;
+    char *ptr = text;
+    char *ptr2 = buf;
     int count = 0;
-    int wEnd=0;
-    int len = 0;
-    bool stop = FALSE;
+    int wEnd = 0;
+    bool stop = false;
 
     buf[0] = '\0';
-    ptr = text;
-    ptr2 = buf;
 
     while (!stop)
     {
+        int len = strlen(ptr);
+
         if (count == 0)
         {
-            len = strlen(ptr);
             if (*ptr == '\0')
             {
                 wEnd = wMax - wBegin;
@@ -373,7 +375,6 @@ char *cline_indent (char *text, int wBegin, int wMax)
             else
             {
                 int x = 0;
-
                 while (*(ptr + (wMax - wBegin - x)) != ' ')
                 {
                     x++;
@@ -385,6 +386,7 @@ char *cline_indent (char *text, int wBegin, int wMax)
                 }
             }
         }
+
         if (count == 0 && *ptr == ' ')
         {
             ptr++;
@@ -393,37 +395,35 @@ char *cline_indent (char *text, int wBegin, int wMax)
         {
             if ((*ptr2++ = *ptr++) == '\0')
             {
-                stop = TRUE;
+                stop = true;
             }
         }
         else if (*ptr == '\0')
         {
-            stop = TRUE;
+            stop = true;
             *ptr2 = '\0';
         }
         else
         {
-            int k = 0;
-
             count = 0;
             *ptr2++ = '\n';
             *ptr2++ = '\r';
-            for (k = 0; k < wBegin; k++)
+            for (int k = 0; k < wBegin; k++)
             {
                 *ptr2++ = ' ';
             }
         }
     }
-    
+
     return buf;
 }
 
-char* format_text(char* text)
+char *format_text(char *text)
 {
     static char buf[MSL];
     int buf_length = 0;
     int line_length = 0;
-    char* ptr = text;
+    char *ptr = text;
     bool new_line = true;
 
     buf[0] = '\0';
@@ -438,7 +438,7 @@ char* format_text(char* text)
         }
         else if (new_line)
         {
-            while (isspace(*ptr))
+            while (isspace((unsigned char)*ptr))
                 ptr++;
             new_line = false;
         }
@@ -449,7 +449,9 @@ char* format_text(char* text)
         if (line_length >= 70 || *ptr == '\0' || *ptr == '\n')
         {
             if (line_length >= 70)
+            {
                 buf[buf_length++] = '\n';
+            }
             buf[buf_length++] = '\r';
             line_length = 0;
             new_line = true;
@@ -461,10 +463,7 @@ char* format_text(char* text)
 }
 
 
-/*
- * The player function.
- * simply lists the last MAX_CHANGE changes
- */
+
 void do_nchange(CHAR_DATA *ch, char *argument)
 {
     int count = 0, page = 0, pcount = 0;
@@ -478,7 +477,7 @@ void do_nchange(CHAR_DATA *ch, char *argument)
     pcount = (changecount + 9) / 10;
 
     // Parse the requested page number
-    if (is_number(argument))
+    if (isdigit(argument[0]))
     {
         page = atoi(argument);
 
@@ -498,75 +497,96 @@ void do_nchange(CHAR_DATA *ch, char *argument)
     int start_change = page * 10;
     int end_change = start_change + 9;
 
-    if (end_change >= changecount)
-        end_change = changecount - 1;
-
     send_to_char("CHANGES\n", ch);
 
     // Loop through the changes and display them
     for (change = change_list; change && count <= end_change; change = change->next, count++)
     {
-        if (!str_cmp(test, change->date))
+        // Allocate memory and copy strings
+        char *changeDate = strdup(change->date);
+        char *changeText = strdup(change->text);
+        char *changeImm = strdup(change->imm);
+
+        if (!changeDate || !changeText || !changeImm)
+        {
+            // Handle memory allocation failure
+            // Clean up allocated memory and exit
+            free(changeDate);
+            free(changeText);
+            free(changeImm);
+            // Additional error handling may be required
+            return;
+        }
+
+        if (!strcmp(test, changeDate))
             today++;
 
         if (count >= start_change)
         {
             snprintf(buf, sizeof(buf), "%-2d) [%s] %s [%s]\n\r",
-                     count + 1, change->date, cline_indent(change->text, 3, 79), change->imm);
+                     count + 1, changeDate, cline_indent(changeText, 3, 79), changeImm);
             send_to_char(buf, ch);
         }
+
+        // Free allocated memory
+        free(changeDate);
+        free(changeText);
+        free(changeImm);
     }
 
     send_to_char("+=============================================================================+\n\r", ch);
 
     if (today > 0)
+    {
         printf_to_char(ch, "There is a total of %d change%s in the database of which %d %s added today.\n\r",
                        changecount, changecount == 1 ? "" : "s", today,
                        today == 1 ? "was" : "were");
+    }
     else
+    {
         printf_to_char(ch, "There is a total of %d change%s in the database.\n\r",
                        changecount, changecount == 1 ? "" : "s");
+    }
 
     if (pcount > 1)
+    {
         printf_to_char(ch, "To see pages of changes use: changes <1-%d>\n\r", pcount);
+    }
 
     send_to_char("+=============================================================================+\n\r", ch);
 }
 
-
-/*
- * delchange removes a given change, and adds the
- * change to a free_list so it can be recycled later
- */
-void do_delchange (CHAR_DATA * ch, char *argument)
+// Removes a given change, and adds the change to a free_list for recycling
+void do_delchange(CHAR_DATA *ch, char *argument)
 {
     char arg[MIL] = {'\0'};
-    bool found = FALSE;
+    bool found = false;
     int i = 0;
 
     CheckChNPC(ch);
 
-    one_argument (argument, arg);
+    one_argument(argument, arg);
 
-    if ((i = atoi (arg)) < 1)
+    if ((i = atoi(arg)) < 1)
     {
-        send_to_char ("Which number change did you want to remove ?\n\r", ch);
+        send_to_char("Which number change did you want to remove?\n\r", ch);
         return;
     }
 
-    found = remove_change (i);
+    found = remove_change(i);
 
     if (!found)
     {
-        send_to_char ("No such change.\n\r", ch);
+        send_to_char("No such change.\n\r", ch);
     }
     else
     {
-        send_to_char ("Change removed.\n\r", ch);
+        send_to_char("Change removed.\n\r", ch);
     }
 
     changecount--;
-    save_changes ();
+    save_changes();
+
     return;
 }
 
@@ -577,17 +597,17 @@ void do_delchange (CHAR_DATA * ch, char *argument)
 bool remove_change(int i)
 {
     CHANGE_DATA *change;
-    bool found = FALSE;
+    bool found = false; // Use lowercase 'false' and 'true' for boolean values
     int count = 0;
 
     // Traverse the change list to find the change at index i
-    for (change = change_list; change; change = change->next)
+    for (change = change_list; change != NULL; change = change->next)
     {
         count++;
 
         if (count == i)
         {
-            found = TRUE;
+            found = true;
 
             // Update pointers to remove the change from the list
             if (change->prev)
@@ -604,18 +624,9 @@ bool remove_change(int i)
             }
 
             // Free memory for the change's data
-            if (change->imm)
-            {
-                free(change->imm);
-            }
-            if (change->date)
-            {
-                free(change->date);
-            }
-            if (change->text)
-            {
-                free(change->text);
-            }
+            free(change->imm);
+            free(change->date);
+            free(change->text);
 
             // Add the change to the free list for recycling
             change->next = change_free;
