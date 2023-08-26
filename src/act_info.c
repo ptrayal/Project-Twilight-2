@@ -5053,23 +5053,51 @@ void run_election()
 
 void do_nominees (CHAR_DATA *ch, char *argument)
 {
-	int i = 0,j = 0;
+    CheckCH(ch);
 
-	CheckCH(ch);
+    bool foundNominee = false;
 
-	send_to_char("The nominees are:\n\r", ch);
-	for(i=0;i<MAX_OFFICES;i++)
-	{
-		send_to_char(Format("%s: ", office_table[i].name), ch);
-		for(j=0;j<MAX_NOMINEES;j++)
-		{
-			if(IS_NULLSTR(vote_tally[i][j].name))
-				continue;
+    send_to_char("The nominees are:\n\r", ch);
 
-			send_to_char(Format("%s%s", !str_cmp(vote_tally[i][j].name, "None") ? "" : vote_tally[i][j].name, !str_cmp(vote_tally[i][j].name, "None") ? "" : " "), ch);
-		}
-		send_to_char("\n\r", ch);
-	}
+    for (int officeIndex = 0; officeIndex < MAX_OFFICES; officeIndex++)
+    {
+        send_to_char(Format("%s: ", office_table[officeIndex].name), ch);
+
+        bool officeHasNominee = false;
+
+        for (int nomineeIndex = 0; nomineeIndex < MAX_NOMINEES; nomineeIndex++)
+        {
+            if (!IS_NULLSTR(vote_tally[officeIndex][nomineeIndex].name))
+            {
+                if (str_cmp(vote_tally[officeIndex][nomineeIndex].name, "None") == 0)
+                {
+                    continue;
+                }
+
+                if (!officeHasNominee)
+                {
+                    officeHasNominee = true;
+                }
+
+                send_to_char(vote_tally[officeIndex][nomineeIndex].name, ch);
+                send_to_char(" ", ch);
+
+                foundNominee = true;
+            }
+        }
+
+        if (!officeHasNominee)
+        {
+            send_to_char("\tYNo nominees for this office currently\tn.", ch);
+        }
+
+        send_to_char("\n\r\n\r", ch);
+    }
+
+    if (!foundNominee)
+    {
+        send_to_char("\tRNo nominees for any office currently\tn.", ch);
+    }
 }
 
 void do_nature (CHAR_DATA *ch, char *argument)
