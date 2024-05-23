@@ -4086,54 +4086,63 @@ void do_step(CHAR_DATA *ch, char *argument)
 
     CheckCH(ch);
 
-    /*
-     * Added org stepping. Dsarky.
-     * Added home stepping. Dsarky.
-     */
-
-    /* Added a better way of displaying the steps by adding the count feature
-     * so that it would display much like the abilities and powers do.  Also
-     * looks a hell of a lot better.  Rayal.
-     */
-    if(IS_NULLSTR(argument))
+    if (IS_NULLSTR(argument))
     {
         send_to_char("\tGAvailable locations are\tn:\n\r", ch);
-        for(i=0;rp_area_table[i].name != NULL;i++)
+        for (i = 0; rp_area_table[i].name != NULL; i++)
         {
-            if(rp_area_table[i].settable == TRUE) {
-                send_to_char(Format("\t<send href='step %s'>%-20s\t</send> |", rp_area_table[i].name, rp_area_table[i].name), ch);
-                count++;if(!(count%3)) send_to_char("\n\r", ch);
-            }
-        }
-        for(org = org_list; org; org = org->next)
-        {
-            if(mem_lookup(org, ch->name))
+            if (rp_area_table[i].settable == TRUE)
             {
-                send_to_char(Format("\t<send href='step %s'>%-20s\t</send> |", org->name, org->name), ch);
-                count++;if(!(count%3)) send_to_char("\n\r", ch);
+                send_to_char(Format("\t<send href='step %s'>%-20s\t</send> |",
+                                    rp_area_table[i].name, rp_area_table[i].name), ch);
+                count++;
+                if (!(count % 3))
+                {
+                    send_to_char("\n\r", ch);
+                }
             }
         }
-        if(ch->home > 0)
+
+        for (org = org_list; org; org = org->next)
         {
-            send_to_char(Format("\t<send href='step %s'>%-20s\t</send> |", "home", "home"), ch);
-            count++;if(!(count%3)) send_to_char("\n\r", ch);
+            if (mem_lookup(org, ch->name))
+            {
+                send_to_char(Format("\t<send href='step %s'>%-20s\t</send> |",
+                                    org->name, org->name), ch);
+                count++;
+                if (!(count % 3))
+                {
+                    send_to_char("\n\r", ch);
+                }
+            }
         }
+
+        if (ch->home > 0)
+        {
+            send_to_char(Format("\t<send href='step %s'>%-20s\t</send> |",
+                                "home", "home"), ch);
+            count++;
+            if (!(count % 3))
+            {
+                send_to_char("\n\r", ch);
+            }
+        }
+
         send_to_char("\n\r", ch);
         return;
     }
 
-    if(ch->in_room->vnum == ROOM_VNUM_JAIL)
+    if (ch->in_room->vnum == ROOM_VNUM_JAIL)
     {
         send_to_char("The jail attendant laughs at your request for a taxi.\n\r", ch);
         return;
     }
 
-    if((i = flag_value(rp_area_table, argument)) == NO_FLAG)
+    if ((i = flag_value(rp_area_table, argument)) == NO_FLAG)
     {
-        if((org = org_lookup(argument)) == NULL || !get_room_index(i = org->step_point))
+        if ((org = org_lookup(argument)) == NULL || !get_room_index(i = org->step_point))
         {
-            if(!str_prefix(argument, "home")
-                    && (ch->home == 0 || !get_room_index(i = ch->rooms[0]->vnum)))
+            if (!str_prefix(argument, "home") && (ch->home == 0 || !get_room_index(i = ch->rooms[0]->vnum)))
             {
                 send_to_char("No such step point available.\n\r", ch);
                 return;
@@ -4141,13 +4150,7 @@ void do_step(CHAR_DATA *ch, char *argument)
         }
     }
 
-    if(i != flag_value(rp_area_table, "newbie school") && ch->dollars + (ch->cents / 100) < 5 && !IS_ADMIN(ch))
-    {
-        send_to_char("You don't have $5 to pay for the taxi!\n\r", ch);
-        return;
-    }
-
-    if((location = get_room_index(i)) == NULL)
+    if ((location = get_room_index(i)) == NULL)
     {
         send_to_char("\tOThere seems to have been a mistake.\tn\n\r", ch);
         send_to_char("\tOPlease report that target location as being unavailable.\tn\n\r", ch);
@@ -4160,39 +4163,54 @@ void do_step(CHAR_DATA *ch, char *argument)
     {
         if (get_trust(rch) >= ch->invis_level)
         {
-            if (ch->pcdata != NULL && !IS_NULLSTR(ch->pcdata->bamfout) )
-                act("$t",ch,ch->pcdata->bamfout,rch,TO_VICT,0);
+            if (ch->pcdata != NULL && !IS_NULLSTR(ch->pcdata->bamfout))
+            {
+                act("$t", ch, ch->pcdata->bamfout, rch, TO_VICT, 0);
+            }
             else
-                act("$n leaves, catching a taxi to another area.",ch, NULL,rch,TO_VICT,0);
+            {
+                act("$n leaves, catching a taxi to another area.", ch, NULL, rch, TO_VICT, 0);
+            }
         }
     }
 
-    char_from_room( ch );
-    char_to_room( ch, location );
+    char_from_room(ch);
+    char_to_room(ch, location);
 
     for (rch = ch->in_room->people; rch != NULL; rch = rch->next_in_room)
     {
         if (get_trust(rch) >= ch->invis_level)
         {
-            if (ch->pcdata != NULL && !IS_NULLSTR(ch->pcdata->bamfin) )
-                act("$t",ch,ch->pcdata->bamfin,rch,TO_VICT,0);
+            if (ch->pcdata != NULL && !IS_NULLSTR(ch->pcdata->bamfin))
+            {
+                act("$t", ch, ch->pcdata->bamfin, rch, TO_VICT, 0);
+            }
             else
-                act("$n has arrived.",ch,NULL,rch,TO_VICT,0);
+            {
+                act("$n has arrived.", ch, NULL, rch, TO_VICT, 0);
+            }
         }
     }
 
-    do_function( ch, &do_look, "auto" );
-    if(!IS_ADMIN(ch) && i != flag_value(rp_area_table, "school"))
+    do_function(ch, &do_look, "auto");
+
+    // Code for paying the taxi driver
+    if (!IS_ADMIN(ch) && i != flag_value(rp_area_table, "school"))
     {
-        if(ch->dollars >= 5)
-            ch->dollars -= 5;
-        else {
-            ch->cents -= (5 - ch->dollars) * 100;
+        int cost = 5;
+        if (ch->dollars < cost)
+        {
+            ch->cents -= (cost - ch->dollars) * 100;
             ch->dollars = 0;
+        }
+        else
+        {
+            ch->dollars -= cost;
         }
         send_to_char("You pay the taxi driver the $5 you owe him for the trip.\n\r", ch);
     }
 }
+
 
 void do_taxi(CHAR_DATA *ch, char *argument)
 {

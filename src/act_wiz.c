@@ -28,6 +28,7 @@
  **************************************************************************/
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -4579,7 +4580,7 @@ void do_copyover (CHAR_DATA *ch, char * argument)
 
 	CheckCH(ch);
 
-	fp = fopen (COPYOVER_FILE, "w");
+	fp = fopen(COPYOVER_FILE, "w");
 
 	if (!fp)
 	{
