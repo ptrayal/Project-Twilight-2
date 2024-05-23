@@ -1,7 +1,7 @@
 /***************************************************************************
  * Much of the code is the original work of Peter Fitzgerald who turned    *
  * it over to Brandon Morrison who has adopted and improved the code.      *
- * Copyright (C) 2012 - 2019                                               *
+ * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
  
 #include <stdlib.h>

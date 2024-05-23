@@ -22,13 +22,11 @@
  *  By using this code, you have agreed to follow the terms of the         *
  *  ROM license, in the file Rom24/doc/rom.license                         *
  *                                                                         *
- * The following code is based on ILAB OLC by Jason Dinkel.                *
- * Mobprogram code by Lordrom for Nevermore.                               *
- *                                                                         *
  * Much of the code is the original work of Peter Fitzgerald who turned    *
  * it over to Brandon Morrison who has adopted and improved the code.      *
- * Copyright (C) 2012 - 2019                                               *
+ * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
+ 
 
 #if defined(Macintosh)
 #include <types.h>

@@ -1,7 +1,7 @@
 /***************************************************************************
  * Much of the code is the original work of Peter Fitzgerald who turned    *
  * it over to Brandon Morrison who has adopted and improved the code.      *
- * Copyright (C) 2012 - 2019                                               *
+ * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
 
 /*	@(#)telnet.h 1.7 88/08/19 SMI; from UCB 5.1 5/30/85	*/
