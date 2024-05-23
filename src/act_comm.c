@@ -271,104 +271,171 @@ void emote_say_colouring( char *argument, CHAR_DATA *ch )
 
 void do_channels( CHAR_DATA *ch, char *argument)
 {
-	CheckCH(ch);
+    CheckCH(ch);
 
-	/* lists all channels and their status */
-	send_to_char("\tW|   \tYchannel\tW     | \tYstatus\tW|\tn\n\r",ch);
-	send_to_char("\tW|---------------|-------|\tn\n\r",ch);
+    if (IS_SET(ch->comm, COMM_BRIEF))
+    {
+        send_to_char("Channels and their status.  ::\n\r", ch);
 
-	if (IS_ADMIN(ch))
-	{
-		send_to_char("\tW|\tnImmtalk channel", ch);
-		if(!IS_SET(ch->comm,COMM_NOWIZ))
-			send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-		else
-			send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        if (IS_ADMIN(ch))
+        {
+            send_to_char("Immtalk channel ", ch);
+            if(!IS_SET(ch->comm, COMM_NOWIZ))
+                send_to_char("ON ::\n\r", ch);
+            else
+                send_to_char("OFF ::\n\r", ch);
 
-		send_to_char("\tW|\tnThink channel  ",ch);
-		if(!IS_SET(ch->comm,COMM_THINK_ON))
-			send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-		else
-			send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
-	}
+            send_to_char("Think channel ", ch);
+            if(!IS_SET(ch->comm, COMM_THINK_ON))
+                send_to_char("ON ::\n\r", ch);
+            else
+                send_to_char("OFF ::\n\r", ch);
+        }
 
-	send_to_char("\tW|\tnOOC Channel    ",ch);
-	if (!IS_SET(ch->comm,COMM_OOC_OFF))
-		send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-	else
-		send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        send_to_char("OOC Channel ", ch);
+        if (!IS_SET(ch->comm, COMM_OOC_OFF))
+            send_to_char("ON ::\n\r", ch);
+        else
+            send_to_char("OFF ::\n\r", ch);
 
-	send_to_char("\tW|\tnDiscreet mode  ",ch);
-	if (IS_SET(ch->comm,COMM_DISCREET))
-		send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-	else
-		send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        send_to_char("Discreet mode ", ch);
+        if (IS_SET(ch->comm, COMM_DISCREET))
+            send_to_char("ON ::\n\r", ch);
+        else
+            send_to_char("OFF ::\n\r", ch);
 
-	send_to_char("\tW|\tnQuiet mode     ",ch);
-	if (IS_SET(ch->comm,COMM_QUIET))
-		send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-	else
-		send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        send_to_char("Quiet mode ", ch);
+        if (IS_SET(ch->comm, COMM_QUIET))
+            send_to_char("ON ::\n\r", ch);
+        else
+            send_to_char("OFF ::\n\r", ch);
 
-	send_to_char("\tW|\tnTelephone/Deaf ",ch);
-	if (!IS_SET(ch->comm,COMM_NOPHONE))
-		send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-	else
-		send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        send_to_char("Telephone/Deaf ", ch);
+        if (!IS_SET(ch->comm, COMM_NOPHONE))
+            send_to_char("ON ::\n\r", ch);
+        else
+            send_to_char("OFF ::\n\r", ch);
 
-	send_to_char("\tW|\tnYelling        ",ch);
-	if (!IS_SET(ch->comm,COMM_NOGOSSIP))
-		send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-	else
-		send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        send_to_char("Yelling ", ch);
+        if (!IS_SET(ch->comm, COMM_NOGOSSIP))
+            send_to_char("ON ::\n\r", ch);
+        else
+            send_to_char("OFF ::\n\r", ch);
 
-	send_to_char("\tW|\tnTips           ",ch);
-	if (IS_SET(ch->comm,COMM_TIPS))
-		send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r",ch);
-	else
-		send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r",ch);
+        send_to_char("Tips ", ch);
+        if (IS_SET(ch->comm, COMM_TIPS))
+            send_to_char("ON ::\n\r", ch);
+        else
+            send_to_char("OFF ::\n\r", ch);
 
-	if(ch->played < 60*60*10 || IS_ADMIN(ch))
-	{
-		send_to_char("\tW|\tnHelpline       \tW|\tn \tGON    \tW|\tn\n\r", ch);
-	}
+        if(ch->played < 60 * 60 * 10 || IS_ADMIN(ch))
+        {
+            send_to_char("Helpline Available ::\n\r", ch);
+        }
 
-	if (!IS_NPC(ch) && ch->pcdata->security > 0)
-	{
-		send_to_char("\tW|\tnBuilder channel\tW|\tn \tGON    \tW|\tn\n\r", ch);
-	}
+        if (!IS_NPC(ch) && ch->pcdata->security > 0)
+        {
+            send_to_char("Builder channel ON ::\n\r", ch);
+        }
+    }
+    else
+    {
+        /* lists all channels and their status */
+        send_to_char("\tW|   \tYchannel\tW     | \tYstatus\tW|\tn\n\r", ch);
+        send_to_char("\tW|---------------|-------|\tn\n\r", ch);
 
-	send_to_char("\n\r", ch);
+        if (IS_ADMIN(ch))
+        {
+            send_to_char("\tW|\tnImmtalk channel", ch);
+            if(!IS_SET(ch->comm, COMM_NOWIZ))
+                send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+            else
+                send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
 
-	if (ch->lines != PAGELEN)
-	{
-		if (ch->lines)
-		{
-			send_to_char(Format("You display %d lines of scroll.\n\r",ch->lines+2),ch);
-		}
-		else
-			send_to_char("Scroll buffering is off.\n\r",ch);
-	}
+            send_to_char("\tW|\tnThink channel  ", ch);
+            if(!IS_SET(ch->comm, COMM_THINK_ON))
+                send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+            else
+                send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
+        }
 
-	if (ch->prompt != NULL)
-	{
-		send_to_char(Format("Your current prompt is: %s\n\r",ch->prompt),ch);
-	}
+        send_to_char("\tW|\tnOOC Channel    ", ch);
+        if (!IS_SET(ch->comm, COMM_OOC_OFF))
+            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+        else
+            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
 
-	if (IS_SET(ch->comm,COMM_NOSHOUT))
-		send_to_char("You cannot shout.\n\r",ch);
+        send_to_char("\tW|\tnDiscreet mode  ", ch);
+        if (IS_SET(ch->comm, COMM_DISCREET))
+            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+        else
+            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
 
-	if (IS_SET(ch->comm,COMM_NOTELL))
-		send_to_char("You cannot use a phone.\n\r",ch);
+        send_to_char("\tW|\tnQuiet mode     ", ch);
+        if (IS_SET(ch->comm, COMM_QUIET))
+            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+        else
+            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
 
-	if (IS_SET(ch->comm,COMM_NOCHANNELS))
-		send_to_char("You cannot use channels.\n\r",ch);
+        send_to_char("\tW|\tnTelephone/Deaf ", ch);
+        if (!IS_SET(ch->comm, COMM_NOPHONE))
+            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+        else
+            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
 
-	if (IS_SET(ch->comm,COMM_NOEMOTE))
-		send_to_char("You cannot show emotions.\n\r",ch);
+        send_to_char("\tW|\tnYelling        ", ch);
+        if (!IS_SET(ch->comm, COMM_NOGOSSIP))
+            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+        else
+            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
 
-	if (IS_SET(ch->comm,COMM_AFK))
-		send_to_char("You are AFK.\n\r",ch);
+        send_to_char("\tW|\tnTips           ", ch);
+        if (IS_SET(ch->comm, COMM_TIPS))
+            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
+        else
+            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
+
+        if(ch->played < 60 * 60 * 10 || IS_ADMIN(ch))
+        {
+            send_to_char("\tW|\tnHelpline       \tW|\tn \tGON    \tW|\tn\n\r", ch);
+        }
+
+        if (!IS_NPC(ch) && ch->pcdata->security > 0)
+        {
+            send_to_char("\tW|\tnBuilder channel\tW|\tn \tGON    \tW|\tn\n\r", ch);
+        }
+    }
+    send_to_char("\n\r", ch);
+
+    if (ch->lines != PAGELEN)
+    {
+        if (ch->lines)
+        {
+            send_to_char(Format("You display %d lines of scroll.\n\r", ch->lines + 2), ch);
+        }
+        else
+            send_to_char("Scroll buffering is off.\n\r", ch);
+    }
+
+    if (ch->prompt != NULL)
+    {
+        send_to_char(Format("Your current prompt is: %s\n\r", ch->prompt), ch);
+    }
+
+    if (IS_SET(ch->comm, COMM_NOSHOUT))
+        send_to_char("You cannot shout.\n\r", ch);
+
+    if (IS_SET(ch->comm, COMM_NOTELL))
+        send_to_char("You cannot use a phone.\n\r", ch);
+
+    if (IS_SET(ch->comm, COMM_NOCHANNELS))
+        send_to_char("You cannot use channels.\n\r", ch);
+
+    if (IS_SET(ch->comm, COMM_NOEMOTE))
+        send_to_char("You cannot show emotions.\n\r", ch);
+
+    if (IS_SET(ch->comm, COMM_AFK))
+        send_to_char("You are AFK.\n\r", ch);
 }
 
 /* Toggle comm flags */
