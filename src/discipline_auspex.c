@@ -4,7 +4,6 @@
  * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
 
-
 #include <sys/types.h>
 #include <stdlib.h>
 #include <time.h>
@@ -18,6 +17,7 @@
 
 /*
  * Auspex powers
+ * Level 1:  Heightened Senses
  */
 
 void do_auspex1 ( CHAR_DATA * ch, char * string )
@@ -67,6 +67,10 @@ void do_auspex1 ( CHAR_DATA * ch, char * string )
 		send_to_char("\tRWARNING: You do not know Heightened Senses\tn.\n\r", ch);
 	}
 }
+
+/*
+ *  Level 2: Aura Perception
+ */
 
 void do_auspex2 ( CHAR_DATA * ch, char * string )
 {
@@ -255,6 +259,10 @@ void do_auspex2 ( CHAR_DATA * ch, char * string )
 	}
 }
 
+/*
+ *  Level 3: Spirit's Touch
+ */
+
 void do_auspex3 ( CHAR_DATA * ch, char * argument )
 {
 	OBJ_DATA *obj;
@@ -317,6 +325,10 @@ void do_auspex3 ( CHAR_DATA * ch, char * argument )
 	}
 }
 
+/*
+ *  Level 4: Telepathy
+ */
+
 void do_auspex4(CHAR_DATA *ch, char *argument)
 {
 	CheckCH(ch);
@@ -340,6 +352,10 @@ void do_auspex4(CHAR_DATA *ch, char *argument)
 	send_to_char( "You focus to listen to thoughts.\n\r", ch );
 	SET_BIT(ch->affected_by, AFF_AUSPEX4);
 }
+
+/*
+ *  Level 5: Astral Projection
+ */
 
 void do_auspex5(CHAR_DATA *ch, char *argument)
 {
