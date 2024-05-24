@@ -3302,7 +3302,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 					gender_string(wch),
 					wch->invis_level >= LEVEL_IMMORTAL ? "[\tYWIZI\tn]" : "",
 					IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
-					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn]": "",
+					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
 					wch->name);
 			}
 			else
@@ -3310,7 +3310,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 				snprintf( buf, sizeof(buf), "[%s] %s%s\tW%s\tn\n\r",
 					gender_string(wch),
 					IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
-					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn]": "",
+					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
 					wch->name );
 			}
 		}
@@ -3325,7 +3325,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 					gender_string(wch),
 					wch->invis_level >= LEVEL_IMMORTAL ? "[\tYWIZI\tn]" : "",
 					IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
-					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn]": "",
+					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
 					wch->name,
 					IS_NULLSTR(wch->surname) ? "" : wch->surname,
 					fRPOK ? " [": "",
@@ -3335,7 +3335,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 				snprintf( buf, sizeof(buf), "[%s]%s%s \tW%s %s\tn\tR%s\tn%s\tR%s\tn\n\r",
 					gender_string(wch),
 					IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
-					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn]": "",
+					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
 					wch->name,
 					IS_NULLSTR(wch->surname) ? "" : wch->surname,
 					fRPOK ? " [": "",
