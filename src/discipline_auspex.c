@@ -35,6 +35,12 @@ void do_auspex1 ( CHAR_DATA * ch, char * string )
 		return;
 	}
 
+	if( !IS_VAMPIRE(ch) || ch->disc[DISC_AUSPEX] < 1 )
+	{
+		send_to_char("\tRWARNING: You do not know Heightened Senses\tn.\n\r", ch);
+		return;
+	}
+
 	if (!has_enough_power(ch))
 		return;
 
