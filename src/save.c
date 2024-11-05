@@ -252,36 +252,25 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     char buf[MSL]={'\0'};
     int sn = 0, pos = 0;
     int i = 0;
-    time_t rawtime;
-	struct tm *info;
-	char buffer[80]={'\0'};
+	time_t current_time = time(NULL); // Get the current epoch time
 
-	time( &rawtime );
+	if(IS_SET(ch->affected_by2, AFF2_EARTHMELD))
+	{
+	    REMOVE_BIT(ch->affected_by2, AFF2_EARTHMELD);
+	}
 
-	info = localtime( &rawtime );
-
-	strftime(buffer,80,"%x - %I:%M%p", info);
-
-    if(IS_SET(ch->affected_by2, AFF2_EARTHMELD))
-    {
-    	REMOVE_BIT(ch->affected_by2, AFF2_EARTHMELD);
-    }
-
-    WriteToFile( fp, false, "#", IS_NPC(ch) ? "MOB" : "PLAYER"	);
+	WriteToFile(fp, false, "#", IS_NPC(ch) ? "MOB" : "PLAYER");
 
 	WriteNumber(fp, "Ver", ch->version);
-    WriteToFile(fp, true, "Name", ch->name);
-    WriteToFile(fp, true, "SName", ch->surname);
-    WriteToFile(fp, true, "AName", ch->alt_name);
+	WriteToFile(fp, true, "Name", ch->name);
+	WriteToFile(fp, true, "SName", ch->surname);
+	WriteToFile(fp, true, "AName", ch->alt_name);
 
-    WriteLong(fp, "Id", ch->id);
-	WriteLong(fp, "LogO", current_time);
-	WriteLong(fp, "LastV", ch->pcdata->last_vote);
+	WriteLong(fp, "Id", ch->id);
+	WriteLong(fp, "LogO", current_time); // Save the current logon time as epoch time
+    // WriteLong(fp, "LastO", ch->laston); // This should be storing the epoch time directly
+    WriteLong(fp, "LastV", ch->pcdata->last_vote);
 
-
-    snprintf( buf, sizeof(buf), "%s", buffer);
-    buf[strlen(buf) - 1] = '\0';
-	WriteToFile(fp, true, "LastO", buf);
 
     WriteToFile(fp, true, "ShD", ch->short_descr);
     WriteToFile(fp, true, "LnD", ch->long_descr);
@@ -805,7 +794,6 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 	PURGE_DATA( ch->email_addr );
 	PURGE_DATA( ch->ghouled_by );
 	PURGE_DATA( ch->ignore );
-	PURGE_DATA( ch->laston );
 	PURGE_DATA( ch->long_descr );
 	PURGE_DATA( ch->married );
 	PURGE_DATA( ch->material );
@@ -839,7 +827,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 	ch->email_addr				= NULL;
 	ch->ghouled_by				= NULL;
 	ch->ignore 					= NULL;
-	ch->laston 					= NULL;
+	ch->laston 					= time(NULL); // This sets laston to the current time in seconds since the epoch
 	ch->long_descr				= NULL;
 	ch->married					= NULL;
 	ch->material				= str_dup("flesh");
@@ -1364,7 +1352,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 
 		case 'L':
 			KEY( "LastV",	ch->pcdata->last_vote,	fread_number( fp ) );
-			KEY( "LastO",	ch->laston,		fread_string( fp ) );
+			KEY( "LastO", ch->laston, fread_long(fp)); // Ensure fread_long reads it as time_t
 			KEY( "LogO",	lastlogoff,		fread_number( fp ) );
 			KEY( "LongDescr",	ch->long_descr,		fread_string( fp ) );
 			KEY( "LnD",		ch->long_descr,		fread_string( fp ) );

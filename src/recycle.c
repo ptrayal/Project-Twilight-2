@@ -776,7 +776,7 @@ CHAR_DATA *new_char (void)
 	ch->email_addr		= NULL;
 	ch->ghouled_by		= NULL;
 	ch->ignore			= NULL;
-	ch->laston			= NULL;
+	ch->laston			= time(NULL); // This sets laston to the current time in seconds since the epoch
 	ch->long_descr		= NULL;
 	ch->married			= NULL;
 	ch->material		= str_dup("flesh");
@@ -953,7 +953,6 @@ void free_char (CHAR_DATA *ch)
 	PURGE_DATA(ch->description);
 	PURGE_DATA(ch->email_addr);
 	PURGE_DATA(ch->ignore);
-	PURGE_DATA(ch->laston);
 	PURGE_DATA(ch->long_descr);
 	PURGE_DATA(ch->material);
 	PURGE_DATA(ch->name);
@@ -978,6 +977,7 @@ void free_char (CHAR_DATA *ch)
 	ch->next_in_room = NULL;
 	ch->reply = NULL;
 	ch->sire = NULL;
+	ch->laston = time(NULL); // This sets laston to the current time in seconds since the epoch
 
 	PURGE_DATA(ch);
 	return;

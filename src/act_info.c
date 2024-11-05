@@ -31,6 +31,8 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
@@ -3106,6 +3108,7 @@ void do_profession(CHAR_DATA *ch, char *argument)
 		free_char(wch);
 }
 
+
 /*
  * New 'who' command originally by Alander of Rivers of Mud.
  * Extended and customised by One Thousand Monkeys
@@ -3288,6 +3291,30 @@ void do_who( CHAR_DATA *ch, char *argument )
 		clan = clan_table[wch->clan].who_name;
 		send_to_char("\n\r", ch);
 
+		// Time calculations
+
+	time_t laston_time = wch->laston; // Assume this is already a valid time_t
+	time_t current_time = time(NULL); // Get current time
+	double online_seconds = difftime(current_time, laston_time); // Calculate the difference
+
+	int hours = (int)(online_seconds / 3600);
+	int minutes = (int)((int)online_seconds % 3600 / 60); // Corrected line for minutes
+	char online_time_str[20];
+
+	if (online_seconds < 0) {
+	    snprintf(online_time_str, sizeof(online_time_str), "N/A"); // Handle negative time difference
+	} else {
+	    snprintf(online_time_str, sizeof(online_time_str), "%02d hrs %02d mins", hours, minutes);
+	}
+
+	// Debugging output
+	log_string(LOG_BUG, Format("Current time: %ld, Laston time: %ld, Online seconds: %.0f\n", current_time, laston_time, online_seconds));
+
+	// Header
+	send_to_char("|=================================================================|\n\r", ch);
+	send_to_char("|      Name      | Species |   Online Time  | Role | RP Available |\n\r", ch);
+	send_to_char("|=================================================================|\n\r", ch);
+
 	/*
 	 * Format it up.
 	 */
@@ -3317,20 +3344,23 @@ void do_who( CHAR_DATA *ch, char *argument )
 		else
 		{
 			if(IS_ADMIN(ch))
-				snprintf( buf, sizeof(buf), "[\tY%4s %s\tn][\tY%s %6s\tn]%s%s%s \tW%s %s\tn %s%s%s\tn\n\r",
-					wch->race < MAX_PC_RACE ? pc_race_table[wch->race].who_name
-					: "     ",
-					clan,
-					appearance_string(wch),
-					gender_string(wch),
-					wch->invis_level >= LEVEL_IMMORTAL ? "[\tYWIZI\tn]" : "",
-					IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
-					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
-					wch->name,
-					IS_NULLSTR(wch->surname) ? "" : wch->surname,
-					fRPOK ? " [": "",
-					IS_NPC(wch) ? "" : !fRPOK ? wch->pcdata->title : wch->pcdata->rpok_string,
-					fRPOK ? "]": "");
+				snprintf( buf, sizeof(buf), "| %-14s |   %-3s   | %13s |      |              |\n\r",
+					wch->name, ch->race < MAX_PC_RACE ? pc_race_table[wch->race].who_name 
+				 	: "     ", online_time_str);
+				// snprintf( buf, sizeof(buf), "[\tY%4s %s\tn][\tY%s %6s\tn]%s%s%s \tW%s %s\tn %s%s%s\tn\n\r",
+				// 	wch->race < MAX_PC_RACE ? pc_race_table[wch->race].who_name
+				// 	: "     ",
+				// 	clan,
+				// 	appearance_string(wch),
+				// 	gender_string(wch),
+				// 	wch->invis_level >= LEVEL_IMMORTAL ? "[\tYWIZI\tn]" : "",
+				// 	IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
+				// 	IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
+				// 	wch->name,
+				// 	IS_NULLSTR(wch->surname) ? "" : wch->surname,
+				// 	fRPOK ? " [": "",
+				// 	IS_NPC(wch) ? "" : !fRPOK ? wch->pcdata->title : wch->pcdata->rpok_string,
+				// 	fRPOK ? "]": "");
 			else
 				snprintf( buf, sizeof(buf), "[%s]%s%s \tW%s %s\tn\tR%s\tn%s\tR%s\tn\n\r",
 					gender_string(wch),
@@ -5557,39 +5587,51 @@ void do_surname(CHAR_DATA *ch, char *argument)
 
 void do_laston(CHAR_DATA *ch, char *argument)
 {
-	CHAR_DATA *vch = NULL;
-	bool in_char_list = FALSE;
+    CHAR_DATA *vch = NULL;
+    bool in_char_list = FALSE;
 
-	CheckCH(ch);
+    CheckCH(ch);
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Whose last logon are you trying to check?\n\r", ch);
-		return;
-	}
+    if (IS_NULLSTR(argument))
+    {
+        send_to_char("Whose last logon are you trying to check?\n\r", ch);
+        return;
+    }
 
-	if(is_online(argument))
-	{
-		send_to_char("\tGThey are currently online.\tn\n\r", ch);
-		return;
-	}
+    if (is_online(argument))
+    {
+        send_to_char("\tGThey are currently online.\tn\n\r", ch);
+        return;
+    }
 
-	if(pc_in_char_list(argument))
-		in_char_list = TRUE;
+    if (pc_in_char_list(argument))
+        in_char_list = TRUE;
 
-	if((vch = get_player(argument)) == NULL)
-	{
-		send_to_char("That player does not exist.\n\r", ch);
-		return;
-	}
+    if ((vch = get_player(argument)) == NULL)
+    {
+        send_to_char("That player does not exist.\n\r", ch);
+        return;
+    }
 
-	if(IS_NULLSTR(vch->laston))
-		act("$N has not saved since the implementation of the laston command.", ch, NULL, vch, TO_CHAR, 1);
-	else
-		act("\tR$N is not online.  $N was last online: $t\tn.", ch, vch->laston, vch, TO_CHAR, 1);
+    // Check if `laston` is unset (0) and display appropriate message
+    if (vch->laston == 0)
+    {
+        act("$N has not saved since the implementation of the laston command.", ch, NULL, vch, TO_CHAR, 1);
+    }
+    else
+    {
+        // Convert laston to a readable string
+        char laston_str[80];
+        struct tm *laston_tm = localtime(&vch->laston);
+        strftime(laston_str, sizeof(laston_str), "%x - %I:%M %p", laston_tm);
 
-	if(!in_char_list) 
-		free_char(vch);
+        // Display last online time using `act` function
+        act("\tR$N is not online.  $N was last online: $t\tn.", ch, laston_str, vch, TO_CHAR, 1);
+    }
+
+    // Free character if not in character list
+    if (!in_char_list)
+        free_char(vch);
 }
 
 void do_setting(CHAR_DATA *ch, char *argument)

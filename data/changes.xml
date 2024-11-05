@@ -2,6 +2,16 @@
 <changes>
   <change>
     <imm>Rayal</imm>
+    <date>05-Nov-2024</date>
+    <text>Beginning work on new 'do_who' command.  Right now only available for Admin</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>23-May-2024</date>
+    <text>Channel command is now screenreader friendly.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
     <date>24-Aug-2023</date>
     <text>Modified celebs command to tell explicitly if there are no famous people online.</text>
   </change>
