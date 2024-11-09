@@ -309,13 +309,13 @@ void do_auspex3 ( CHAR_DATA * ch, char * argument )
 
 	if(success<0)
 	{
-		send_to_char("You are overwhelmed by the psychic impressions on this object and it gives you a massive headache!", ch);
-		ch->power_timer = 3;
+		send_to_char("\tYCritical Failure\tn: You are overwhelmed by the psychic impressions on this object and it gives you a massive headache!", ch);
+		ch->power_timer = 6;
 	}
 
 	if(success==0)
 	{
-		send_to_char("You get nothing off of this object.", ch);
+		send_to_char("\tYFailure\tn: You get nothing off of this object.", ch);
 		ch->power_timer = 3;
 	}
 

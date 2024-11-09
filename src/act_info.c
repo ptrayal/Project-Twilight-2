@@ -2038,629 +2038,6 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	return;
 }
 
-/************************************************
-* This command is no longer used.  The command  *
-* for score is now do_score_revised.            *
-*  --Rayal                                      *
-************************************************/
-void do_score( CHAR_DATA *ch, char *argument )
-{
-	CHAR_DATA *user = ch;
-	int num = 0;
-	int statcount = 0;
-
-	CheckCH(ch);
-
-	if(!IS_NULLSTR(argument) && IS_ADMIN(user))
-	{
-		if((ch = get_char_world(user, argument)) == NULL)
-		{
-			send_to_char("They aren't online.\n\r", user);
-			return;
-		}
-
-		if(ch->trust > user->trust)
-		{
-			send_to_char("Not available for those with higher authority.\n\r", user);
-			return;
-		}
-	}
-
-	if(ch->race == race_lookup("human") && IS_SET(ch->act2, ACT2_GHOUL))
-	{
-		send_to_char( Format("\r\n\tW---------------------------------<\tG   Ghoul\tW>-----------------------------------\tn\r\n"), user);
-	}
-	else
-	{
-		send_to_char( Format("\n\r\tW---------------------------------<\tG%8s\tW>-----------------------------------\tn\n\r",
-				capitalize(race_table[ch->race].name)), user);
-	}
-
-	/* snprintf(altname, sizeof(altname), " [%s]", !IS_NULLSTR(ch->alt_name) ? ch->alt_name : "" ); */
-
-	send_to_char( Format("First Name: %-15s  ", IS_NPC(ch) ? ch->short_descr : ch->name ), user);
-	if(ch->race == race_lookup("werewolf"))
-		send_to_char( Format("Breed: %-15s  ",breed_table[ch->breed].name), user);
-	else
-		send_to_char( Format("Nature: %-15s  ", capitalize(ch->nature)), user);
-
-	if(ch->race == race_lookup("werewolf"))
-		send_to_char( "Pack Name: ", user);
-	else if ( IS_VAMPIRE(ch) )
-		send_to_char( Format("Clan: %-20s", capitalize(clan_table[ch->clan].name)), user);
-	else
-		send_to_char( Format("Group: %-19s", capitalize(clan_table[ch->clan].name)), user);
-	send_to_char("\r\n", user);
-
-	send_to_char( Format("Last Name: %s%-15s  ", !IS_NULLSTR(ch->surname)? " " : " ", !IS_NULLSTR(ch->surname)? ch->surname : ""), user);
-
-	if(ch->race == race_lookup("werewolf"))
-		send_to_char( Format("Auspice: %-13s  ",auspice_table[ch->auspice].name), user);
-	else
-		send_to_char( Format("Demeanor: %-13s  ", capitalize(ch->demeanor)), user);
-
-	if(ch->race == race_lookup("werewolf"))
-		send_to_char( "Pack Totem: ", user);
-	else if ( IS_VAMPIRE(ch) )
-		send_to_char( Format("Generation: %d", ch->gen), user);
-	else
-		send_to_char("", user);
-
-	send_to_char("\r\n", user);
-
-	if(IS_ADMIN(user))
-	{
-		if(ch->trust > MAX_LEVEL || ch->trust < 0)
-			ch->trust = 1;
-		send_to_char( Format("\tWAdmin Level: %-14s  \tn", staff_status[ch->trust].name), user);
-	}
-	else
-	{
-		send_to_char(Format("%29s", " "), user);
-	}
-
-	if(ch->race == race_lookup("werewolf"))
-		send_to_char( Format("Tribe: %-15s  ",capitalize(clan_table[ch->clan].name)), user);
-	else
-		send_to_char( Format("Profession: %-12s ", ch->profession), user);
-
-	if(ch->race == race_lookup("werewolf"))
-		send_to_char( Format("Profession: %-16s  ", ch->profession), user);
-	else if( IS_VAMPIRE(ch) )
-		send_to_char( Format("Sire: %-16s  ", ch->sire), user);
-	else
-		send_to_char("", user);
-
-	send_to_char("\r\n", user);
-
-	send_to_char("\tW--------------------------------<\tGAttributes\tW>----------------------------------\tn\n\r", user);
-
-	send_to_char ("Str: ", user);
-	if (get_curr_stat(ch,STAT_STR)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_STR))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-
-	send_to_char (Format("%14sCHA: ", " "), user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_CHA)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_CHA))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-
-	send_to_char (Format("%10sPER: ", " "), user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_PER)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-   }
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_PER))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	send_to_char("\n\r", user);
-
-	send_to_char ("DEX: ", user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_DEX)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_DEX))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-
-	send_to_char (Format("%14sMAN: ", " "), user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_MAN)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_MAN))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-
-	send_to_char (Format("%10sINT: ", " "), user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_INT)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_INT))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	send_to_char("\n\r", user);
-
-	send_to_char ("STA: ", user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_STA)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_STA))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-
-	send_to_char (Format("%14sAPP: ", " "), user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_APP)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_APP))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-
-	send_to_char (Format("%10sWIT: ", " "), user);
-	statcount = 0;
-	if (get_curr_stat(ch,STAT_WIT)<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-				while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < get_curr_stat(ch,STAT_WIT))
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-	send_to_char("\n\r", user);
-
-	send_to_char("\tW--------------------------------<\tGOther\tW>----------------------------------\tn\n\r", user);
-
-	send_to_char( Format("Health: %-22s  ", health_string(ch)), user );
-	send_to_char( Format("Carrying: %d/%d lbs.\n\r", get_carry_weight(ch) / 10, can_carry_w(ch) /10), user );
-
-	send_to_char( Format("%8s (%2d)", race_table[ch->race].pc_race?pc_race_table[ch->race].GHB:"Humanity", ch->GHB), ch);
-	send_to_char( Format("%15sConscience   ", " ", ch->virtues[0]), ch);
-
-	if (ch->virtues[0]<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-				while (statcount < 5)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->virtues[0])
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 5)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-	send_to_char("\n\r", ch);
-
-	if (ch->GHB<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-				while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->GHB)
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-
-	// Spacing for proper formatting
-	send_to_char( Format("%18s", " "), ch);
-
-	send_to_char( "Self-Control ", ch);
-	if (ch->virtues[1]<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-				while (statcount < 5)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->virtues[1])
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 5)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-	send_to_char("\n\r", ch);
-
-	send_to_char("Willpower ", ch);
-	send_to_char( "(Resist ", ch);
-	if (IS_SET(ch->act2, ACT2_RESIST))
-	{
-		send_to_char( Format("%3s)", "on"), ch);
-	}
-	else
-	{
-		send_to_char( Format("\t<send href='resist'>%3s\t</send>)", "off"), ch);
-	}
-
-	send_to_char( Format("%6s", " "), ch);
-	send_to_char( "Courage      ", ch);
-	if (ch->virtues[2]<=0)
-	{
-		statcount=1;
-				while (statcount < 5)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->virtues[2])
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 5)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-	send_to_char("\n\r", ch);
-
-	// Max willpower first
-	if (ch->max_willpower<=0)
-	{
-		send_to_char( "\t[U9675/O]", user);
-		statcount=1;
-				while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->max_willpower)
-		{
-			send_to_char( "\t[U9679/*]", user);
-			statcount++;
-		}
-		while (statcount < 10)
-		{
-			send_to_char( "\t[U9675/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-	send_to_char("\n\r", ch);
-
-	// Available willpower
-	if (ch->willpower<=0)
-	{
-		send_to_char( "\t[U9746/O]", user);
-		statcount=1;
-		while (statcount < ch->max_willpower)
-		{
-			send_to_char( "\t[U9746/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->willpower)
-		{
-			send_to_char( "\t[U9744/*]", user);
-			statcount++;
-		}
-		while (statcount < ch->max_willpower)
-		{
-			send_to_char( "\t[U9746/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-
-
-	send_to_char("\n\r", ch);
-
-	send_to_char( Format("%s\n\r", race_table[ch->race].pc_race?pc_race_table[ch->race].RBPG:"Faith"), ch);
-	// Available RBPG pool
-	if (ch->willpower<=0)
-	{
-		while (statcount < ch->max_RBPG)
-		{
-			send_to_char( "\t[U9746/O]", user);
-			statcount++;
-		}
-	}
-	else
-	{
-		while (statcount < ch->RBPG)
-		{
-			send_to_char( "\t[U9744/*]", user);
-			statcount++;
-		}
-		while (statcount < ch->max_RBPG)
-		{
-			send_to_char( "\t[U9746/O]", user);
-			statcount++;
-		}
-	}
-	statcount=0;
-	send_to_char("\n\r", ch);
-
-	send_to_char("\tW------------------------------------------------------------------------------\tn\n\r", user);
-
-	if((num = ch->cents/100) > 0)
-	{
-		ch->dollars = ch->dollars + num;
-		ch->cents = ch->cents - (100 * num);
-	}
-
-	send_to_char(Format("Experience/OOC Experience: %d / %d\n\r", ch->exp, ch->oocxp), user);
-	send_to_char(Format("Experience to Gift: %d\n\r", ch->xpgift), user);
-	send_to_char(Format("Cash on Hand: $ %d.%.2d.\n\r", ch->dollars, ch->cents), user);
-
-	send_to_char( "You are: ", user );
-	if ( !IS_NPC(ch) && IS_DRUNK(ch) )
-		send_to_char( "drunk ",   user );
-	if ( !IS_NPC(ch) && IS_HIGH(ch) )
-		send_to_char( "high ",   user );
-	if ( !IS_NPC(ch) && IS_TRIPPING(ch) )
-		send_to_char( "tripping ",   user );
-	if ( !IS_NPC(ch) && NEAR_FRENZY(ch) && !IS_SET(ch->act2, ACT2_FRENZY) )
-		send_to_char( "near frenzy ", user );
-	else if(IS_SET(ch->act2, ACT2_FRENZY))
-		send_to_char( "frenzied ", user );
-	if ( !IS_NPC(ch) && ch->condition[COND_THIRST] ==  0 )
-		send_to_char( "thirsty ", user );
-	if ( !IS_NPC(ch) && ch->condition[COND_HUNGER]   ==  0 )
-		send_to_char( "hungry ",  user );
-	if ( !IS_NPC(ch) && ch->condition[COND_ANGER]   >  10 )
-		send_to_char( "angry ",  user );
-	if ( !IS_NPC(ch) && ch->condition[COND_PAIN]   >  10 )
-		send_to_char( "in pain ",  user );
-
-	switch ( ch->position )
-	{
-	case P_DEAD:
-		send_to_char( "-=<DEAD>=-\n\r",     user );
-		break;
-	case P_MORT:
-		send_to_char( "mortally wounded.\n\r",  user );
-		break;
-	case P_INCAP:
-		send_to_char( "incapacitated.\n\r", user );
-		break;
-	case P_TORPOR:
-		send_to_char( "in torpor.\n\r",     user );
-		break;
-	case P_STUN:
-		send_to_char( "stunned.\n\r",       user );
-		break;
-	case P_SLEEP:
-		send_to_char( "sleeping.\n\r",      user );
-		break;
-	case P_REST:
-		send_to_char( "resting.\n\r",       user );
-		break;
-	case P_SIT:
-		send_to_char( "sitting.\n\r",       user );
-		break;
-	case P_STAND:
-		send_to_char( "standing.\n\r",      user );
-		break;
-	case P_FIGHT:
-		send_to_char( "fighting.\n\r",      user );
-		break;
-	}
-
-	if(IS_SET(ch->act2, ACT2_GHOUL))
-	{
-		send_to_char(Format("You are the devoted servant of %s.\n\r", ch->ghouled_by), user);
-	}
-
-	send_to_char("\tW--------------------------------<\tGAbilities\tW>---------------------------------\tn\n\r", user);
-	send_to_char("Use \t<send href='abilities'>abilities\t</send> to see Skills, Talents, and Knowledges.\n\r", user);
-
-	send_to_char("\tW---------------------------------<\tGAdvantages\tW>---------------------------------\tn\n\r", user);
-	send_to_char("Use \t<send href='advantages'>advantages\t</send> to see Powers, Backgrounds, and Influences.\n\r", user);
-
-
-	send_to_char("\n\r", user);
-}
 
 void do_affects(CHAR_DATA *ch, char *argument )
 {
@@ -2727,18 +2104,23 @@ void do_time( CHAR_DATA *ch, char *argument )
 		{
 		case MOON_FULL:
 			send_to_char("A full moon hangs in the sky.\n\r", ch);
+			send_to_char("   _____\n  /     \\\n | () () |\n  \\  ^  /\n   |||||\n", ch);
 			break;
 		case MOON_GIBBOUS:
 			send_to_char("A fat gibbous moon ambles across the sky.\n\r", ch);
+			send_to_char("   _____\n  /     \\\n |  () ()|\n  \\     /\n   |||||\n", ch);
 			break;
 		case MOON_NEW:
 			send_to_char("The moon is absent from the night sky.\n\r", ch);
+			send_to_char("   _____\n  /     \\\n |       |\n  \\     /\n   |||||\n", ch);
 			break;
 		case MOON_CRESCENT:
 			send_to_char("A mere sliver of moon peers down from the sky.\n\r", ch);
+			send_to_char("   _____\n  /     \\\n |)      |\n  \\     /\n   |||||\n", ch);
 			break;
 		case MOON_HALF:
 			send_to_char("The moon shines with a balance of light and dark.\n\r", ch);
+			send_to_char("   _____\n  /     \\\n | )     |\n  \\     /\n   |||||\n", ch);
 			break;
 		}
 	}
@@ -3147,9 +2529,9 @@ void do_who( CHAR_DATA *ch, char *argument )
 
 	send_to_char("\n\r", ch);
 
-	send_to_char( "\t[F220]************************************************************\tn\n\r", ch);
-	send_to_char( "\t[F220]***\tn  \tW       People currently on Project Twilight\tn         \t[F220]***\tn\n\r", ch );
-	send_to_char( "\t[F220]************************************************************\tn\n\r", ch);
+	send_to_char( "\tY************************************************************************\tn\n\r", ch);
+	send_to_char( "\tY***\tn  \tW             People currently on Project Twilight\tn               \tY***\tn\n\r", ch );
+	send_to_char( "\tY************************************************************************\tn\n\r", ch);
 
 	/*
 	 * Parse arguments.
@@ -3307,13 +2689,10 @@ void do_who( CHAR_DATA *ch, char *argument )
 	    snprintf(online_time_str, sizeof(online_time_str), "%02d hrs %02d mins", hours, minutes);
 	}
 
-	// Debugging output
-	log_string(LOG_BUG, Format("Current time: %ld, Laston time: %ld, Online seconds: %.0f\n", current_time, laston_time, online_seconds));
-
 	// Header
-	send_to_char("|=================================================================|\n\r", ch);
-	send_to_char("|      Name      | Species |   Online Time  | Role | RP Available |\n\r", ch);
-	send_to_char("|=================================================================|\n\r", ch);
+	send_to_char("\tY|======================================================================|\tn\n\r", ch);
+	send_to_char("\tY|\tn    \tBName\tn        \tY|\tn \tBSpecies\tn \tY|\tn   \tBOnline Time\tn  \tY|\tn   \tBRole\tn    \tY|\tn \tBRP Available\tn \tY|\tn\n\r", ch);
+	send_to_char("\tY|======================================================================|\tn\n\r", ch);
 
 	/*
 	 * Format it up.
@@ -3344,9 +2723,9 @@ void do_who( CHAR_DATA *ch, char *argument )
 		else
 		{
 			if(IS_ADMIN(ch))
-				snprintf( buf, sizeof(buf), "| %-14s |   %-3s   | %13s |      |              |\n\r",
+				snprintf( buf, sizeof(buf), "\tY|\tn \tW%-14s\tn \tY|\tn   \tW%-3s\tn   \tY|\tn \tW%13s\tn \tY|\tn \tW%-8s\tn  \tY|\tn     \tW%-3s\tn      \tY|\tn\n\r",
 					wch->name, ch->race < MAX_PC_RACE ? pc_race_table[wch->race].who_name 
-				 	: "     ", online_time_str);
+				 	: "     ", online_time_str, staff_status[wch->trust].name, IS_SET(wch->plr_flags, PLR_RP_OK) ? "Yes" : "No");
 				// snprintf( buf, sizeof(buf), "[\tY%4s %s\tn][\tY%s %6s\tn]%s%s%s \tW%s %s\tn %s%s%s\tn\n\r",
 				// 	wch->race < MAX_PC_RACE ? pc_race_table[wch->race].who_name
 				// 	: "     ",
@@ -3362,22 +2741,29 @@ void do_who( CHAR_DATA *ch, char *argument )
 				// 	IS_NPC(wch) ? "" : !fRPOK ? wch->pcdata->title : wch->pcdata->rpok_string,
 				// 	fRPOK ? "]": "");
 			else
-				snprintf( buf, sizeof(buf), "[%s]%s%s \tW%s %s\tn\tR%s\tn%s\tR%s\tn\n\r",
-					gender_string(wch),
-					IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
-					IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
-					wch->name,
-					IS_NULLSTR(wch->surname) ? "" : wch->surname,
-					fRPOK ? " [": "",
-					IS_NPC(wch) ? "" : !fRPOK ? wch->pcdata->title : wch->pcdata->rpok_string,
-					fRPOK ? "]": "");
+				snprintf( buf, sizeof(buf), "\tY|\tn \tW%-14s\tn \tY|\tn   \tW%-3s\tn   \tY|\tn \tW%13s\tn \tY|\tn \tW%-8s\tn  \tY|\tn     \tW%-3s\tn      \tY|\tn\n\r",
+					wch->name, ch->race < MAX_PC_RACE ? pc_race_table[wch->race].who_name 
+				 	: "     ", online_time_str, staff_status[wch->trust].name, IS_SET(wch->plr_flags, PLR_RP_OK) ? "Yes" : "No");
+				// snprintf( buf, sizeof(buf), "[%s]%s%s \tW%s %s\tn\tR%s\tn%s\tR%s\tn\n\r",
+				// 	gender_string(wch),
+				// 	IS_SET(wch->act2, ACT2_STORY) ? "[\t[F205]ST\tn]": "",
+				// 	IS_SET(wch->comm, COMM_AFK) ? "[\tYAFK\tn] ": " ",
+				// 	wch->name,
+				// 	IS_NULLSTR(wch->surname) ? "" : wch->surname,
+				// 	fRPOK ? " [": "",
+				// 	IS_NPC(wch) ? "" : !fRPOK ? wch->pcdata->title : wch->pcdata->rpok_string,
+				// 	fRPOK ? "]": "");
 		}
 		add_buf(output,buf);
 	}
 
-	add_buf(output, (char *)Format("\n\rPlayers found: %d\n\r", nMatch));
+	// add_buf(output, (char *)Format("\n\rPlayers found: %d\n\r", nMatch));
 	page_to_char( buf_string(output), ch );
 	free_buf(output);
+
+	send_to_char("\tY|======================================================================|\tn\n\r", ch);
+	send_to_char(Format("\n\rPlayers online: %d\n\r", nMatch), ch);
+
 	return;
 }
 
@@ -3941,11 +3327,11 @@ void do_abilities(CHAR_DATA *ch, char *argument)
 
 	grid = create_grid(75);
 	row = create_row(grid);
-	row_append_cell(row, 75, "%31s\tYAbilities\tn %32s", " ", " ");
+	row_append_cell(row, 75, "%31s\tBAbilities\tn %32s", " ", " ");
 	row = create_row(grid);
 
 	// First Column  - Talents
-	cell = row_append_cell(row, 25, "\tGTalents\tn\n");
+	cell = row_append_cell(row, 25, "\tBTalents\tn\n");
 	for (sn = 0; sn < 13; sn++)
 	{
 		if (ability_table[sn].name == NULL )
@@ -3953,12 +3339,12 @@ void do_abilities(CHAR_DATA *ch, char *argument)
 
 		if(IS_ATTRIB_AVAILABLE(ch->race, sn))
 		{
-			cell_append_contents(cell, "%-15s: %-2d\n", capitalize(ability_table[sn].name), ch->ability[sn].value);
+			cell_append_contents(cell, "\tW%-15s\tn: %-2d\n", capitalize(ability_table[sn].name), ch->ability[sn].value);
 		}
 	}
 
 	// Second Column  - Skills
-	cell = row_append_cell(row, 25, "\tGSkills\tn\n");
+	cell = row_append_cell(row, 25, "\tBSkills\tn\n");
 	for (sn = 13; sn < 24; sn++)
 	{
 		if (ability_table[sn].name == NULL )
@@ -3966,12 +3352,12 @@ void do_abilities(CHAR_DATA *ch, char *argument)
 
 		if(IS_ATTRIB_AVAILABLE(ch->race, sn))
 		{
-			cell_append_contents(cell, "%-15s: %-2d\n", capitalize(ability_table[sn].name), ch->ability[sn].value);
+			cell_append_contents(cell, "\tW%-15s\tn: %-2d\n", capitalize(ability_table[sn].name), ch->ability[sn].value);
 		}
 	}
 
 	// Third Column  - Knowledges
-	cell = row_append_cell(row, 25, "\tGKnowledges\tn\n");
+	cell = row_append_cell(row, 25, "\tBKnowledges\tn\n");
 	for (sn = 24; sn < MAX_ABIL; sn++)
 	{
 		if (ability_table[sn].name == NULL )
@@ -3979,7 +3365,7 @@ void do_abilities(CHAR_DATA *ch, char *argument)
 
 		if(IS_ATTRIB_AVAILABLE(ch->race, sn))
 		{
-			cell_append_contents(cell, "%-15s: %-2d\n", capitalize(ability_table[sn].name), ch->ability[sn].value);
+			cell_append_contents(cell, "\tW%-15s\tn: %-2d\n", capitalize(ability_table[sn].name), ch->ability[sn].value);
 		}
 	}
 
@@ -4000,7 +3386,7 @@ void do_powers(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	send_to_char("\n\rPowers:\n\r", ch);
+	send_to_char("\n\r\tBPowers\tn:\n\r", ch);
 
 	if (IS_VAMPIRE(ch))
 	{
@@ -4011,7 +3397,7 @@ void do_powers(CHAR_DATA *ch, char *argument)
 				if(sn != DISC_OBEAH)
 				{
 					snprintf(name, sizeof(name), "%s", disc_table[sn].vname);
-					send_to_char(Format("\t<send href='help %s'>%-15s\t</send> %-2d ", capitalize(name),capitalize(name), ch->disc[sn]), ch);
+					send_to_char(Format("\tW\t<send href='help %s'>%-15s\t</send>\tn %-2d ", capitalize(name),capitalize(name), ch->disc[sn]), ch);
 					send_to_char("\n\r", ch);
 				}
 			}
@@ -4026,7 +3412,7 @@ void do_powers(CHAR_DATA *ch, char *argument)
 					if(ch->disc[sn] != 0)
 					{
 						snprintf(name, sizeof(name), "%s", disc_table[sn].vname);
-						send_to_char(Format("\t<send href='help %s'>%-15s\t</send> %-2d ", capitalize(name),capitalize(name), ch->disc[sn]), ch);
+						send_to_char(Format("\tW\t<send href='help %s'>%-15s\t</send>\tn %-2d ", capitalize(name),capitalize(name), ch->disc[sn]), ch);
 						send_to_char("\n\r", ch);
 					}
 				}
@@ -4040,7 +3426,7 @@ void do_powers(CHAR_DATA *ch, char *argument)
 		for(sn = 0; disc_table[sn].wname != NULL; sn++)
 		{
 			snprintf(name, sizeof(name), "%s", disc_table[sn].wname);
-			send_to_char(Format("\t<send help='help %s'>%-15s\t</send> %-2d ", capitalize(name), capitalize(name), ch->disc[sn]), ch);
+			send_to_char(Format("\tW\t<send href='help %s'>%-15s\t</send>\tn %-2d ", capitalize(name), capitalize(name), ch->disc[sn]), ch);
 			send_to_char("\n\r", ch);
 		}
 	}
@@ -6265,13 +5651,13 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 	}
 	else
 	{
-		cell = row_append_cell(row, 80, "\n\r\tW---------------------------------<\tG%8s\tW>---------------------------------\tn",
+		cell = row_append_cell(row, 80, "\n\r\tW---------------------------------<\tB%8s\tW>---------------------------------\tn",
 			capitalize(race_table[ch->race].name));
 	}
 
 	row = create_row(grid);
 	// First Box, First row. First Name, Last Name, and if Admin, Admin level.
-	cell = row_append_cell(row, 28, "First Name: %-15s\nLast Name: %s%-15s\n%s %-14s", 
+	cell = row_append_cell(row, 28, "\tWFirst Name\tn: %-15s\n\tWLast Name\tn: %s%-15s\n%s %-14s", 
 		IS_NPC(ch) ? ch->short_descr : ch->name,
 		!IS_NULLSTR(ch->surname) ? " " : " ", !IS_NULLSTR(ch->surname)? ch->surname : "\tRNot Set\tn",
 		IS_ADMIN(ch) ? "\tWAdmin Level\tn:" : "",
@@ -6279,24 +5665,24 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 
 	// Second Box, first Row.  Nature/Demeanor/Profession
 	cell = row_append_cell(row, 28, "%s: %s\n%s: %s\n%s: %s",
-		IS_WEREWOLF(ch) ? "Breed" : "Nature",
+		IS_WEREWOLF(ch) ? "\tWBreed\tn" : "\tWNature\tn",
 		IS_WEREWOLF(ch) ? breed_table[ch->breed].name : score_nature,
-		IS_WEREWOLF(ch) ? "Auspice" : "Demeanor",
+		IS_WEREWOLF(ch) ? "\tWAuspice\tn" : "\tWDemeanor\tn",
 		IS_WEREWOLF(ch) ? auspice_table[ch->auspice].name : score_demeanor,
-		IS_WEREWOLF(ch) ? "Tribe" : "Profession",
+		IS_WEREWOLF(ch) ? "\tWTribe\tn" : "\tWProfession\tn",
 		IS_WEREWOLF(ch) ? capitalize(clan_table[ch->clan].name) : ch->profession);
 
 	// Third Box, first Row.  Genre Specific (clan,generation, sire for vampire as example)
-	cell = row_append_cell(row, 23, "%s: %s\n%s: %d\n",
+	cell = row_append_cell(row, 23, "\tW%s\tn: %s\n\tW%s\tn: %d\n",
 		affiliation, capitalize(clan_table[ch->clan].name),
 		group_aff,
 		IS_VAMPIRE(ch) ? ch->gen : 0);
 
 	// NEW ROW
 	row=create_row(grid);
-	cell = row_append_cell(row, 28, "STR: %d\nDEX: %d\nSTA: %d", get_curr_stat(ch,STAT_STR), get_curr_stat(ch,STAT_DEX), get_curr_stat(ch,STAT_STA) );
-	cell = row_append_cell(row, 28, "CHA: %d\nMAN: %d\nAPP: %d", get_curr_stat(ch,STAT_CHA), get_curr_stat(ch,STAT_MAN), get_curr_stat(ch,STAT_APP) );
-	cell = row_append_cell(row, 23, "PER: %d\nINT: %d\nWIT: %d", get_curr_stat(ch,STAT_PER), get_curr_stat(ch,STAT_INT), get_curr_stat(ch,STAT_WIT) );
+	cell = row_append_cell(row, 28, "\tWSTR\tn: %d\n\tWDEX\tn: %d\n\tWSTA\tn: %d", get_curr_stat(ch,STAT_STR), get_curr_stat(ch,STAT_DEX), get_curr_stat(ch,STAT_STA) );
+	cell = row_append_cell(row, 28, "\tWCHA\tn: %d\n\tWMAN\tn: %d\n\tWAPP\tn: %d", get_curr_stat(ch,STAT_CHA), get_curr_stat(ch,STAT_MAN), get_curr_stat(ch,STAT_APP) );
+	cell = row_append_cell(row, 23, "\tWPER\tn: %d\n\tWINT\tn: %d\n\tWWIT\tn: %d", get_curr_stat(ch,STAT_PER), get_curr_stat(ch,STAT_INT), get_curr_stat(ch,STAT_WIT) );
 
 	// NEW ROW
 	row = create_row(grid);
@@ -6306,19 +5692,19 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 	i = 0;
 	if ( IS_VAMPIRE(ch) )
 	{
-		cell = row_append_cell(row, 28, "\tGDisciplines\tn\n");
+		cell = row_append_cell(row, 28, "\tBDisciplines\tn\n");
 	}
 	else if (IS_WEREWOLF(ch))
 	{
-		cell = row_append_cell(row, 28, "\tGGifts\tn\n");
+		cell = row_append_cell(row, 28, "\tBGifts\tn\n");
 	}
 	else if (IS_FAERIE(ch))
 	{
-		cell = row_append_cell(row, 28, "\tGGlamour\tn\n");
+		cell = row_append_cell(row, 28, "\tBGlamour\tn\n");
 	}
 	else
 	{
-		cell = row_append_cell(row, 28, "\tGOther\tn\n");
+		cell = row_append_cell(row, 28, "\tBOther\tn\n");
 	}
 
 	if (IS_VAMPIRE(ch))
@@ -6331,7 +5717,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 				if(sn != DISC_OBEAH)
 				{
 					snprintf(name, sizeof(name), "%s", disc_table[sn].vname);
-					cell_append_contents(cell, "%-14s:%3d\n", capitalize(name), ch->disc[sn]);
+					cell_append_contents(cell, "\tW%-14s\tn:%3d\n", capitalize(name), ch->disc[sn]);
 				}
 			}
 		}
@@ -6344,7 +5730,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 					if(ch->disc[sn] != 0)
 					{
 						snprintf(name, sizeof(name), "%s", disc_table[sn].vname);
-						cell_append_contents(cell, "%-14s:%3d\n", capitalize(name), ch->disc[sn]);
+						cell_append_contents(cell, "\tW%-14s\tn:%3d\n", capitalize(name), ch->disc[sn]);
 					}
 				}
 			}
@@ -6352,7 +5738,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 	}
 
 	// Second Cell - Backgrounds
-	cell = row_append_cell(row, 28, "\tGBackgrounds\tn\n");
+	cell = row_append_cell(row, 28, "\tBBackgrounds\tn\n");
 	i = 0;
 	// This is so Admins can see how players see it if they have holy light turned off.
 	if(IS_ADMIN(ch) && IS_SET(ch->plr_flags,PLR_HOLYLIGHT))
@@ -6363,7 +5749,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 			{
 				if(num < MAX_BACKGROUND)
 				{
-					cell_append_contents(cell, "%-11s:%3d\n", background_table[num].name, ch->backgrounds[num]);
+					cell_append_contents(cell, "\tW%-11s\tn:%3d\n", background_table[num].name, ch->backgrounds[num]);
 					i++;
 				}
 			}
@@ -6380,7 +5766,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 				{
 					if (ch->backgrounds[num] != 0)
 					{
-						cell_append_contents(cell, "%-11s:%3d\n", background_table[num].name, ch->backgrounds[num]);
+						cell_append_contents(cell, "\tW%-11s\tn:%3d\n", background_table[num].name, ch->backgrounds[num]);
 						i++;
 					}
 				}
@@ -6389,7 +5775,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 	}
 
 	//  Third Cell - Influences
-	cell = row_append_cell(row, 23, "\tGInfluences\tn\n");
+	cell = row_append_cell(row, 23, "\tBInfluences\tn\n");
 	i = 0;
 	// This is so Admins can see how players see it if they have holy light turned off.
 	if(IS_ADMIN(ch) && IS_SET(ch->plr_flags,PLR_HOLYLIGHT))
@@ -6400,7 +5786,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 			{
 				if(num < MAX_BACKGROUND)
 				{
-					cell_append_contents(cell, "%-11s:%3d\n", influence_table[num].name, ch->influences[num]);
+					cell_append_contents(cell, "\tW%-11s\tn:%3d\n", influence_table[num].name, ch->influences[num]);
 					i++;
 				}
 			}
@@ -6416,7 +5802,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 				{
 					if(ch->influences[num] != 0)
 					{
-						cell_append_contents(cell, "%-11s:%3d\n", influence_table[num].name, ch->influences[num]);
+						cell_append_contents(cell, "\tW%-11s\tn:%3d\n", influence_table[num].name, ch->influences[num]);
 						i++;						
 					}
 				}
@@ -6427,13 +5813,13 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 	// NEW ROW
 	row = create_row(grid);
 	// VIRTUES
-	cell = row_append_cell(row, 28, "\tGVirtues\tn\nConscience:   %d\nSelf-Control: %d\nCourage:      %d", ch->virtues[0], ch->virtues[1], ch->virtues[2] );
+	cell = row_append_cell(row, 28, "\tBVirtues\tn\n\tWConscience\tn:   %d\n\tWSelf-Control\tn: %d\n\tWCourage\tn:      %d", ch->virtues[0], ch->virtues[1], ch->virtues[2] );
 
 	// HEALTH/EXPERIENCE
-	cell = row_append_cell(row, 28, "Health Status: %s\nXP/OOC XP: %d/%-d\nGift XP: %d", health_string(ch), ch->exp, ch->oocxp, ch->xpgift);
+	cell = row_append_cell(row, 28, "\tWHealth Status\tn: %s\n\tWXP/OOC XP\tn: %d/%-d\n\tWGift XP\tn: %d", health_string(ch), ch->exp, ch->oocxp, ch->xpgift);
 
 	// HUMANITY/WillPOWER/BLOODPOOL
-	cell = row_append_cell(row, 23, "%8s: %2d\nWillpower: %2d/%-2d\n%s: %2d/%-2d",
+	cell = row_append_cell(row, 23, "\tW%8s\tn: %2d\n\tWWillpower\tn: %2d/%-2d\n\tW%s\tn: %2d/%-2d",
 		race_table[ch->race].pc_race?pc_race_table[ch->race].GHB:"Humanity", ch->GHB, 
 		ch->willpower, ch->max_willpower, 
 		race_table[ch->race].pc_race?pc_race_table[ch->race].RBPG:"Faith", ch->RBPG, ch->max_RBPG );
@@ -6441,7 +5827,7 @@ void do_score_revised( CHAR_DATA *ch, char *argument )
 
 	// NEW ROW
 	row = create_row(grid);
-	cell = row_append_cell(row, 107, "Use \t<send href='abilities'>abilities\t</send> to see Skills, Talents, and Knowledges.");
+	cell = row_append_cell(row, 107, "\tWUse \t<send href='abilities'>abilities\t</send> to see Skills, Talents, and Knowledges.\tn");
 
 	grid_to_char (grid, user, TRUE );
 // TABLE ENDS HERE
@@ -6613,8 +5999,6 @@ void do_updatetime( CHAR_DATA *ch, char *argument)
 	}
 	else
 		found = TRUE;
-
-	// Assert(found = TRUE, "Project.exe file was not located.");
 
 	if(found)
 		send_to_char(ctime(&time), ch);
