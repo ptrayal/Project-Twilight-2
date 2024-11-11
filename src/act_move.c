@@ -3206,7 +3206,7 @@ void do_xpgift (CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if(!IS_NULLSTR(arg1))
+    if(IS_NULLSTR(arg1))
     {
         send_to_char("Give experience to whom?\n\r", ch);
         return;
@@ -3254,7 +3254,7 @@ void do_xpgift (CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if(arg2 != NULL)
+    if (arg2[0] != '\0')
         gift = atoi(arg2);
     else
         gift = 1;
