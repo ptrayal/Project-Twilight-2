@@ -4,11 +4,7 @@
  * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
  
-#if defined(Macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
-#endif
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1819,66 +1815,70 @@ void stock_update()
 
 OBJ_DATA *make_newspapers ()
 {
-	OBJ_DATA *papers = NULL;
-	OBJ_DATA *obj;
-	NEWSPAPER *pnews;
-	EXTRA_DESCR_DATA *ed;
-	char buf[MSL]={'\0'};
-	char tmp[MSL]={'\0'};
-	int i = 0;
+    OBJ_DATA *papers = NULL;
+    OBJ_DATA *obj;
+    NEWSPAPER *pnews;
+    EXTRA_DESCR_DATA *ed;
+    char buf[MSL] = {'\0'};
+    char tmp[MSL] = {'\0'};
+    char tmp_buf[MSL] = {'\0'};  // Intermediate buffer for snprintf operations
+    int i = 0;
 
-	for(pnews = paper_list; pnews; pnews = pnews->next)
-	{
-		obj = create_object(get_obj_index(OBJ_VNUM_NEWSPAPER));
+    for (pnews = paper_list; pnews; pnews = pnews->next)
+    {
+        obj = create_object(get_obj_index(OBJ_VNUM_NEWSPAPER));
 
-		snprintf(buf, sizeof(buf), obj->name, pnews->name);
+        snprintf(buf, sizeof(buf), obj->name, pnews->name);
 
-		PURGE_DATA(obj->name);
-		obj->name = str_dup(buf);
+        PURGE_DATA(obj->name);
+        obj->name = str_dup(buf);
 
-		snprintf(buf, sizeof(buf), obj->short_descr, pnews->name);
-		PURGE_DATA(obj->short_descr);
-		obj->short_descr = str_dup(buf);
-		snprintf(buf, sizeof(buf), obj->description, pnews->name);
-		PURGE_DATA(obj->description);
-		obj->description = str_dup(buf);
+        snprintf(buf, sizeof(buf), obj->short_descr, pnews->name);
+        PURGE_DATA(obj->short_descr);
+        obj->short_descr = str_dup(buf);
+        
+        snprintf(buf, sizeof(buf), obj->description, pnews->name);
+        PURGE_DATA(obj->description);
+        obj->description = str_dup(buf);
 
-		obj->cost = pnews->cost;
-		for(i = MAX_ARTICLES - 1; i >= 0; i--)
-		{
-			/* Set extra descriptions from articles */
-			NOTE_DATA *article;
-			int vnum = 0;
+        obj->cost = pnews->cost;
+        for (i = MAX_ARTICLES - 1; i >= 0; i--)
+        {
+            NOTE_DATA *article;
+            int vnum = 0;
 
-			for(article = news_list; article != NULL; article = article->next)
-				if( vnum++ == pnews->articles[i] ) break;
+            for (article = news_list; article != NULL; article = article->next)
+                if (vnum++ == pnews->articles[i]) break;
 
-			if(article != NULL && article->successes == 0)
-			{
-				ALLOC_DATA (ed, EXTRA_DESCR_DATA, 1);
-				ed->keyword		= str_dup(Format("Page%d: %s", i, article?article->subject:""));
-				ed->description	= str_dup(Format("%s", article?article->text:""));
-				ed->next		= obj->extra_descr;
-				obj->extra_descr	= ed;
-			}
-		}
+            if (article != NULL && article->successes == 0)
+            {
+                ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+                ed->keyword = str_dup(Format("Page%d: %s", i, article ? article->subject : ""));
+                ed->description = str_dup(Format("%s", article ? article->text : ""));
+                ed->next = obj->extra_descr;
+                obj->extra_descr = ed;
+            }
+        }
 
-		snprintf(tmp, sizeof(tmp), "Contents:\n\r");
-		for(ed=obj->extra_descr;ed;ed=ed->next)
-		{
-			snprintf(tmp, MSL, "%s%s\n", tmp, ed->keyword);
-		}
+        snprintf(tmp_buf, sizeof(tmp_buf), "Contents:\n\r");
+        for (ed = obj->extra_descr; ed; ed = ed->next)
+        {
+            strncat(tmp_buf, ed->keyword, sizeof(tmp_buf) - strlen(tmp_buf) - 1);
+            strncat(tmp_buf, "\n", sizeof(tmp_buf) - strlen(tmp_buf) - 1);
+        }
+        
+        // Copy the final result to tmp
+        strncpy(tmp, tmp_buf, sizeof(tmp));
 
-		PURGE_DATA(obj->full_desc);
-		obj->full_desc = str_dup(Format("%s\n\n%s", obj->full_desc, tmp));
-		obj->wear_loc = -1;
+        PURGE_DATA(obj->full_desc);
+        obj->full_desc = str_dup(Format("%s\n\n%s", obj->full_desc, tmp));
+        obj->wear_loc = -1;
 
-		object_list = obj->next;
-		obj->next = papers;
-		papers = obj;
-	}
+        obj->next = papers;
+        papers = obj;
+    }
 
-	return papers;
+    return papers;
 }
 
 int update_news_stands ()
