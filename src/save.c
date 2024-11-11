@@ -249,7 +249,8 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     AFFECT_DATA *paf;
     TRAIT_DATA *trait;
     STOCKS *stock;
-    char buf[MSL]={'\0'};
+    // Remove this line as it is unused
+	// char buf[MSL]={'\0'};
     int sn = 0, pos = 0;
     int i = 0;
 	time_t current_time = time(NULL); // Get the current epoch time
