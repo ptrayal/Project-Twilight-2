@@ -1962,7 +1962,7 @@ struct	char_data
     EXTRA_DESCR_DATA *	extra_descr;
     TRAIT_DATA *	traits;
     int			attitude;
-    char *		laston;
+    time_t		laston;
     char *		name;
     char *		surname;
     char *		married;
@@ -3209,6 +3209,7 @@ RID *	get_room_index	args( ( int vnum ) );
 MPC *	get_mprog_index	args( ( int vnum ) );
 char	fread_letter	args( ( FILE *fp ) );
 int	fread_number	args( ( FILE *fp ) );
+long fread_long(FILE *fp);
 long 	fread_flag	args( ( FILE *fp ) );
 char *	fread_string	args( ( FILE *fp ) );
 char *  fread_string_eol args(( FILE *fp ) );

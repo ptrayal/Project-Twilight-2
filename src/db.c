@@ -28,20 +28,19 @@
  **************************************************************************/
   
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include <time.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <unistd.h>
-#if defined(Macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#endif
+
 
 #include <stddef.h>
 #include <dirent.h>
@@ -4958,24 +4957,50 @@ void bug( const char *str, int param )
 }
 
 
+// char *sys_time()
+// {
+// 	char *strtime;
+// 	time_t rawtime;
+// 	struct tm *info;
+// 	char buffer[80]={'\0'};
+
+// 	time( &rawtime );
+
+// 	info = localtime( &rawtime );
+
+// 	strftime(buffer,80,"%x - %I:%M%p", info);
+
+// 	strtime = buffer;
+// 	strtime[strlen(strtime)-1] = '\0';
+// 	return strtime;
+// }
+
 char *sys_time()
 {
-	char *strtime;
-	time_t rawtime;
-	struct tm *info;
-	char buffer[80]={'\0'};
-
-	time( &rawtime );
-
-	info = localtime( &rawtime );
-
-	strftime(buffer,80,"%x - %I:%M%p", info);
-
-	strtime = buffer;
-	strtime[strlen(strtime)-1] = '\0';
-	return strtime;
+    time_t rawtime;
+    struct tm *info;
+    char buffer[80] = {'\0'};
+    
+    // Get the current time
+    time(&rawtime);
+    info = localtime(&rawtime);
+    
+    // Format the time string
+    strftime(buffer, sizeof(buffer), "%x - %I:%M%p", info);
+    
+    // Allocate memory for strtime
+    char *strtime = malloc(strlen(buffer) + 1);
+    if (strtime == NULL) {
+        // Handle allocation failure
+        return NULL;
+    }
+    
+    // Copy buffer content to strtime
+    strcpy(strtime, buffer);
+    
+    // Return the dynamically allocated string
+    return strtime;
 }
-
 
 char logfile[MIL];
 
@@ -5263,5 +5288,3 @@ void closeReserve(void)
 	}
 	fpReserve = NULL;
 }
-
-

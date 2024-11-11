@@ -6,6 +6,10 @@
 
 #ifndef MAGIC_H
 #define MAGIC_H
+
+int has_enough_power(CHAR_DATA *ch);
+
+
 /*
  * Spell functions.
  * Defined in magic.c.
