@@ -2,6 +2,11 @@
 <changes>
   <change>
     <imm>Rayal</imm>
+    <date>11-Nov-2024</date>
+    <text>Fixed several compiler warnings to improve the code readability.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
     <date>05-Nov-2024</date>
     <text>Beginning work on new 'do_who' command.  Right now only available for Admin</text>
   </change>
