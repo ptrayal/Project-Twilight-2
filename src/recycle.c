@@ -416,38 +416,38 @@ PERSONA *new_persona()
 
 void free_persona(PERSONA *persona)
 {
-	REACT *react;
-	REACT *next;
-	REACT *pe;
-	int i = 0;
+    REACT *react;
+    REACT *next;
+    REACT *pe;
+    int i = 0;
 
-	Escape(persona);
+    Escape(persona);
 
-	persona->vnum = -1;
-	PURGE_DATA(persona->name);
-	for(i = 0; i <= MAX_ATTITUDE; i++)
-		for(react = persona->matrix[i]; react; react = next)
-		{
-			next = react->next_in_matrix_loc;
-			if(react == react_first)
-			{
-				react_first = react_first->next;
-			}
-			else
-			{
-				for(pe = react_first; pe->next != NULL; pe = pe->next)
-				{
-					if(pe->next == react)
-					{
-						pe->next = react->next;
-						break;
-					}
-				}
-			}
-			free_react(react);
-		}
+    persona->vnum = -1;
+    PURGE_DATA(persona->name);
+    for(i = 0; i < MAX_ATTITUDE; i++)  // Changed condition to `i < MAX_ATTITUDE`
+        for(react = persona->matrix[i]; react; react = next)
+        {
+            next = react->next_in_matrix_loc;
+            if(react == react_first)
+            {
+                react_first = react_first->next;
+            }
+            else
+            {
+                for(pe = react_first; pe->next != NULL; pe = pe->next)
+                {
+                    if(pe->next == react)
+                    {
+                        pe->next = react->next;
+                        break;
+                    }
+                }
+            }
+            free_react(react);
+        }
 
-	PURGE_DATA(persona);
+    PURGE_DATA(persona);
 }
 
 SCRIPT_DATA *new_script()
