@@ -84,6 +84,13 @@ void violence_update( void )
 
 		obj_next = obj->next;
 
+		// Check if obj is valid before accessing fields.
+		if (obj == NULL) 
+		{
+        	log_string(LOG_BUG, "violence_update: obj is NULL in object_list.");
+        	continue;
+    	}
+
 		if(obj->item_type != ITEM_BOMB || !obj->value[1])
 		{
 			continue;

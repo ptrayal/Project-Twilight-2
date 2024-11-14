@@ -166,34 +166,52 @@ void free_help(HELP_DATA *help)
 
 NEWSPAPER *new_newspaper()
 {
-	NEWSPAPER *paper;
-	int i = 0;
+    NEWSPAPER *paper;
+    int i;
 
-	ALLOC_DATA(paper, NEWSPAPER, 1);
+    ALLOC_DATA(paper, NEWSPAPER, 1); // Assuming ALLOC_DATA is a macro for memory allocation.
 
-	paper->name = NULL;
-	paper->cost = 0;
-	paper->on_stands = 0;
-	for(i=0;i<MAX_ARTICLES;i++)
-		{
-			paper->articles[i] = -1;
-		}
+    if (!paper)
+    {
+        log_string(LOG_ERR, "Failed to allocate memory for new newspaper.");
+        return NULL;  // Check for memory allocation failure.
+    }
 
-	return paper;
+    paper->name = NULL;
+    paper->cost = 0;
+    paper->on_stands = 0;
+
+    // Initialize articles with -1 to indicate no articles are assigned.
+    for (i = 0; i < MAX_ARTICLES; i++)
+    {
+        paper->articles[i] = -1;
+    }
+
+    paper->next = NULL; // Ensure the next pointer is initialized to NULL.
+
+    return paper;
 }
 
 void free_newspaper(NEWSPAPER *paper)
 {
-	Escape(paper);
+    Escape(paper);
 
-	PURGE_DATA( paper->name );
-	paper->cost = 0;
-	paper->on_stands = 0;
+    PURGE_DATA(paper->name);   // Clean up string data.
+    paper->cost = 0;
+    paper->on_stands = 0;
 
+    // Properly free the articles (if necessary, depending on how they are allocated).
+    for (int i = 0; i < MAX_ARTICLES; i++)
+    {
+        if (paper->articles[i] != -1)
+        {
+            // Assuming articles are dynamically allocated, we would free them here.
+            // In this case, we assume they are just indexes, so nothing further is required.
+        }
+    }
 
-	PURGE_DATA(paper);
+    PURGE_DATA(paper); // Free the newspaper object.
 }
-
 
 NOTE_DATA *new_note()
 {

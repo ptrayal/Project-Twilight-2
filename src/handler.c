@@ -3005,22 +3005,53 @@ CHAR_DATA *get_char_world( CHAR_DATA *ch, char *argument )
  * Find some object with a given index data.
  * Used by area-reset 'P' command.
  */
-OBJ_DATA *get_obj_type( OBJ_INDEX_DATA *pObjIndex )
+// OBJ_DATA *get_obj_type( OBJ_INDEX_DATA *pObjIndex )
+// {
+// 	OBJ_DATA *obj;
+
+// 	for ( obj = object_list; obj != NULL; obj = obj->next )
+// 	{
+// 		if ( obj->pIndexData == pObjIndex )
+// 		{
+// 			return obj;
+// 		}
+// 	}
+
+// 	return NULL;
+// }
+
+// Placeholder for a function that checks pointer validity
+bool is_valid_pointer(void *ptr)
 {
-	OBJ_DATA *obj;
-
-	for ( obj = object_list; obj != NULL; obj = obj->next )
-	{
-		if ( obj->pIndexData == pObjIndex )
-		{
-			return obj;
-		}
-	}
-
-	return NULL;
+    // Implement or replace with system/OS-specific checks if available
+    return ptr != NULL;
 }
 
+OBJ_DATA *get_obj_type(OBJ_INDEX_DATA *pObjIndex)
+{
+    OBJ_DATA *obj;
 
+    // Start iterating through the object list
+    for (obj = object_list; obj != NULL; obj = obj->next)
+    {
+        // Check if pIndexData is NULL or obj->next is an invalid pointer
+        if (obj->pIndexData == NULL || !is_valid_pointer(obj->next))
+        {
+            log_string(LOG_BUG, Format("Warning: obj->pIndexData or obj->next is NULL in get_obj_type, obj=%p, obj->next=%p", (void *)obj, (void *)obj->next));
+            continue;  // Skip this object to avoid accessing invalid memory
+        }
+
+        // If the object type matches, return it
+        if (obj->pIndexData == pObjIndex)
+        {
+            return obj;
+        }
+    }
+
+    // Log if no matching object was found
+    log_string(LOG_BUG, Format("get_obj_type: No matching object for pObjIndex=%p", (void *)pObjIndex));
+    return NULL;  // Return NULL if no match is found
+}
 /*
  * Find an obj in a list.
  */

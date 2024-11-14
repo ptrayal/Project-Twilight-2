@@ -4645,31 +4645,35 @@ void load_papers()
 
 void save_papers()
 {
-	FILE *fp;
-	NEWSPAPER *pnews;
-	int i = 0;
+    FILE *fp;
+    NEWSPAPER *pnews;
+    int i;
 
-	closeReserve();
-	if ( ( fp = fopen( PAPER_FILE, "w" ) ) == NULL )
-	{
-		perror( PAPER_FILE );
-	}
-	else
-	{
-		for ( pnews = paper_list ; pnews != NULL; pnews = pnews->next )
-		{
-			fprintf( fp, "Name  %s~\n", pnews->name);
-			fprintf( fp, "States %d %d\n", pnews->on_stands, pnews->cost);
-			fprintf( fp, "Articles");
-			for(i=0;i<MAX_ARTICLES;i++)
-				fprintf(fp, " %ld", pnews->articles[i]);
-			fprintf( fp, "\n");
-		}
-		fclose( fp );
-		openReserve();
-		return;
-	}
+    closeReserve();  // Assuming this locks resources before saving.
+
+    fp = fopen(PAPER_FILE, "w");
+    if (!fp)
+    {
+        perror(PAPER_FILE);  // Print the error if the file cannot be opened.
+        return;
+    }
+
+    for (pnews = paper_list; pnews != NULL; pnews = pnews->next)
+    {
+        fprintf(fp, "Name  %s~\n", pnews->name);
+        fprintf(fp, "States %d %d\n", pnews->on_stands, pnews->cost);
+        fprintf(fp, "Articles");
+        for (i = 0; i < MAX_ARTICLES; i++)
+        {
+            fprintf(fp, " %ld", pnews->articles[i]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+    openReserve();  // Unlock resources after saving.
 }
+
 
 void load_stocks()
 {

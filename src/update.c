@@ -1813,7 +1813,7 @@ void stock_update()
     save_stocks();
 }
 
-OBJ_DATA *make_newspapers ()
+OBJ_DATA *make_newspapers()
 {
     OBJ_DATA *papers = NULL;
     OBJ_DATA *obj;
@@ -1822,39 +1822,54 @@ OBJ_DATA *make_newspapers ()
     char buf[MSL] = {'\0'};
     char tmp[MSL] = {'\0'};
     char tmp_buf[MSL] = {'\0'};  // Intermediate buffer for snprintf operations
-    int i = 0;
+    int i;
 
     for (pnews = paper_list; pnews; pnews = pnews->next)
     {
-        obj = create_object(get_obj_index(OBJ_VNUM_NEWSPAPER));
+        obj = create_object(get_obj_index(OBJ_VNUM_NEWSPAPER));  // Ensure get_obj_index returns valid data.
+
+        if (!obj)
+        {
+            log_string(LOG_ERR, "Failed to create newspaper object.");
+            continue;  // Skip this iteration if the object creation fails.
+        }
 
         snprintf(buf, sizeof(buf), obj->name, pnews->name);
-
         PURGE_DATA(obj->name);
         obj->name = str_dup(buf);
 
         snprintf(buf, sizeof(buf), obj->short_descr, pnews->name);
         PURGE_DATA(obj->short_descr);
         obj->short_descr = str_dup(buf);
-        
+
         snprintf(buf, sizeof(buf), obj->description, pnews->name);
         PURGE_DATA(obj->description);
         obj->description = str_dup(buf);
 
         obj->cost = pnews->cost;
+        
+        // Iterate through articles, adding extra descriptions.
         for (i = MAX_ARTICLES - 1; i >= 0; i--)
         {
             NOTE_DATA *article;
             int vnum = 0;
 
             for (article = news_list; article != NULL; article = article->next)
+            {
                 if (vnum++ == pnews->articles[i]) break;
+            }
 
-            if (article != NULL && article->successes == 0)
+            if (article != NULL && article->successes == 0) // Ensure the article is valid.
             {
                 ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
-                ed->keyword = str_dup(Format("Page%d: %s", i, article ? article->subject : ""));
-                ed->description = str_dup(Format("%s", article ? article->text : ""));
+                if (!ed)
+                {
+                    log_string(LOG_ERR, "Memory allocation failed for EXTRA_DESCR_DATA.");
+                    continue;  // Skip this article if allocation fails.
+                }
+
+                ed->keyword = str_dup(Format("Page%d: %s", i, article->subject));
+                ed->description = str_dup(Format("%s", article->text));
                 ed->next = obj->extra_descr;
                 obj->extra_descr = ed;
             }
@@ -1866,10 +1881,8 @@ OBJ_DATA *make_newspapers ()
             strncat(tmp_buf, ed->keyword, sizeof(tmp_buf) - strlen(tmp_buf) - 1);
             strncat(tmp_buf, "\n", sizeof(tmp_buf) - strlen(tmp_buf) - 1);
         }
-        
-        // Copy the final result to tmp
-        strncpy(tmp, tmp_buf, sizeof(tmp));
 
+        strncpy(tmp, tmp_buf, sizeof(tmp));
         PURGE_DATA(obj->full_desc);
         obj->full_desc = str_dup(Format("%s\n\n%s", obj->full_desc, tmp));
         obj->wear_loc = -1;

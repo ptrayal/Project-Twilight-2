@@ -1988,285 +1988,291 @@ void forced_reset_area( AREA_DATA *pArea )
  */
 void reset_room( ROOM_INDEX_DATA *pRoom )
 {
-	RESET_DATA  *pReset;
-	CHAR_DATA   *pMob;
-	CHAR_DATA   *mob;
-	OBJ_DATA    *pObj;
-	CHAR_DATA   *LastMob = NULL;
-	OBJ_DATA    *LastObj = NULL;
-	int iExit = 0;
-	bool last = FALSE;
+    RESET_DATA  *pReset;
+    CHAR_DATA   *pMob;
+    CHAR_DATA   *mob;
+    OBJ_DATA    *pObj;
+    CHAR_DATA   *LastMob = NULL;
+    OBJ_DATA    *LastObj = NULL;
+    int iExit = 0;
+    bool last = FALSE;
 
-	if ( !pRoom )
-		return;
+    if ( !pRoom )
+        return;
 
-	pMob        = NULL;
+    pMob        = NULL;
 
-	for ( iExit = 0;  iExit < MAX_DIR;  iExit++ )
-	{
-		EXIT_DATA *pExit;
-		if ( ( pExit = pRoom->exit[iExit] )
-				/*  && !IS_SET( pExit->exit_info, EX_BASHED )   ROM OLC */ )
-		{
-			pExit->exit_info = pExit->rs_flags;
-			if ( ( pExit->u1.to_room != NULL )
-					&& ( ( pExit = pExit->u1.to_room->exit[rev_dir[iExit]] ) ) )
+    for ( iExit = 0;  iExit < MAX_DIR;  iExit++ )
+    {
+        EXIT_DATA *pExit;
+        if ( ( pExit = pRoom->exit[iExit] )
+                /*  && !IS_SET( pExit->exit_info, EX_BASHED )   ROM OLC */ )
+        {
+            pExit->exit_info = pExit->rs_flags;
+            if ( ( pExit->u1.to_room != NULL )
+                    && ( ( pExit = pExit->u1.to_room->exit[rev_dir[iExit]] ) ) )
+            {
+                /* nail the other side */
+                pExit->exit_info = pExit->rs_flags;
+            }
+        }
+    }
+
+    for ( pReset = pRoom->reset_first; pReset != NULL; pReset = pReset->next )
+    {
+        MOB_INDEX_DATA  *pMobIndex;
+        OBJ_INDEX_DATA  *pObjIndex;
+        OBJ_INDEX_DATA  *pObjToIndex;
+        ROOM_INDEX_DATA *pRoomIndex;
+        int count, limit = 0;
+
+        switch ( pReset->command )
+        {
+        default:
+            log_string(LOG_BUG, Format("Reset_room: bad command %c.", pReset->command ));
+            break;
+
+        case 'F':
+            if ( !( pObjIndex = get_obj_index( pReset->arg1 ) )
+                    && pReset->arg1 != 0)
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'F': bad vnum %d.", pReset->arg1 ));
+                log_string(LOG_BUG, Format("%d %d %d %d", pReset->arg1, pReset->arg2, pReset->arg3, pReset->arg4));
+                continue;
+            }
+
+            if ( !( pRoomIndex = get_room_index( pReset->arg3 ) ) )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'F': bad vnum %d.", pReset->arg3 ));
+                log_string(LOG_BUG, Format("%d %d %d %d", pReset->arg1, pReset->arg2, pReset->arg3, pReset->arg4));
+                continue;
+            }
+
+            if ( pRoom->area->nplayer > 0
+                    || ( pObjIndex != NULL
+                         && count_obj_list( pObjIndex, pRoom->contents ) > 0)
+                    || ( pObjIndex == NULL
+                         && pRoom->owner[0] != '\0'
+                         && is_online(pRoom->owner)) )
+            {
+                last = FALSE;
+                break;
+            }
+
+            if( pObjIndex != NULL )
+            {
+                pObj       = create_object( pObjIndex );
+                pObj->cost = 0;
+                obj_to_room( pObj, pRoom );
+                SET_BIT(pObj->extra2, OBJ_FURNISHING);
+            }
+            else
+            {
+                if(!is_online(pRoom->owner))
+                {
+                    if((mob = get_player(pRoom->owner)) != NULL)
+                    {
+                        /* @@@@@ place_home_room_obj(mob, pRoom); */
+                        free_char(mob);
+                    }
+                }
+            }
+            last = TRUE;
+            break;
+
+        case 'M':
+            if ( !( pMobIndex = get_mob_index( pReset->arg1 ) ) )
+            {
+                log_string(LOG_BUG, Format("Reset_room: 'M': bad vnum %d.", pReset->arg1 ));
+                continue;
+            }
+
+            if ( ( pRoomIndex = get_room_index( pReset->arg3 ) ) == NULL )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'R': bad vnum %d.", pReset->arg3 ));
+                continue;
+            }
+            if ( pMobIndex->count >= pReset->arg2 )
+            {
+                last = FALSE;
+                break;
+            }
+
+            count = 0;
+            for (mob = pRoomIndex->people; mob != NULL; mob = mob->next_in_room)
+                if (mob->pIndexData == pMobIndex)
+                {
+                    count++;
+                    if (count >= pReset->arg4)
+                    {
+                        last = FALSE;
+                        break;
+                    }
+                }
+
+            if (count > pReset->arg4)
+                break;
+
+            pMob = create_mobile( pMobIndex );
+
+            char_to_room( pMob, pRoomIndex );
+            LastMob = pMob;
+            last = TRUE;
+            break;
+
+        case 'O':
+            if ( !( pObjIndex = get_obj_index( pReset->arg1 ) ) )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'O': bad vnum %d.", pReset->arg1 ));
+                log_string(LOG_BUG, (char *)Format("%d %d %d %d", pReset->arg1, pReset->arg2, pReset->arg3, pReset->arg4));
+                continue;
+            }
+
+            if ( !( pRoomIndex = get_room_index( pReset->arg3 ) ) )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'R': bad vnum %d.", pReset->arg3 ));
+                log_string(LOG_BUG, (char *)Format("%d %d %d %d", pReset->arg1, pReset->arg2, pReset->arg3, pReset->arg4));
+                continue;
+            }
+
+            if ( pRoom->area->nplayer > 0
+                    ||   count_obj_list( pObjIndex, pRoom->contents ) > 0 )
+            {
+                last = FALSE;
+                break;
+            }
+
+            pObj       = create_object( pObjIndex );
+            pObj->cost = 0;
+            obj_to_room( pObj, pRoom );
+            last = TRUE;
+            break;
+
+        case 'P':
+            if (!(pObjIndex = get_obj_index(pReset->arg1)))
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'P': bad vnum %d.", pReset->arg1));
+                continue;
+            }
+
+            if (!(pObjToIndex = get_obj_index(pReset->arg3)))
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'P': bad vnum %d.", pReset->arg3));
+                continue;
+            }
+
+            if (pReset->arg2 > 50) /* old format */
+                limit = 6;
+            else if (pReset->arg2 == -1) /* no limit */
+                limit = 999;
+            else
+                limit = pReset->arg2;
+
+            LastObj = get_obj_type(pObjToIndex);
+			if (LastObj == NULL) 
 			{
-				/* nail the other side */
-				pExit->exit_info = pExit->rs_flags;
-			}
-		}
-	}
-
-	for ( pReset = pRoom->reset_first; pReset != NULL; pReset = pReset->next )
-	{
-		MOB_INDEX_DATA  *pMobIndex;
-		OBJ_INDEX_DATA  *pObjIndex;
-		OBJ_INDEX_DATA  *pObjToIndex;
-		ROOM_INDEX_DATA *pRoomIndex;
-		int count,limit=0;
-
-		switch ( pReset->command )
-		{
-		default:
-			log_string(LOG_BUG, Format("Reset_room: bad command %c.", pReset->command ));
-			break;
-
-		case 'F':
-			if ( !( pObjIndex = get_obj_index( pReset->arg1 ) )
-					&& pReset->arg1 != 0)
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'F': bad vnum %d.", pReset->arg1 ));
-				log_string(LOG_BUG, Format("%d %d %d %d",pReset->arg1, pReset->arg2, pReset->arg3, pReset->arg4));
-				continue;
-			}
-
-			if ( !( pRoomIndex = get_room_index( pReset->arg3 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'F': bad vnum %d.", pReset->arg3 ));
-				log_string(LOG_BUG, Format("%d %d %d %d",pReset->arg1,pReset->arg2,pReset->arg3, pReset->arg4));
-				continue;
-			}
-
-			if ( pRoom->area->nplayer > 0
-					|| ( pObjIndex != NULL
-							&& count_obj_list( pObjIndex, pRoom->contents ) > 0)
-							|| ( pObjIndex == NULL
-									&& pRoom->owner[0] != '\0'
-											&& is_online(pRoom->owner)) )
-			{
-				last = FALSE;
-				break;
-			}
-
-			if( pObjIndex != NULL )
-			{
-				pObj       = create_object( pObjIndex );
-				pObj->cost = 0;
-				obj_to_room( pObj, pRoom );
-				SET_BIT(pObj->extra2, OBJ_FURNISHING);
-			}
-			else
-			{
-				if(!is_online(pRoom->owner))
-				{
-					if((mob = get_player(pRoom->owner)) != NULL)
-					{
-						/* @@@@@ place_home_room_obj(mob, pRoom); */
-						free_char(mob);
-					}
-				}
-			}
-			last = TRUE;
-			break;
-
-		case 'M':
-			if ( !( pMobIndex = get_mob_index( pReset->arg1 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_room: 'M': bad vnum %d.", pReset->arg1 ));
-				continue;
-			}
-
-			if ( ( pRoomIndex = get_room_index( pReset->arg3 ) ) == NULL )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'R': bad vnum %d.", pReset->arg3 ));
-				continue;
-			}
-			if ( pMobIndex->count >= pReset->arg2 )
-			{
-				last = FALSE;
-				break;
-			}
-
-			count = 0;
-			for (mob = pRoomIndex->people; mob != NULL; mob = mob->next_in_room)
-				if (mob->pIndexData == pMobIndex)
-				{
-					count++;
-					if (count >= pReset->arg4)
-					{
-						last = FALSE;
-						break;
-					}
-				}
-
-			if (count > pReset->arg4)
-				break;
-
-			pMob = create_mobile( pMobIndex );
-
-			char_to_room( pMob, pRoomIndex );
-			LastMob = pMob;
-			last = TRUE;
-			break;
-
-		case 'O':
-			if ( !( pObjIndex = get_obj_index( pReset->arg1 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'O': bad vnum %d.", pReset->arg1 ));
-				log_string(LOG_BUG, (char *)Format("%d %d %d %d",pReset->arg1, pReset->arg2, pReset->arg3, pReset->arg4));
-				continue;
-			}
-
-			if ( !( pRoomIndex = get_room_index( pReset->arg3 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'R': bad vnum %d.", pReset->arg3 ));
-				log_string(LOG_BUG, (char *)Format("%d %d %d %d",pReset->arg1,pReset->arg2,pReset->arg3, pReset->arg4));
-				continue;
-			}
-
-			if ( pRoom->area->nplayer > 0
-					||   count_obj_list( pObjIndex, pRoom->contents ) > 0 )
-			{
-				last = FALSE;
-				break;
-			}
-
-			pObj       = create_object( pObjIndex );
-			pObj->cost = 0;
-			obj_to_room( pObj, pRoom );
-			last = TRUE;
-			break;
-
-		case 'P':
-			if ( !( pObjIndex = get_obj_index( pReset->arg1 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'P': bad vnum %d.", pReset->arg1 ));
-				continue;
-			}
-
-			if ( !( pObjToIndex = get_obj_index( pReset->arg3 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'P': bad vnum %d.", pReset->arg3 ));
-				continue;
-			}
-
-			if (pReset->arg2 > 50) /* old format */
-				limit = 6;
-			else if (pReset->arg2 == -1) /* no limit */
-				limit = 999;
-			else
-				limit = pReset->arg2;
-
-			if (pRoom->area->nplayer > 0
-					|| (LastObj = get_obj_type( pObjToIndex ) ) == NULL
-					|| (LastObj->in_room == NULL && !last)
-					|| ( pObjIndex->count >= limit /* && number_range(0,4) != 0 */ )
-					|| (count = count_obj_list(pObjIndex,LastObj->contains))
-					> pReset->arg4 )
-			{
-				last = FALSE;
-				break;
+			    log_string(LOG_BUG, "reset_room: get_obj_type returned NULL for 'P' case.");
+			    last = FALSE;
+			    break; // Prevent further dereferencing of LastObj
 			}
 
-			while (count < pReset->arg4)
-			{
-				pObj = create_object( pObjIndex );
-				obj_to_obj( pObj, LastObj );
-				count++;
-				if (pObjIndex->count >= limit)
-					break;
-			}
-			/* fix object lock state! */
-			LastObj->value[1] = LastObj->pIndexData->value[1];
-			last = TRUE;
-			break;
+            if (pRoom->area->nplayer > 0
+                    || (LastObj->in_room == NULL && !last)
+                    || (pObjIndex->count >= limit /* && number_range(0,4) != 0 */)
+                    || (count = count_obj_list(pObjIndex, LastObj->contains)) > pReset->arg4)
+            {
+                last = FALSE;
+                break;
+            }
 
-		case 'G':
-		case 'E':
-			if ( !( pObjIndex = get_obj_index( pReset->arg1 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'E' or 'G': bad vnum %d.", pReset->arg1 ));
-				continue;
-			}
+            while (count < pReset->arg4)
+            {
+                pObj = create_object(pObjIndex);
+                obj_to_obj(pObj, LastObj);
+                count++;
+                if (pObjIndex->count >= limit)
+                    break;
+            }
+            /* fix object lock state! */
+            LastObj->value[1] = LastObj->pIndexData->value[1];
+            last = TRUE;
+            break;
 
-			if ( !last )
-				break;
+        case 'G':
+        case 'E':
+            if ( !( pObjIndex = get_obj_index( pReset->arg1 ) ) )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'E' or 'G': bad vnum %d.", pReset->arg1 ));
+                continue;
+            }
 
-			if ( !LastMob )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'E' or 'G': null mob for vnum %d.", pReset->arg1 ));
-				last = FALSE;
-				break;
-			}
+            if ( !last )
+                break;
 
-			if ( LastMob->pIndexData->pShop )
-			{
-				pObj = create_object( pObjIndex );
-				SET_BIT( pObj->extra_flags, ITEM_INVENTORY );
-			}
+            if ( !LastMob )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'E' or 'G': null mob for vnum %d.", pReset->arg1 ));
+                last = FALSE;
+                break;
+            }
 
-			else
-			{
-				int limit;
-				if (pReset->arg2 > 50) /* old format */
-					limit = 6;
-				else if (pReset->arg2 == -1 || pReset->arg2 == 0 )
-					limit = 999;
-				else
-					limit = pReset->arg2;
+            if ( LastMob->pIndexData->pShop )
+            {
+                pObj = create_object( pObjIndex );
+                SET_BIT( pObj->extra_flags, ITEM_INVENTORY );
+            }
 
-				if (pObjIndex->count < limit || number_range(0,4) == 0)
-				{
-					pObj=create_object(pObjIndex);
-				}
-				else
-					break;
-			}
-			obj_to_char( pObj, LastMob );
-			if ( pReset->command == 'E' )
-				equip_char( LastMob, pObj, pReset->arg3 );
-			last = TRUE;
-			break;
+            else
+            {
+                int limit;
+                if (pReset->arg2 > 50) /* old format */
+                    limit = 6;
+                else if (pReset->arg2 == -1 || pReset->arg2 == 0 )
+                    limit = 999;
+                else
+                    limit = pReset->arg2;
 
-		case 'D':
-			break;
+                if (pObjIndex->count < limit || number_range(0, 4) == 0)
+                {
+                    pObj = create_object(pObjIndex);
+                }
+                else
+                    break;
+            }
+            obj_to_char( pObj, LastMob );
+            if ( pReset->command == 'E' )
+                equip_char( LastMob, pObj, pReset->arg3 );
+            last = TRUE;
+            break;
 
-		case 'R':
-			if ( !( pRoomIndex = get_room_index( pReset->arg1 ) ) )
-			{
-				log_string(LOG_BUG, Format("Reset_area: 'R': bad vnum %d.", pReset->arg1 ));
-				continue;
-			}
+        case 'D':
+            break;
 
-			{
-				EXIT_DATA *pExit;
-				int d0;
-				int d1;
+        case 'R':
+            if ( !( pRoomIndex = get_room_index( pReset->arg1 ) ) )
+            {
+                log_string(LOG_BUG, Format("Reset_area: 'R': bad vnum %d.", pReset->arg1 ));
+                continue;
+            }
 
-				for ( d0 = 0; d0 < pReset->arg2 - 1; d0++ )
-				{
-					d1                   = number_range( d0, pReset->arg2-1 );
-					pExit                = pRoomIndex->exit[d0];
-					pRoomIndex->exit[d0] = pRoomIndex->exit[d1];
-					pRoomIndex->exit[d1] = pExit;
-				}
-			}
-			break;
-		}
-	}
+            {
+                EXIT_DATA *pExit;
+                int d0;
+                int d1;
 
-	return;
+                for ( d0 = 0; d0 < pReset->arg2 - 1; d0++ )
+                {
+                    d1                   = number_range( d0, pReset->arg2 - 1 );
+                    pExit                = pRoomIndex->exit[d0];
+                    pRoomIndex->exit[d0] = pRoomIndex->exit[d1];
+                    pRoomIndex->exit[d1] = pExit;
+                }
+            }
+            break;
+        }
+    }
+
+    return;
 }
 
 /*
@@ -3552,161 +3558,353 @@ void clone_mobile(CHAR_DATA *parent, CHAR_DATA *clone)
 /*
  * Create an instance of an object.
  */
+// OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex )
+// {
+// 	AFFECT_DATA *paf;
+// 	OBJ_DATA *obj, *pool;
+
+// 	if ( pObjIndex == NULL )
+// 	{
+// 		log_string(LOG_BUG, "Create_object: NULL pObjIndex.");
+// 		exit( 1 );
+// 	}
+
+// 	obj = new_obj();
+
+// 	obj->pIndexData = pObjIndex;
+// 	obj->in_room    = NULL;
+// 	obj->enchanted  = FALSE;
+
+// 	obj->wear_loc   = -1;
+
+// 	PURGE_DATA( obj->name );
+// 	PURGE_DATA( obj->short_descr );
+// 	PURGE_DATA( obj->description );
+// 	PURGE_DATA( obj->full_desc );
+// 	PURGE_DATA( obj->material );
+// 	PURGE_DATA( obj->owner );
+// 	obj->name       = str_dup( pObjIndex->name );           /* OLC */
+// 	obj->short_descr    = str_dup( pObjIndex->short_descr );    /* OLC */
+// 	if(!IS_NULLSTR(pObjIndex->description))
+// 		CopyTo( obj->description, pObjIndex->description );
+// 	else
+// 		obj->description = str_dup("This object needs a long description.");
+
+// 	if(!IS_NULLSTR(pObjIndex->full_desc))
+// 		CopyTo( obj->full_desc, pObjIndex->full_desc );
+// 	else
+// 		obj->full_desc = str_dup("This object needs a full description.");
+// 	obj->material   = str_dup(pObjIndex->material);
+// 	obj->owner      = NULL;
+// 	obj->item_type  = pObjIndex->item_type;
+// 	obj->extra_flags    = pObjIndex->extra_flags;
+// 	obj->extra2     = pObjIndex->extra2;
+// 	obj->wear_flags = pObjIndex->wear_flags;
+// 	obj->value[0]   = pObjIndex->value[0];
+// 	obj->value[1]   = pObjIndex->value[1];
+// 	obj->value[2]   = pObjIndex->value[2];
+// 	obj->value[3]   = pObjIndex->value[3];
+// 	obj->value[4]   = pObjIndex->value[4];
+// 	obj->value[5]   = pObjIndex->value[5];
+// 	obj->weight     = pObjIndex->weight;
+// 	obj->condition  = pObjIndex->condition;
+// 	obj->quality    = pObjIndex->quality;
+
+// 	obj->cost       = pObjIndex->cost;
+// 	obj->fetish_flags   = pObjIndex->fetish_flags;
+// 	obj->fetish_level   = pObjIndex->fetish_level;
+// 	obj->fetish_target  = pObjIndex->fetish_target;
+
+// 	PURGE_DATA( obj->to_user_none );
+// 	CopyTo(obj->to_user_none,pObjIndex->to_user_none);
+// 	PURGE_DATA( obj->to_user_self );
+// 	CopyTo(obj->to_user_self, pObjIndex->to_user_self);
+// 	PURGE_DATA( obj->to_user_other );
+// 	CopyTo(obj->to_user_other, pObjIndex->to_user_other);
+// 	PURGE_DATA( obj->to_room_none );
+// 	CopyTo(obj->to_room_none, pObjIndex->to_room_none );
+// 	PURGE_DATA( obj->to_room_self );
+// 	CopyTo(obj->to_room_self, pObjIndex->to_room_self );
+// 	PURGE_DATA( obj->to_room_other );
+// 	CopyTo(obj->to_room_other, pObjIndex->to_room_other );
+// 	PURGE_DATA( obj->to_vict_other );
+// 	CopyTo( obj->to_vict_other, pObjIndex->to_vict_other );
+// 	PURGE_DATA( obj->to_room_used );
+// 	CopyTo( obj->to_room_used, pObjIndex->to_room_used );
+// 	PURGE_DATA( obj->to_user_used );
+// 	CopyTo( obj->to_user_used, pObjIndex->to_user_used );
+// 	obj->uses           = pObjIndex->uses;
+// 	obj->timer          = -1;
+
+// 	/*
+// 	 * Mess with object properties.
+// 	 */
+// 	 switch ( obj->item_type )
+// 	 {
+// 	 default:
+// 		 log_string(LOG_BUG, Format("Read_object: vnum %d bad type.", pObjIndex->vnum ));
+// 		 break;
+
+// 	 case ITEM_LIGHT:
+// 		 if (obj->value[2] == 999)
+// 			 obj->value[2] = -1;
+// 		 break;
+
+// 		 /* ADD CONVERSION FROM LIQUIDS TO LIQUID OBJECTS HERE @@@@@ */
+// 	 case ITEM_DRINK_CON:
+// 		 pool = create_puddle_from_liq(liq_table[obj->value[2]].liq_name, OBJ_VNUM_POOL,
+// 				 obj->value[1]);
+// 		 obj->item_type = ITEM_CONTAINER;
+// 		 SET_BIT(obj->extra2, OBJ_WATERPROOF);
+// 		 obj->value[0] = obj->value[1]
+// 									* material_table[material_lookup(liq_table[obj->value[2]].liq_name)].weight;
+// 		 obj->value[1] = 0;
+// 		 obj->value[3] = obj->value[0];
+// 		 obj->value[2] = 0;
+// 		 obj_to_obj(pool, obj);
+// 		 break;
+
+// 	 case ITEM_FURNITURE:
+// 	 case ITEM_TRASH:
+// 	 case ITEM_CONTAINER:
+// 	 case ITEM_KEY:
+// 	 case ITEM_FOOD:
+// 	 case ITEM_BOAT:
+// 	 case ITEM_CORPSE_NPC:
+// 	 case ITEM_CORPSE_PC:
+// 	 case ITEM_FOUNTAIN:
+// 	 case ITEM_MAP:
+// 	 case ITEM_CLOTHING:
+// 	 case ITEM_PORTAL:
+// 	 case ITEM_TELEPHONE:
+// 		 break;
+
+// 	 case ITEM_TREASURE:
+// 	 case ITEM_RELIC:
+// 		 break;
+
+// 	 case ITEM_SCROLL:
+// 		 obj->value[0]  = number_fuzzy( obj->value[0] );
+// 		 break;
+
+// 	 case ITEM_WEAPON:
+// 		 break;
+
+// 	 case ITEM_ARMOR:
+// 		 obj->value[0] = number_fuzzy(2);
+// 		 break;
+
+// 	 case ITEM_POTION:
+// 	 case ITEM_PILL:
+// 		 obj->value[0] = number_fuzzy( number_fuzzy( obj->value[0] ) );
+// 		 break;
+
+// 	 case ITEM_MONEY:
+// 	 case ITEM_AMMO:
+// 	 case ITEM_BOMB:
+// 		 break;
+// 	 }
+
+// 	 for (paf = pObjIndex->affected; paf != NULL; paf = paf->next)
+// 		 if ( paf->location == APPLY_SPELL_AFFECT )
+// 			 affect_to_obj(obj,paf);
+
+// 	LINK_SINGLE(obj, next, object_list);
+// 	 pObjIndex->count++;
+
+// 	 return obj;
+// }
+
 OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex )
 {
-	AFFECT_DATA *paf;
-	OBJ_DATA *obj, *pool;
+    AFFECT_DATA *paf;
+    OBJ_DATA * obj, *pool;
 
-	if ( pObjIndex == NULL )
-	{
-		log_string(LOG_BUG, "Create_object: NULL pObjIndex.");
-		exit( 1 );
-	}
+    // Ensure pObjIndex is not NULL
+    if (pObjIndex == NULL)
+    {
+        log_string(LOG_BUG, "create_object: NULL pObjIndex.");
+        exit(1);  // Abort if pObjIndex is invalid
+    }
 
-	obj = new_obj();
+    // Allocate memory for the new object
+    obj = new_obj();
 
-	obj->pIndexData = pObjIndex;
-	obj->in_room    = NULL;
-	obj->enchanted  = FALSE;
+    // Set initial values for object attributes
+    obj->pIndexData = pObjIndex;
+    obj->in_room    = NULL;
+    obj->enchanted  = FALSE;
+    obj->wear_loc   = -1;
 
-	obj->wear_loc   = -1;
+    // Purge any previously allocated memory for object attributes
+    if (obj->name) PURGE_DATA(obj->name);
+    if (obj->short_descr) PURGE_DATA(obj->short_descr);
+    if (obj->description) PURGE_DATA(obj->description);
+    if (obj->full_desc) PURGE_DATA(obj->full_desc);
+    if (obj->material) PURGE_DATA(obj->material);
+    if (obj->owner) PURGE_DATA(obj->owner);
 
-	PURGE_DATA( obj->name );
-	PURGE_DATA( obj->short_descr );
-	PURGE_DATA( obj->description );
-	PURGE_DATA( obj->full_desc );
-	PURGE_DATA( obj->material );
-	PURGE_DATA( obj->owner );
-	obj->name       = str_dup( pObjIndex->name );           /* OLC */
-	obj->short_descr    = str_dup( pObjIndex->short_descr );    /* OLC */
-	if(!IS_NULLSTR(pObjIndex->description))
-		CopyTo( obj->description, pObjIndex->description );
-	else
-		obj->description = str_dup("This object needs a long description.");
+    // Duplicate strings from pObjIndex, ensuring no NULL values
+    obj->name = str_dup(pObjIndex->name);
+    if (obj->name == NULL)
+    {
+        log_string(LOG_BUG, Format("create_object: Failed to duplicate name string for vnum %d", pObjIndex->vnum));
+        exit(1);
+    }
 
-	if(!IS_NULLSTR(pObjIndex->full_desc))
-		CopyTo( obj->full_desc, pObjIndex->full_desc );
-	else
-		obj->full_desc = str_dup("This object needs a full description.");
-	obj->material   = str_dup(pObjIndex->material);
-	obj->owner      = NULL;
-	obj->item_type  = pObjIndex->item_type;
-	obj->extra_flags    = pObjIndex->extra_flags;
-	obj->extra2     = pObjIndex->extra2;
-	obj->wear_flags = pObjIndex->wear_flags;
-	obj->value[0]   = pObjIndex->value[0];
-	obj->value[1]   = pObjIndex->value[1];
-	obj->value[2]   = pObjIndex->value[2];
-	obj->value[3]   = pObjIndex->value[3];
-	obj->value[4]   = pObjIndex->value[4];
-	obj->value[5]   = pObjIndex->value[5];
-	obj->weight     = pObjIndex->weight;
-	obj->condition  = pObjIndex->condition;
-	obj->quality    = pObjIndex->quality;
+    obj->short_descr = str_dup(pObjIndex->short_descr);
+    if (obj->short_descr == NULL)
+    {
+        log_string(LOG_BUG, Format("create_object: Failed to duplicate short description for vnum %d", pObjIndex->vnum));
+        exit(1);
+    }
 
-	obj->cost       = pObjIndex->cost;
-	obj->fetish_flags   = pObjIndex->fetish_flags;
-	obj->fetish_level   = pObjIndex->fetish_level;
-	obj->fetish_target  = pObjIndex->fetish_target;
+    // Set descriptions with fallback to default if NULL
+    CopyTo(obj->description, pObjIndex->description);
+    if (obj->description == NULL)
+    {
+        obj->description = str_dup("This object needs a long description.");
+    }
 
-	PURGE_DATA( obj->to_user_none );
-	CopyTo(obj->to_user_none,pObjIndex->to_user_none);
-	PURGE_DATA( obj->to_user_self );
-	CopyTo(obj->to_user_self, pObjIndex->to_user_self);
-	PURGE_DATA( obj->to_user_other );
-	CopyTo(obj->to_user_other, pObjIndex->to_user_other);
-	PURGE_DATA( obj->to_room_none );
-	CopyTo(obj->to_room_none, pObjIndex->to_room_none );
-	PURGE_DATA( obj->to_room_self );
-	CopyTo(obj->to_room_self, pObjIndex->to_room_self );
-	PURGE_DATA( obj->to_room_other );
-	CopyTo(obj->to_room_other, pObjIndex->to_room_other );
-	PURGE_DATA( obj->to_vict_other );
-	CopyTo( obj->to_vict_other, pObjIndex->to_vict_other );
-	PURGE_DATA( obj->to_room_used );
-	CopyTo( obj->to_room_used, pObjIndex->to_room_used );
-	PURGE_DATA( obj->to_user_used );
-	CopyTo( obj->to_user_used, pObjIndex->to_user_used );
-	obj->uses           = pObjIndex->uses;
-	obj->timer          = -1;
+    CopyTo(obj->full_desc, pObjIndex->full_desc);
+    if (obj->full_desc == NULL)
+    {
+        obj->full_desc = str_dup("This object needs a full description.");
+    }
 
-	/*
-	 * Mess with object properties.
-	 */
-	 switch ( obj->item_type )
-	 {
-	 default:
-		 log_string(LOG_BUG, Format("Read_object: vnum %d bad type.", pObjIndex->vnum ));
-		 break;
+    // Set other attributes
+    obj->material   = str_dup(pObjIndex->material);
+    obj->owner      = NULL;  // Not setting an owner
+    obj->item_type  = pObjIndex->item_type;
+    obj->extra_flags = pObjIndex->extra_flags;
+    obj->extra2     = pObjIndex->extra2;
+    obj->wear_flags = pObjIndex->wear_flags;
+    obj->value[0]   = pObjIndex->value[0];
+    obj->value[1]   = pObjIndex->value[1];
+    obj->value[2]   = pObjIndex->value[2];
+    obj->value[3]   = pObjIndex->value[3];
+    obj->value[4]   = pObjIndex->value[4];
+    obj->value[5]   = pObjIndex->value[5];
+    obj->weight     = pObjIndex->weight;
+    obj->condition  = pObjIndex->condition;
+    obj->quality    = pObjIndex->quality;
+    obj->cost       = pObjIndex->cost;
+    obj->fetish_flags = pObjIndex->fetish_flags;
+    obj->fetish_level = pObjIndex->fetish_level;
+    obj->fetish_target = pObjIndex->fetish_target;
 
-	 case ITEM_LIGHT:
-		 if (obj->value[2] == 999)
-			 obj->value[2] = -1;
-		 break;
+    // Copy additional user-related data
+    PURGE_DATA(obj->to_user_none);
+    CopyTo(obj->to_user_none, pObjIndex->to_user_none);
 
-		 /* ADD CONVERSION FROM LIQUIDS TO LIQUID OBJECTS HERE @@@@@ */
-	 case ITEM_DRINK_CON:
-		 pool = create_puddle_from_liq(liq_table[obj->value[2]].liq_name, OBJ_VNUM_POOL,
-				 obj->value[1]);
-		 obj->item_type = ITEM_CONTAINER;
-		 SET_BIT(obj->extra2, OBJ_WATERPROOF);
-		 obj->value[0] = obj->value[1]
-									* material_table[material_lookup(liq_table[obj->value[2]].liq_name)].weight;
-		 obj->value[1] = 0;
-		 obj->value[3] = obj->value[0];
-		 obj->value[2] = 0;
-		 obj_to_obj(pool, obj);
-		 break;
+    PURGE_DATA(obj->to_user_self);
+    CopyTo(obj->to_user_self, pObjIndex->to_user_self);
 
-	 case ITEM_FURNITURE:
-	 case ITEM_TRASH:
-	 case ITEM_CONTAINER:
-	 case ITEM_KEY:
-	 case ITEM_FOOD:
-	 case ITEM_BOAT:
-	 case ITEM_CORPSE_NPC:
-	 case ITEM_CORPSE_PC:
-	 case ITEM_FOUNTAIN:
-	 case ITEM_MAP:
-	 case ITEM_CLOTHING:
-	 case ITEM_PORTAL:
-	 case ITEM_TELEPHONE:
-		 break;
+    PURGE_DATA(obj->to_user_other);
+    CopyTo(obj->to_user_other, pObjIndex->to_user_other);
 
-	 case ITEM_TREASURE:
-	 case ITEM_RELIC:
-		 break;
+    PURGE_DATA(obj->to_room_none);
+    CopyTo(obj->to_room_none, pObjIndex->to_room_none);
 
-	 case ITEM_SCROLL:
-		 obj->value[0]  = number_fuzzy( obj->value[0] );
-		 break;
+    PURGE_DATA(obj->to_room_self);
+    CopyTo(obj->to_room_self, pObjIndex->to_room_self);
 
-	 case ITEM_WEAPON:
-		 break;
+    PURGE_DATA(obj->to_room_other);
+    CopyTo(obj->to_room_other, pObjIndex->to_room_other);
 
-	 case ITEM_ARMOR:
-		 obj->value[0] = number_fuzzy(2);
-		 break;
+    PURGE_DATA(obj->to_vict_other);
+    CopyTo(obj->to_vict_other, pObjIndex->to_vict_other);
 
-	 case ITEM_POTION:
-	 case ITEM_PILL:
-		 obj->value[0] = number_fuzzy( number_fuzzy( obj->value[0] ) );
-		 break;
+    PURGE_DATA(obj->to_room_used);
+    CopyTo(obj->to_room_used, pObjIndex->to_room_used);
 
-	 case ITEM_MONEY:
-	 case ITEM_AMMO:
-	 case ITEM_BOMB:
-		 break;
-	 }
+    PURGE_DATA(obj->to_user_used);
+    CopyTo(obj->to_user_used, pObjIndex->to_user_used);
 
-	 for (paf = pObjIndex->affected; paf != NULL; paf = paf->next)
-		 if ( paf->location == APPLY_SPELL_AFFECT )
-			 affect_to_obj(obj,paf);
+    obj->uses = pObjIndex->uses;
+    obj->timer = -1;
 
-	LINK_SINGLE(obj, next, object_list);
-	 pObjIndex->count++;
+    // Modify object properties based on item type
+    switch (obj->item_type)
+    {
+    default:
+        log_string(LOG_BUG, Format("create_object: vnum %d has an invalid item type.", pObjIndex->vnum));
+        break;
 
-	 return obj;
+    case ITEM_LIGHT:
+        if (obj->value[2] == 999)
+            obj->value[2] = -1;  // Handle special case for ITEM_LIGHT
+        break;
+
+    case ITEM_DRINK_CON:
+        pool = create_puddle_from_liq(liq_table[obj->value[2]].liq_name, OBJ_VNUM_POOL, obj->value[1]);
+        obj->item_type = ITEM_CONTAINER;
+        SET_BIT(obj->extra2, OBJ_WATERPROOF);
+        obj->value[0] = obj->value[1] * material_table[material_lookup(liq_table[obj->value[2]].liq_name)].weight;
+        obj->value[1] = 0;
+        obj->value[3] = obj->value[0];
+        obj->value[2] = 0;
+        obj_to_obj(pool, obj);  // Link the pool to the drink container
+        break;
+
+    case ITEM_FURNITURE:
+    case ITEM_TRASH:
+    case ITEM_CONTAINER:
+    case ITEM_KEY:
+    case ITEM_FOOD:
+    case ITEM_BOAT:
+    case ITEM_CORPSE_NPC:
+    case ITEM_CORPSE_PC:
+    case ITEM_FOUNTAIN:
+    case ITEM_MAP:
+    case ITEM_CLOTHING:
+    case ITEM_PORTAL:
+    case ITEM_TELEPHONE:
+        break;  // No special processing for these item types
+
+    case ITEM_TREASURE:
+    case ITEM_RELIC:
+        break;  // No special processing for these item types
+
+    case ITEM_SCROLL:
+        obj->value[0] = number_fuzzy(obj->value[0]);
+        break;
+
+    case ITEM_WEAPON:
+        break;  // No special processing for weapons
+
+    case ITEM_ARMOR:
+        obj->value[0] = number_fuzzy(2);  // Armor value adjustment
+        break;
+
+    case ITEM_POTION:
+    case ITEM_PILL:
+        obj->value[0] = number_fuzzy(number_fuzzy(obj->value[0]));
+        break;
+
+    case ITEM_MONEY:
+    case ITEM_AMMO:
+    case ITEM_BOMB:
+        break;  // No special processing for these item types
+    }
+
+    // Add any affects from pObjIndex to the new object
+    for (paf = pObjIndex->affected; paf != NULL; paf = paf->next)
+    {
+        if (paf->location == APPLY_SPELL_AFFECT)
+        {
+            affect_to_obj(obj, paf);
+        }
+    }
+
+    // Link the object into the global object list
+    LINK_SINGLE(obj, next, object_list);
+
+    // Increment the object count for the pObjIndex
+    pObjIndex->count++;
+
+    // Return the newly created object
+    return obj;
 }
 
 /* duplicate an object exactly -- except contents */
