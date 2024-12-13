@@ -829,50 +829,104 @@ void do_refuse(CHAR_DATA *ch, char *argument)
 	}
 }
 
+// void do_applicants(CHAR_DATA *ch, char *argument)
+// {
+// 	ORG_DATA *org;
+// 	ORGMEM_DATA *mem;
+
+// 	CheckCH(ch);
+
+// 	if(IS_NULLSTR(argument))
+// 	{
+// 		send_to_char("Syntax: applicants [organisation]\n\r", ch);
+// 		for(org = org_list; org; org = org->next)
+// 		{
+// 			send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
+// 		}
+// 		return;
+// 	}
+
+// 	if((org = org_lookup(argument)) == NULL)
+// 	{
+// 		send_to_char("No such organisation.\n\r", ch);
+// 		return;
+// 	}
+
+// 	if((mem = mem_lookup(org, ch->name)) == NULL && !IS_ADMIN(ch))
+// 	{
+// 		send_to_char("You don't even belong to that organisation!\n\r", ch);
+// 		return;
+// 	}
+
+// 	if(str_cmp(org->leader, ch->name) && !IS_ADMIN(ch) && !IS_SET(mem->auth_flags, AUTH_INDUCT))
+// 	{
+// 		send_to_char("You aren't in a position to see members of that organisation.\n\r", ch);
+// 		return;
+// 	}
+
+// 	if(!str_cmp(org->applicants, "None"))
+// 	{
+// 		send_to_char("There are currently no outstanding applications.\n\r", ch);
+// 	}
+// 	else
+// 	{
+// 		send_to_char("Currently applying to join the organisation are:\n\r", ch);
+// 		send_to_char(org->applicants, ch);
+// 	}
+// }
+
 void do_applicants(CHAR_DATA *ch, char *argument)
 {
-	ORG_DATA *org;
-	ORGMEM_DATA *mem;
+    ORG_DATA *org = NULL;
+    ORGMEM_DATA *mem = NULL;
 
-	CheckCH(ch);
+    // Validate input
+    CheckCH(ch);
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Syntax: applicants [organisation]\n\r", ch);
-		for(org = org_list; org; org = org->next)
-		{
-			send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
-		}
-		return;
-	}
+    if (IS_NULLSTR(argument))
+    {
+        send_to_char("Syntax: applicants [organisation]\n\r\n\r", ch);
+        send_to_char("[\tWWHO\tn] \tWOrganization Name\tn\n\r", ch);
+        
+        for (org = org_list; org != NULL; org = org->next)
+        {
+            send_to_char(Format("[%s] %s\n\r", org->who_name, org->name), ch);
+        }
+        return;
+    }
 
-	if((org = org_lookup(argument)) == NULL)
-	{
-		send_to_char("No such organisation.\n\r", ch);
-		return;
-	}
+    // Lookup organisation
+    org = org_lookup(argument);
+    if (org == NULL)
+    {
+        send_to_char("No such organisation.\n\r", ch);
+        return;
+    }
 
-	if((mem = mem_lookup(org, ch->name)) == NULL && !IS_ADMIN(ch))
-	{
-		send_to_char("You don't even belong to that organisation!\n\r", ch);
-		return;
-	}
+    // Check membership or administrative rights
+    mem = mem_lookup(org, ch->name);
+    if (mem == NULL && !IS_ADMIN(ch))
+    {
+        send_to_char("You don't even belong to that organisation!\n\r", ch);
+        return;
+    }
 
-	if(str_cmp(org->leader, ch->name) && !IS_ADMIN(ch) && !IS_SET(mem->auth_flags, AUTH_INDUCT))
-	{
-		send_to_char("You aren't in a position to see members of that organisation.\n\r", ch);
-		return;
-	}
+    if (str_cmp(org->leader, ch->name) && !IS_ADMIN(ch) && !IS_SET(mem->auth_flags, AUTH_INDUCT))
+    {
+        send_to_char("You aren't in a position to see members of that organisation.\n\r", ch);
+        return;
+    }
 
-	if(!str_cmp(org->applicants, "None"))
-	{
-		send_to_char("There are currently no outstanding applications.\n\r", ch);
-	}
-	else
-	{
-		send_to_char("Currently applying to join the organisation are:\n\r", ch);
-		send_to_char(org->applicants, ch);
-	}
+    // Display applicants
+    if (IS_NULLSTR(org->applicants) || !str_cmp(org->applicants, "None"))
+    {
+        send_to_char("There are currently no outstanding applications.\n\r", ch);
+    }
+    else
+    {
+        send_to_char("Currently applying to join the organisation are:\n\r", ch);
+        send_to_char(org->applicants, ch);
+    }
 }
 
 void do_induct(CHAR_DATA *ch, char *argument)

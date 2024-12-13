@@ -2,6 +2,26 @@
 <changes>
   <change>
     <imm>Rayal</imm>
+    <date>13-Dec-2024</date>
+    <text>Fixed bug in 'hedit_races'.  No longer causes crashes.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>27-Nov-2024</date>
+    <text>Formatted and sorted alphabetically do_areas and do_alist.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>25-Nov-2024</date>
+    <text>Adding sorting for the index command.  It now sorts by the topic alphabetically.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>22-Nov-2024</date>
+    <text>Added an index command for help files.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
     <date>11-Nov-2024</date>
     <text>Fixed several compiler warnings to improve the code readability.</text>
   </change>
