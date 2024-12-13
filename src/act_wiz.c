@@ -5930,37 +5930,43 @@ void do_org(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if(!str_prefix(arg, "create"))
+	if (!str_prefix(arg, "create"))
 	{
-		argument = one_argument(argument, arg);
-		if(IS_NULLSTR(arg) || IS_NULLSTR(argument))
-		{
-			send_to_char("What do you want to name the organisation?\n\r", ch);
-			return;
-		}
+	    argument = one_argument(argument, arg);
+	    if (IS_NULLSTR(arg) || IS_NULLSTR(argument))
+	    {
+	        send_to_char("What do you want to name the organisation?\n\r", ch);
+	        return;
+	    }
 
-		if(strlen(argument) > 5)
-		{
-			send_to_char("The who name can only be 5 characters long.\n\r", ch);
-			return;
-		}
+	    if (strlen(arg) > 12) // Check if the name exceeds 12 characters
+	    {
+	        send_to_char("The organization name can only be up to 12 characters long.\n\r", ch);
+	        return;
+	    }
 
-		org = new_org();
-		PURGE_DATA(org->name);
-		PURGE_DATA(org->who_name);
-		PURGE_DATA(org->file_name);
-		org->name = str_dup(arg);
-		org->who_name = str_dup(argument);
-		org->file_name = str_dup(Format("%ld.org", (long)current_time));
-		org->step_point = 0;
-		org->type = 0;
+	    if (strlen(argument) > 3) // Existing check for who_name
+	    {
+	        send_to_char("The who name can only be 3 characters long.\n\r", ch);
+	        return;
+	    }
 
-		LINK_SINGLE(org, next, org_list);
+	    org = new_org();
+	    PURGE_DATA(org->name);
+	    PURGE_DATA(org->who_name);
+	    PURGE_DATA(org->file_name);
+	    org->name = str_dup(arg);
+	    org->who_name = str_dup(argument);
+	    org->file_name = str_dup(Format("%ld.org", (long)current_time));
+	    org->step_point = 0;
+	    org->type = 0;
 
-		act("You create the $t organisation.", ch, org->name, NULL, TO_CHAR, 1);
-		fwrite_org(org);
-		save_org_list();
-		return;
+	    LINK_SINGLE(org, next, org_list);
+
+	    act("You create the $t organisation.", ch, org->name, NULL, TO_CHAR, 1);
+	    fwrite_org(org);
+	    save_org_list();
+	    return;
 	}
 	else if(!str_prefix(arg, "list"))
 	{
@@ -6026,16 +6032,22 @@ void do_org(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	else if(!str_prefix(arg, "name"))
+	else if (!str_prefix(arg, "name"))
 	{
-		if(IS_NULLSTR(argument))
-		{
-			send_to_char("You need to supply a new name.\n\r", ch);
-			return;
-		}
+	    if (IS_NULLSTR(argument))
+	    {
+	        send_to_char("You need to supply a new name.\n\r", ch);
+	        return;
+	    }
 
-		PURGE_DATA(org->name);
-		org->name = str_dup(argument);
+	    if (strlen(argument) > 12) // Enforce the 12-character limit
+	    {
+	        send_to_char("The organization name can only be up to 12 characters long.\n\r", ch);
+	        return;
+	    }
+
+	    PURGE_DATA(org->name);
+	    org->name = str_dup(argument);
 	}
 
 	else if(!str_prefix(arg, "whoname"))
@@ -6045,6 +6057,13 @@ void do_org(CHAR_DATA *ch, char *argument)
 			send_to_char("You need to supply a new who name.\n\r", ch);
 			return;
 		}
+
+	    if (strlen(argument) > 3) // Enforce the 12-character limit
+	    {
+	        send_to_char("The organization who name can only be up to 3 characters long.\n\r", ch);
+	        return;
+	    }
+
 
 		PURGE_DATA(org->who_name);
 		org->who_name = str_dup(argument);
