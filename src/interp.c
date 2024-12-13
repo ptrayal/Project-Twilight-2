@@ -222,6 +222,7 @@ const	struct	cmd_type	cmd_table	[] =
 		{	"ignore",		do_ignore,		P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
 		{	"incumbents",	do_incumbent,	P_REST,		0,	L_NRM,	1,	B,	0 },
 		{	"induct",		do_induct,		P_SLEEP,	0,	L_NRM,	1,	A|B|E,	0 },
+		{   "index",        do_index,       P_DEAD,     0,  L_NRM,  1,  A|B|E,  0 },
 		{	"influences",	do_influences,	P_REST,		0,	L_NRM,	1,	B|H,	0 },
 		{	"inventory",	do_inventory,	P_DEAD,		0,	L_NRM,	1,	B|E,	0 },
 		{	"investigate",	do_investigate,	P_STAND,	0,	L_NRM,	1,	B|H,	0 },

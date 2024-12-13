@@ -626,14 +626,15 @@ extern SURVEY_DATA *survey_last;
 /*
  * Structure for the stock market.
  */
-struct stocks {
-    char	*name;
-    char	*ticker;
-    long	last_change;
-    int		cost;
-    int		phase;
-    int		upordown;
-    STOCKS	*next;
+struct stocks
+{
+    char    *name;
+    char    *ticker;
+    long    last_change;
+    int     cost;
+    int     phase;
+    int     upordown;
+    STOCKS  *next;
 };
 
 extern STOCKS *stock_list;
@@ -642,12 +643,13 @@ extern STOCKS *stock_list;
 /*
  * Structure for Newspapers
  */
-struct newspaper {
-    char	*name;
-    sh_int	on_stands;
-    long	articles[MAX_ARTICLES];
-    int		cost;
-    NEWSPAPER	*next;
+struct newspaper
+{
+    char    *name;
+    sh_int  on_stands;
+    long    articles[MAX_ARTICLES];
+    int     cost;
+    NEWSPAPER   *next;
 };
 
 extern NEWSPAPER *newspapers;

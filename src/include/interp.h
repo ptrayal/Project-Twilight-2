@@ -244,6 +244,7 @@ DECLARE_DO_FUN(	do_immtalk	);
 DECLARE_DO_FUN( do_incognito	);
 DECLARE_DO_FUN( do_incumbent	);
 DECLARE_DO_FUN( do_induct	);
+DECLARE_DO_FUN( do_index );
 DECLARE_DO_FUN( do_influences	);
 DECLARE_DO_FUN( do_interrupt	);
 DECLARE_DO_FUN( do_instruct	);

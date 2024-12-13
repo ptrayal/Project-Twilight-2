@@ -28,11 +28,7 @@
  **************************************************************************/
  
 
-#if defined(Macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
-#endif
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -560,45 +556,51 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 		percentages.
  Called by:	string_add(string.c)
  ****************************************************************************/
-char *first_arg( char *argument, char *arg_first, bool fCase )
+char *first_arg(char *argument, char *arg_first, bool fCase)
 {
-	char cEnd;
+    char cEnd;
 
-	while ( *argument == ' ' )
-		argument++;
+    // Skip leading spaces
+    while (*argument == ' ')
+        argument++;
 
-	cEnd = ' ';
-	if ( *argument == '\'' || *argument == '"'
-		|| *argument == '%'  || *argument == '(' )
-	{
-		if ( *argument == '(' )
-		{
-			cEnd = ')';
-			argument++;
-		}
-		else cEnd = *argument++;
-	}
+    cEnd = ' ';
+    if (*argument == '\'' || *argument == '"' || *argument == '%' || *argument == '(')
+    {
+        if (*argument == '(')
+        {
+            cEnd = ')';
+            argument++;
+        }
+        else
+            cEnd = *argument++;
+    }
 
-	while ( *argument != '\0' )
-	{
-		if ( *argument == cEnd )
-		{
-			argument++;
-			break;
-		}
-		if ( fCase ) *arg_first = LOWER(*argument);
-		else *arg_first = *argument;
-		arg_first++;
-		argument++;
-	}
-	*arg_first = '\0';
+    while (*argument != '\0')
+    {
+        if (*argument == cEnd)
+        {
+            argument++;
+            break;
+        }
 
-	while ( *argument == ' ' )
-		argument++;
+        if (fCase)
+            *arg_first = tolower((unsigned char)*argument);
+        else
+            *arg_first = *argument;
 
-	return argument;
+        arg_first++;
+        argument++;
+    }
+
+    *arg_first = '\0';
+
+    // Skip trailing spaces
+    while (*argument == ' ')
+        argument++;
+
+    return argument;
 }
-
 
 /*
  * Used in olc_act.c for aedit_builders.

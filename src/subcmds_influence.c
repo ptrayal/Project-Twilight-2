@@ -1542,28 +1542,57 @@ int newspaper_commands(CHAR_DATA *ch, char *argument)
 
 int newspaper_new(CHAR_DATA *ch, char *argument)
 {
-	NEWSPAPER *news = new_newspaper();
-	char arg[MIL]={'\0'};
+    NEWSPAPER *news;
+    char arg[MIL] = {'\0'};
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn", ch);
-		return FALSE;
-	}
+    // Check if the argument is empty or null
+    if (IS_NULLSTR(argument))
+    {
+        send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
+        return FALSE;
+    }
 
-	argument = one_argument(argument, arg);
-	if(!is_number(arg))
-	{
-		send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn", ch);
-		return FALSE;
-	}
+    // Parse the cost argument
+    argument = one_argument(argument, arg);
+    if (!is_number(arg))
+    {
+        send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
+        return FALSE;
+    }
 
-	news->cost = atoi(arg);
-	news->name = str_dup(argument);
-	news->next = paper_list;
-	paper_list = news;
-	send_to_char(Format("Paper '%s' created.\n\r", news->name), ch);
-	return TRUE;
+    int cost = atoi(arg);
+    if (cost < 0)    // Validate cost
+    {
+        send_to_char("The cost of the newspaper must be a non-negative integer.\n\r", ch);
+        return FALSE;
+    }
+
+    // Ensure the name is provided
+    if (IS_NULLSTR(argument))
+    {
+        send_to_char("You must specify a name for the newspaper.\n\r", ch);
+        return FALSE;
+    }
+
+    // Create and initialize the new newspaper
+    news = new_newspaper();
+    if (!news)
+    {
+        send_to_char("Error: Failed to create a new newspaper. Memory allocation failed.\n\r", ch);
+        return FALSE;
+    }
+
+    // Set the newspaper properties
+    news->cost = cost;
+    news->name = str_dup(argument);  // Duplicate the name to ensure proper memory management
+
+    // Link the new newspaper to the list
+    news->next = paper_list;
+    paper_list = news;
+
+    // Confirmation message
+    send_to_char(Format("Paper '%s' created with a cost of %d cents.\n\r", news->name, news->cost), ch);
+    return TRUE;
 }
 
 int newspaper_list(CHAR_DATA *ch, char *argument)

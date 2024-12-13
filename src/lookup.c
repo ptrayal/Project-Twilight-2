@@ -28,11 +28,7 @@
  **************************************************************************/
  
 
-#if defined(Macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
-#endif
 #include <time.h>
 #include "twilight.h"
 #include "tables.h"

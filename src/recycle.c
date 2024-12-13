@@ -28,13 +28,9 @@
  **************************************************************************/
  
  
-#if defined(Macintosh)
-#include <types.h>
-#include <time.h>
-#else
 #include <sys/types.h>
 #include <sys/time.h>
-#endif
+#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -103,64 +99,103 @@ BAN_DATA		*ban_list;
 /* Start all the fun stuff */
 ACTOR_DATA *new_actor()
 {
-	ACTOR_DATA *actor;
+    ACTOR_DATA *actor = NULL;
 
-	ALLOC_DATA(actor, ACTOR_DATA, 1);
+    // Allocate memory with proper validation
+    ALLOC_DATA(actor, ACTOR_DATA, 1);
 
-	actor->mob = 0;
+    if (!actor)
+    {
+        log_string(LOG_ERR, "Memory allocation failed for new actor in function %s at line %d", __FUNCTION__, __LINE__);
+        return NULL; // Return NULL on failure
+    }
 
-	return actor;
+    // Initialize the actor's fields
+    actor->mob = 0;
+    actor->next = NULL; // Ensure all fields are initialized
+
+    log_string(LOG_GAME, "Created a new actor at address %p in function %s at line %d", (void *)actor, __FUNCTION__, __LINE__);
+    return actor;
 }
 
 void free_actor(ACTOR_DATA *actor)
 {
-	Escape(actor);
+    // Validate input
+    if (!actor)
+    {
+        log_string(LOG_ERR, "Attempted to free a NULL actor in function %s at line %d", __FUNCTION__, __LINE__);
+        return;
+    }
 
-	actor->next = NULL;
-	actor->mob = 0;
-	PURGE_DATA(actor);
+    // Clear associations (e.g., next pointers, other linked data)
+    actor->next = NULL;
+
+    // Clear other fields (e.g., mob field) to ensure no dangling references
+    actor->mob = 0;
+
+    log_string(LOG_GAME, "Freeing actor at address %p in function %s at line %d", (void *)actor, __FUNCTION__, __LINE__);
+
+    // Free the memory
+    PURGE_DATA(actor);
 }
-
 
 HELP_DATA *new_help()
 {
-	HELP_DATA *help;
+    HELP_DATA *help = NULL;
 
-	ALLOC_DATA(help, HELP_DATA, 1);
+    // Allocate memory for HELP_DATA
+    ALLOC_DATA(help, HELP_DATA, 1);
 
-	help->level = 0;
+    if (!help)
+    {
+        log_string(LOG_ERR, "new_help: Memory allocation failed.");
+        return NULL;
+    }
 
-	help->clans = NULL;
-	help->description = NULL;
-	help->keyword = NULL;
-	help->quote = NULL;
-	help->races = NULL;
-	help->see_also = NULL;
-	help->syntax = NULL;
-	help->topic = NULL;
-	help->unformatted = NULL;
-	help->website = NULL;
+    // Initialize all members to safe default values
+    help->level = 0;
 
-	return help;
+    help->clans = NULL;
+    help->description = NULL;
+    help->keyword = NULL;
+    help->quote = NULL;
+    help->races = NULL;
+    help->see_also = NULL;
+    help->syntax = NULL;
+    help->topic = NULL;
+    help->unformatted = NULL;
+    help->website = NULL;
+
+    return help;
 }
 
 void free_help(HELP_DATA *help)
 {
-	Escape(help);
+    if (!help)
+    {
+        log_string(LOG_ERR, "free_help: Attempted to free a NULL HELP_DATA pointer.");
+        return;
+    }
 
-	PURGE_DATA( help->clans );
-	PURGE_DATA( help->description );
-	PURGE_DATA( help->keyword );
-	PURGE_DATA( help->quote	);
-	PURGE_DATA( help->races	);
-	PURGE_DATA( help->see_also );
-	PURGE_DATA( help->syntax );
-	PURGE_DATA( help->topic	);
-	PURGE_DATA( help->unformatted );
-	PURGE_DATA( help->website );
+    // Free all dynamically allocated members
+    PURGE_DATA(help->clans);
+    PURGE_DATA(help->description);
+    PURGE_DATA(help->keyword);
+    PURGE_DATA(help->quote);
+    PURGE_DATA(help->races);
+    PURGE_DATA(help->see_also);
+    PURGE_DATA(help->syntax);
+    PURGE_DATA(help->topic);
+    PURGE_DATA(help->unformatted);
+    PURGE_DATA(help->website);
 
-	help->level = 0;
-	PURGE_DATA( help );
+    // Reset fields to default values to avoid accidental reuse
+    help->level = 0;
+
+    // Free the HELP_DATA structure itself
+    PURGE_DATA(help);
+
+    log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
 }
 
 
@@ -169,188 +204,384 @@ NEWSPAPER *new_newspaper()
     NEWSPAPER *paper;
     int i;
 
-    ALLOC_DATA(paper, NEWSPAPER, 1); // Assuming ALLOC_DATA is a macro for memory allocation.
-
+    // Allocate memory for the newspaper
+    ALLOC_DATA(paper, NEWSPAPER, 1);
     if (!paper)
     {
-        log_string(LOG_ERR, "Failed to allocate memory for new newspaper.");
-        return NULL;  // Check for memory allocation failure.
+        log_string(LOG_ERR, "new_newspaper: Failed to allocate memory for NEWSPAPER.");
+        return NULL;  // Return NULL on memory allocation failure
     }
 
+    // Initialize all fields to safe defaults
     paper->name = NULL;
     paper->cost = 0;
     paper->on_stands = 0;
 
-    // Initialize articles with -1 to indicate no articles are assigned.
     for (i = 0; i < MAX_ARTICLES; i++)
     {
-        paper->articles[i] = -1;
+        paper->articles[i] = -1;  // Initialize articles to default invalid values
     }
+    paper->next = NULL;
 
-    paper->next = NULL; // Ensure the next pointer is initialized to NULL.
-
+    log_string(LOG_GAME, "new_newspaper: Successfully created new newspaper.");
     return paper;
 }
 
+
 void free_newspaper(NEWSPAPER *paper)
 {
-    Escape(paper);
+    // Validate input
+    if (!paper)
+    {
+        log_string(LOG_ERR, "free_newspaper: Attempted to free a NULL newspaper.");
+        return;
+    }
 
-    PURGE_DATA(paper->name);   // Clean up string data.
+    // Log before freeing resources
+    log_string(LOG_GAME, "free_newspaper: Freeing newspaper at memory location %p.", (void *)paper);
+
+    // Free dynamically allocated memory for the name
+    if (paper->name)
+    {
+        PURGE_DATA(paper->name);
+        log_string(LOG_GAME, "free_newspaper: Freed 'name' field.");
+    }
+
+    // Reset other fields to safe defaults
     paper->cost = 0;
     paper->on_stands = 0;
 
-    // Properly free the articles (if necessary, depending on how they are allocated).
     for (int i = 0; i < MAX_ARTICLES; i++)
     {
-        if (paper->articles[i] != -1)
-        {
-            // Assuming articles are dynamically allocated, we would free them here.
-            // In this case, we assume they are just indexes, so nothing further is required.
-        }
+        paper->articles[i] = -1;  // Reset articles to "unassigned" state
     }
 
-    PURGE_DATA(paper); // Free the newspaper object.
+    // Log before final deallocation
+    log_string(LOG_GAME, "free_newspaper: Finalizing deallocation of newspaper at %p.", (void *)paper);
+
+    // Free the newspaper structure itself
+    PURGE_DATA(paper);
 }
 
 NOTE_DATA *new_note()
 {
-	NOTE_DATA *note;
+    NOTE_DATA *note = NULL;
 
-	ALLOC_DATA(note, NOTE_DATA, 1);
+    // Allocate memory with proper validation
+    ALLOC_DATA(note, NOTE_DATA, 1);
 
-	note->race = 0;
-	note->successes = 1;
-	note->type = 0;
+    if (!note)
+    {
+        log_string(LOG_ERR, "Memory allocation failed for new note in function %s at line %d", __FUNCTION__, __LINE__);
+        return NULL; // Return NULL on failure
+    }
 
-	note->date = NULL;
-	note->sender = NULL;
-	note->subject = NULL;
-	note->text = NULL;
-	note->to_list = NULL;
+    // Initialize all fields
+    note->type = NOTE_NOTE; // Default type
+    note->race = 0;
+    note->successes = 0;
 
-	return note;
+    note->date = NULL;
+    note->sender = NULL;
+    note->subject = NULL;
+    note->text = NULL;
+    note->to_list = NULL;
+
+    note->date_stamp = time(NULL); // Initialize timestamp
+    note->next = NULL;
+
+    log_string(LOG_GAME, "Created a new note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
+    return note;
 }
 
 void free_note(NOTE_DATA *note)
 {
-	Escape(note);
+    // Validate input
+    if (!note)
+    {
+        log_string(LOG_ERR, "Attempted to free a NULL note in function %s at line %d", __FUNCTION__, __LINE__);
+        return;
+    }
 
-	PURGE_DATA( note->date    );
-	PURGE_DATA( note->sender  );
-	PURGE_DATA( note->subject );
-	PURGE_DATA( note->text    );
-	PURGE_DATA( note->to_list );
+    log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
 
-	PURGE_DATA( note );
+    // Clear dynamically allocated fields
+    PURGE_DATA(note->date);
+    PURGE_DATA(note->sender);
+    PURGE_DATA(note->subject);
+    PURGE_DATA(note->text);
+    PURGE_DATA(note->to_list);
+
+    // Clear other fields for safety
+    note->type = 0;
+    note->race = 0;
+    note->successes = 0;
+    note->date_stamp = 0;
+    note->next = NULL;
+
+    // Free the note structure
+    PURGE_DATA(note);
 }
 
 
 BAN_DATA *new_ban(void)
 {
-	BAN_DATA *ban;
+    BAN_DATA *ban = NULL;
 
-	ALLOC_DATA(ban, BAN_DATA, 1);
+    // Allocate memory and validate
+    ALLOC_DATA(ban, BAN_DATA, 1);
+    if (!ban)
+    {
+        log_string(LOG_ERR, "Memory allocation failed for new ban in function %s at line %d", __FUNCTION__, __LINE__);
+        return NULL;
+    }
 
-	ban->name = NULL;
-	ban->ban_flags = 0;
-	ban->level = 0;
+    // Initialize all fields
+    ban->name = NULL;
+    ban->ban_flags = 0;
+    ban->level = 0;
+    ban->next = NULL;
 
-	return ban;
+    log_string(LOG_GAME, "Created new ban entry at address %p in function %s at line %d", (void *)ban, __FUNCTION__, __LINE__);
+    return ban;
 }
 
 void free_ban(BAN_DATA *ban)
 {
-	Escape(ban);
+    // Validate input
+    if (!ban)
+    {
+        log_string(LOG_ERR, "Attempted to free a NULL ban in function %s at line %d", __FUNCTION__, __LINE__);
+        return;
+    }
 
-	PURGE_DATA(ban->name);
+    log_string(LOG_GAME, "Freeing ban entry at address %p in function %s at line %d", (void *)ban, __FUNCTION__, __LINE__);
 
-	PURGE_DATA(ban);
+    // Clear dynamically allocated fields
+    PURGE_DATA(ban->name);
+
+    // Clear other fields for safety
+    ban->ban_flags = 0;
+    ban->level = 0;
+    ban->next = NULL;
+
+    // Free the ban structure
+    PURGE_DATA(ban);
 }
-
 
 DESCRIPTOR_DATA *new_descriptor(void)
 {
-	DESCRIPTOR_DATA *d;
+    DESCRIPTOR_DATA *d = NULL;
 
-	ALLOC_DATA(d, DESCRIPTOR_DATA, 1);
+    // Allocate memory for the descriptor
+    ALLOC_DATA(d, DESCRIPTOR_DATA, 1);
+    if (!d)
+    {
+        log_string(LOG_ERR, "Memory allocation failed for new descriptor in function %s at line %d", __FUNCTION__, __LINE__);
+        return NULL;
+    }
 
-	d->connected		= CON_GET_NAME;
-	d->host				= NULL;
-	d->pEdit			= NULL;
-	d->pString			= NULL;
-	d->showstr_head		= NULL;
-	d->showstr_point	= NULL;
-	d->outsize			= 2000;
-	d->editor			= 0;
-	d->descriptor		= 0;
-	d->fcommand			= FALSE;
-	d->repeat			= 0;
-	d->outtop			= 0;
-	d->pProtocol			= NULL;
-	ALLOC_DATA(d->outbuf, char, d->outsize);
+    // Initialize fields with default values
+    d->connected = CON_GET_NAME;
+    d->host = NULL;
+    d->pEdit = NULL;
+    d->pString = NULL;
+    d->showstr_head = NULL;
+    d->showstr_point = NULL;
+    d->outsize = 2000;
+    d->editor = 0;
+    d->descriptor = -1; // -1 to indicate invalid/unused descriptor
+    d->fcommand = FALSE;
+    d->repeat = 0;
+    d->outtop = 0;
+    d->pProtocol = NULL;
+    memset(d->inbuf, 0, sizeof(d->inbuf));
+    memset(d->incomm, 0, sizeof(d->incomm));
+    memset(d->inlast, 0, sizeof(d->inlast));
 
-	return d;
+    // Allocate memory for the output buffer
+    ALLOC_DATA(d->outbuf, char, d->outsize);
+    if (!d->outbuf)
+    {
+        log_string(LOG_ERR, "Memory allocation failed for descriptor output buffer in function %s at line %d", __FUNCTION__, __LINE__);
+        PURGE_DATA(d);
+        return NULL;
+    }
+
+    log_string(LOG_GAME, "Created new descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
+    return d;
 }
 
 void free_descriptor(DESCRIPTOR_DATA *d)
 {
-	Escape(d);
+    // Validate the input
+    if (!d)
+    {
+        log_string(LOG_ERR, "Attempted to free a NULL descriptor in function %s at line %d", __FUNCTION__, __LINE__);
+        return;
+    }
 
-	PURGE_DATA(d->host );
-	PURGE_DATA(d->pEdit);
-	PURGE_DATA(d->pString);
-	PURGE_DATA(d->outbuf );
-	PURGE_DATA(d->showstr_head );
-	PURGE_DATA(d->showstr_point);
-	PURGE_DATA(d);
+    log_string(LOG_GAME, "Freeing descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
+
+    // Clear dynamically allocated fields
+    PURGE_DATA(d->host);
+    PURGE_DATA(d->pEdit);
+    PURGE_DATA(d->pString);
+    PURGE_DATA(d->outbuf);
+    PURGE_DATA(d->showstr_head);
+    PURGE_DATA(d->showstr_point);
+
+    // Clear other fields for safety
+    d->connected = -1; // Reset to an invalid state
+    d->descriptor = -1;
+    d->fcommand = FALSE;
+    d->repeat = 0;
+    d->outtop = 0;
+    d->outsize = 0;
+    d->pProtocol = NULL;
+    memset(d->inbuf, 0, sizeof(d->inbuf));
+    memset(d->incomm, 0, sizeof(d->incomm));
+    memset(d->inlast, 0, sizeof(d->inlast));
+
+    // Finally, free the descriptor structure itself
+    PURGE_DATA(d);
+
+    log_string(LOG_GAME, "Descriptor successfully freed in function %s at line %d", __FUNCTION__, __LINE__);
 }
 
 
 GEN_DATA *new_gen_data(void)
 {
-	GEN_DATA *gen;
+    GEN_DATA *gen;
 
-	ALLOC_DATA(gen, GEN_DATA, 1);
+    // Attempt to allocate memory for GEN_DATA
+    ALLOC_DATA(gen, GEN_DATA, 1);
+    if (!gen)
+    {
+        log_string(LOG_ERR, "new_gen_data: Failed to allocate memory for GEN_DATA.");
+        return NULL;
+    }
 
-	gen->freebies	= 0;
-	gen->points_chosen	= 0;
-	gen->virtue_dots	= 0;
-	return gen;
+    // Initialize fields to default values
+    gen->freebies = 0;
+    gen->points_chosen = 0;
+    gen->virtue_dots = 0;
+
+    for (int i = 0; i < MAX_SKILL; i++)
+    {
+        gen->skill_chosen[i] = 0; // Default skill selection to 0
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        gen->stat_dots[i] = 0;  // Default stat dots to 0
+        gen->skill_dots[i] = 0; // Default skill dots to 0
+    }
+
+    gen->next = NULL; // Clear any links to other GEN_DATA structures
+
+    log_string(LOG_GAME, "new_gen_data: Successfully created a new GEN_DATA instance at %p.", (void *)gen);
+    return gen;
 }
 
 void free_gen_data(GEN_DATA *gen)
 {
-	Escape(gen);
-	PURGE_DATA(gen);
+    // Validate input
+    if (!gen)
+    {
+        log_string(LOG_ERR, "free_gen_data: Attempted to free a NULL GEN_DATA.");
+        return;
+    }
+
+    // Log the operation
+    log_string(LOG_GAME, "free_gen_data: Freeing GEN_DATA at memory location %p.", (void *)gen);
+
+    // Reset all fields to safe defaults
+    gen->freebies = 0;
+    gen->points_chosen = 0;
+    gen->virtue_dots = 0;
+
+    for (int i = 0; i < MAX_SKILL; i++)
+    {
+        gen->skill_chosen[i] = 0; // Clear skill selection
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        gen->stat_dots[i] = 0;  // Clear stat dots
+        gen->skill_dots[i] = 0; // Clear skill dots
+    }
+
+    gen->next = NULL; // Clear any linkage to other GEN_DATA structures
+
+    // Free the GEN_DATA structure itself
+    PURGE_DATA(gen);
+
+    log_string(LOG_GAME, "free_gen_data: Successfully freed GEN_DATA.");
 }
+
 
 
 QUEST_DATA *new_quest()
 {
-	QUEST_DATA *quest;
+    QUEST_DATA *quest;
 
-	ALLOC_DATA(quest, QUEST_DATA, 1);
+    // Attempt to allocate memory
+    ALLOC_DATA(quest, QUEST_DATA, 1);
+    if (!quest)
+    {
+        log_string(LOG_ERR, "new_quest: Memory allocation failed for QUEST_DATA.");
+        return NULL;
+    }
 
-	quest->quest_flags  = 0;
-	quest->time_limit	= 0;
-	quest->quest_type	= 0;
-	quest->state	= 0;
+    // Initialize fields to default values
+    quest->quest_flags = 0;
+    quest->time_limit = 0;
+    quest->quest_type = Q_NONE; // Default quest type
+    quest->state = 0;
 
-	return quest;
+    quest->victim = NULL;
+    quest->aggressor = NULL;
+    quest->questor = NULL;
+    quest->obj = NULL;
+    quest->next = NULL;
+
+    log_string(LOG_GAME, "new_quest: Successfully created new QUEST_DATA instance at %p.", (void *)quest);
+    return quest;
 }
 
 void free_quest(QUEST_DATA *quest)
 {
-	Escape(quest);
+    // Validate input
+    if (!quest)
+    {
+        log_string(LOG_ERR, "free_quest: Attempted to free a NULL QUEST_DATA.");
+        return;
+    }
 
-	quest->quest_flags  = 0;
-	quest->time_limit	= 0;
-	quest->quest_type	= 0;
-	quest->state	= 0;
-	quest->obj		= NULL;
-	PURGE_DATA(quest);
+    log_string(LOG_GAME, "free_quest: Freeing QUEST_DATA at memory location %p.", (void *)quest);
+
+    // Clear associations to other structures
+    quest->quest_flags = 0;
+    quest->time_limit = 0;
+    quest->quest_type = Q_NONE; // Reset quest type
+    quest->state = 0;
+
+    // Nullify pointers to prevent accidental usage
+    quest->victim = NULL;
+    quest->aggressor = NULL;
+    quest->questor = NULL;
+    quest->obj = NULL;
+    quest->next = NULL;
+
+    // Free the structure itself
+    PURGE_DATA(quest);
+
+    log_string(LOG_GAME, "free_quest: Successfully freed QUEST_DATA.");
 }
+
+
+// THIS IS WHERE I LEFT OFF REFACTORING CODE
 
 
 REACT_DATA *new_react_data()
@@ -616,30 +847,68 @@ void free_plot(PLOT_DATA *plot)
 
 EXTRA_DESCR_DATA *new_extra_descr(void)
 {
-	EXTRA_DESCR_DATA *ed;
+    EXTRA_DESCR_DATA *ed;
 
-	ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+    // Attempt to allocate memory
+    ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+    if (!ed)
+    {
+        log_string(LOG_ERR, "new_extra_descr: Memory allocation failed for EXTRA_DESCR_DATA.");
+        return NULL;
+    }
 
-	ed->keyword = NULL;
-	ed->description = NULL;
-	ed->timer = 0;
-	ed->ability = 0;
-	ed->attribute = 0;
-	ed->difficulty = 0;
-	ed->successes = 0;
-	return ed;
+    // Initialize fields
+    ed->keyword = NULL;
+    ed->description = NULL;
+    ed->timer = 0;
+    ed->ability = 0;
+    ed->attribute = 0;
+    ed->difficulty = 0;
+    ed->successes = 0;
+    ed->next = NULL;
+
+    log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
+    return ed;
 }
 
 void free_extra_descr(EXTRA_DESCR_DATA *ed)
 {
+    // Validate input
+    if (!ed)
+    {
+        log_string(LOG_ERR, "free_extra_descr: Attempted to free a NULL EXTRA_DESCR_DATA.");
+        return;
+    }
 
-	Escape(ed);
+    log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
 
-	PURGE_DATA(ed->keyword);
-	PURGE_DATA(ed->description);
-	PURGE_DATA(ed);
+    // Clear dynamically allocated strings
+    if (ed->keyword)
+    {
+        PURGE_DATA(ed->keyword);
+        log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
+    }
+    if (ed->description)
+    {
+        PURGE_DATA(ed->description);
+        log_string(LOG_GAME, "free_extra_descr: Cleared description.");
+    }
+
+    // Reset all fields to avoid dangling references
+    ed->keyword = NULL;
+    ed->description = NULL;
+    ed->timer = 0;
+    ed->ability = 0;
+    ed->attribute = 0;
+    ed->difficulty = 0;
+    ed->successes = 0;
+    ed->next = NULL;
+
+    // Free the structure
+    PURGE_DATA(ed);
+
+    log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
 }
-
 
 COMBAT_DATA *new_combat_move(void)
 {
@@ -684,95 +953,117 @@ void free_affect(AFFECT_DATA *af)
 
 OBJ_DATA *new_obj(void)
 {
-	OBJ_DATA *obj;
+    OBJ_DATA *obj;
 
-	ALLOC_DATA(obj, OBJ_DATA, 1);
+    ALLOC_DATA(obj, OBJ_DATA, 1);
+    if (!obj) // Safety check
+    {
+        log_string(LOG_ERR, "Failed to allocate memory for new OBJ_DATA.");
+        return NULL;
+    }
 
-	obj->BUILDER_MODE	= 0;
-	obj->condition		= 100;
-	obj->cost			= 0;
-	obj->description	= NULL;
-	obj->enchanted		= FALSE;
-	obj->extra2			= 0;
-	obj->extra_flags	= 0;
-	obj->fetish_flags	= 0;
-	obj->fetish_level	= 0;
-	obj->fetish_target	= 0;
-	obj->full_desc		= NULL;
-	obj->item_type		= 0;
-	obj->material		= NULL;
-	obj->name			= NULL;
-	obj->owner			= NULL;
-	obj->quality		= 2;
-	obj->reset_loc		= 0;
-	obj->short_descr	= NULL;
-	obj->timer			= -1;
-	obj->to_room_none	= NULL;
-	obj->to_room_other	= NULL;
-	obj->to_room_self	= NULL;
-	obj->to_room_used	= NULL;
-	obj->to_user_none	= NULL;
-	obj->to_user_other	= NULL;
-	obj->to_user_self	= NULL;
-	obj->to_user_used	= NULL;
-	obj->to_vict_other	= NULL;
-	obj->uses			= 0;
-	obj->wear_flags		= 0;
-	obj->wear_loc		= 0;
-	obj->weight			= 0;
+    // Initialize fields to default values
+    obj->BUILDER_MODE   = 0;
+    obj->condition      = 100;
+    obj->cost           = 0;
+    obj->description    = NULL;
+    obj->enchanted      = FALSE;
+    obj->extra2         = 0;
+    obj->extra_flags    = 0;
+    obj->fetish_flags   = 0;
+    obj->fetish_level   = 0;
+    obj->fetish_target  = 0;
+    obj->full_desc      = NULL;
+    obj->item_type      = 0;
+    obj->material       = NULL;
+    obj->name           = NULL;
+    obj->owner          = NULL;
+    obj->quality        = 2;
+    obj->reset_loc      = 0;
+    obj->short_descr    = NULL;
+    obj->timer          = -1;
+    obj->to_room_none   = NULL;
+    obj->to_room_other  = NULL;
+    obj->to_room_self   = NULL;
+    obj->to_room_used   = NULL;
+    obj->to_user_none   = NULL;
+    obj->to_user_other  = NULL;
+    obj->to_user_self   = NULL;
+    obj->to_user_used   = NULL;
+    obj->to_vict_other  = NULL;
+    obj->uses           = 0;
+    obj->wear_flags     = 0;
+    obj->wear_loc       = 0;
+    obj->weight         = 0;
+    obj->coating        = NULL;
+    obj->next           = NULL;
+    obj->next_content   = NULL;
+    obj->contains       = NULL;
+    obj->in_obj         = NULL;
+    obj->on             = NULL;
+    obj->carried_by     = NULL;
+    obj->extra_descr    = NULL;
+    obj->affected       = NULL;
+    obj->pIndexData     = NULL;
+    obj->in_room        = NULL;
 
-	return obj;
+    log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
+    return obj;
 }
 
 void free_obj(OBJ_DATA *obj)
 {
-	AFFECT_DATA *paf, *paf_next;
-	EXTRA_DESCR_DATA *ed, *ed_next;
+    Escape(obj);
 
-	Escape(obj);
+    log_string(LOG_GAME, "Freeing OBJ_DATA.");
 
-	for (paf = obj->affected; paf != NULL; paf = paf_next)
-	{
-		paf_next = paf->next;
-		free_affect(paf);
-	}
-	obj->affected = NULL;
+    // Clear and free affect data
+    AFFECT_DATA *paf, *paf_next;
+    for (paf = obj->affected; paf != NULL; paf = paf_next)
+    {
+        paf_next = paf->next;
+        free_affect(paf);
+    }
+    obj->affected = NULL;
 
-	for (ed = obj->extra_descr; ed != NULL; ed = ed_next )
-	{
-		ed_next = ed->next;
-		free_extra_descr(ed);
-	}
-	obj->extra_descr = NULL;
+    // Clear and free extra descriptions
+    EXTRA_DESCR_DATA *ed, *ed_next;
+    for (ed = obj->extra_descr; ed != NULL; ed = ed_next)
+    {
+        ed_next = ed->next;
+        free_extra_descr(ed);
+    }
+    obj->extra_descr = NULL;
 
-	PURGE_DATA( obj->description );
-	PURGE_DATA( obj->full_desc   );
-	PURGE_DATA( obj->material);
-	PURGE_DATA( obj->name        );
-	obj->owner = NULL;
-	PURGE_DATA( obj->short_descr );
+    // Free strings
+    PURGE_DATA(obj->description);
+    PURGE_DATA(obj->full_desc);
+    PURGE_DATA(obj->material);
+    PURGE_DATA(obj->name);
+    PURGE_DATA(obj->short_descr);
+    PURGE_DATA(obj->to_room_none);
+    PURGE_DATA(obj->to_room_other);
+    PURGE_DATA(obj->to_room_self);
+    PURGE_DATA(obj->to_room_used);
+    PURGE_DATA(obj->to_user_none);
+    PURGE_DATA(obj->to_user_other);
+    PURGE_DATA(obj->to_user_self);
+    PURGE_DATA(obj->to_user_used);
+    PURGE_DATA(obj->to_vict_other);
 
-	PURGE_DATA( obj->to_room_none );
-	PURGE_DATA( obj->to_room_other );
-	PURGE_DATA( obj->to_room_self );
-	PURGE_DATA( obj->to_room_used );
-	PURGE_DATA( obj->to_user_none );
-	PURGE_DATA( obj->to_user_other );
-	PURGE_DATA( obj->to_user_self );
-	PURGE_DATA( obj->to_user_used );
-	PURGE_DATA( obj->to_vict_other );
-	obj->to_user_none          =   NULL;
-	obj->to_user_self          =   NULL;
-	obj->to_user_other         =   NULL;
-	obj->to_room_none          =   NULL;
-	obj->to_room_self          =   NULL;
-	obj->to_room_other         =   NULL;
-	obj->to_vict_other         =   NULL;
-	obj->to_room_used          =   NULL;
-	obj->to_user_used		=   NULL;
-	obj->uses				=   -2;
+    // Nullify dangling pointers
+    obj->owner = NULL;
+    obj->carried_by = NULL;
+    obj->in_obj = NULL;
+    obj->on = NULL;
+    obj->contains = NULL;
+    obj->next_content = NULL;
+    obj->in_room = NULL;
 
-	PURGE_DATA(obj);
+    // Final cleanup
+    PURGE_DATA(obj);
+
+    log_string(LOG_GAME, "OBJ_DATA successfully freed.");
 }
 
 
@@ -782,6 +1073,15 @@ CHAR_DATA *new_char (void)
 	int i = 0;
 
 	ALLOC_DATA(ch, CHAR_DATA, 1);
+
+	if (!ch)
+    {
+        log_string(LOG_ERR, "Failed to allocate memory for new CHAR_DATA.");
+        return NULL;
+    }
+
+    log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
+
 
 	ch->hunted			= FALSE;
 
@@ -932,6 +1232,15 @@ CHAR_DATA *new_char (void)
 
 void free_char (CHAR_DATA *ch)
 {
+    if (!ch)
+    {
+        log_string(LOG_ERR, "Attempted to free a NULL CHAR_DATA.");
+        return;
+    }
+
+    log_string(LOG_GAME, "Freeing CHAR_DATA structure.");
+
+
 	OBJ_DATA *obj;
 	OBJ_DATA *obj_next;
 	AFFECT_DATA *paf;
@@ -944,23 +1253,28 @@ void free_char (CHAR_DATA *ch)
 		mobile_count--;
 	}
 
-	for (obj = ch->carrying; obj != NULL; obj = obj_next)
-	{
-		obj_next = obj->next_content;
-		extract_obj(obj);
-	}
+    // Free all carried objects
+    for (obj = ch->carrying; obj; obj = obj_next)
+    {
+        obj_next = obj->next_content;
+        extract_obj(obj);
+        log_string(LOG_GAME, "Freed carried object.");
+    }
 
-	for (paf = ch->affected; paf != NULL; paf = paf_next)
-	{
-		paf_next = paf->next;
-		affect_remove(ch,paf);
-	}
+    // Remove all effects
+    for (paf = ch->affected; paf; paf = paf_next)
+    {
+        paf_next = paf->next;
+        affect_remove(ch, paf);
+        log_string(LOG_GAME, "Removed affect.");
+    }
 
-	if(ch->script != NULL)
-	{
-		free_script(ch->script);
-	}
-
+    // Free the script if present
+    if (ch->script)
+    {
+        free_script(ch->script);
+        log_string(LOG_GAME, "Freed script data.");
+    }
 	PURGE_DATA(ch->aifile);
 	PURGE_DATA(ch->alt_description);
 	PURGE_DATA(ch->alt_long_descr);
@@ -977,7 +1291,6 @@ void free_char (CHAR_DATA *ch)
 	PURGE_DATA(ch->nature);
 	PURGE_DATA(ch->oldname);
 	PURGE_DATA(ch->pack);
-	// PURGE_DATA(ch->pcdata);
 	PURGE_DATA(ch->pnote);
 	PURGE_DATA(ch->prefix);
 	PURGE_DATA(ch->profession);
@@ -987,8 +1300,12 @@ void free_char (CHAR_DATA *ch)
 	PURGE_DATA(ch->switch_desc);
 	PURGE_DATA(ch->to_learn);
 
-	if(ch->pcdata)
-		free_pcdata(ch->pcdata);
+    // Free PC-specific data
+    if (ch->pcdata)
+    {
+        free_pcdata(ch->pcdata);
+        log_string(LOG_GAME, "Freed PC-specific data.");
+    }
 
 	ch->ghouled_by = NULL;
 	ch->married = NULL;
@@ -996,6 +1313,9 @@ void free_char (CHAR_DATA *ch)
 	ch->reply = NULL;
 	ch->sire = NULL;
 	ch->laston = time(NULL); // This sets laston to the current time in seconds since the epoch
+
+    // Reset and free the main structure
+    memset(ch, 0, sizeof(*ch));
 
 	PURGE_DATA(ch);
 	return;
@@ -1279,45 +1599,79 @@ void free_reset_data( RESET_DATA *pReset )
 }
 
 
-AREA_DATA *new_area( void )
+AREA_DATA *new_area(void)
 {
-    AREA_DATA *pArea;
+    AREA_DATA *pArea = NULL;
 
+    // Allocate memory and validate
     ALLOC_DATA(pArea, AREA_DATA, 1);
+    if (!pArea)
+    {
+        log_string(LOG_ERR, "new_area: Memory allocation for AREA_DATA failed.");
+        return NULL;
+    }
 
-    pArea->name 		= str_dup( "New Area");
-    pArea->builders 	= str_dup("None");
-    pArea->credits 		= str_dup("None");
-    pArea->security		=   1;
-    pArea->pricemod		=   1;
-    pArea->min_vnum		=   0;
-    pArea->max_vnum		=   0;
-    pArea->age			=   0;
-    pArea->nplayer		=   0;
-    pArea->empty		=   TRUE;              /* ROM patch */
-    pArea->file_name	=   str_dup( (char *)Format("area%d.are", pArea->vnum) );
-    pArea->next			=   NULL;
-    pArea->area_flags	=   AREA_ADDED;
-    pArea->vnum			=   top_area-1;
-    pArea->low_range	= 0;
-    pArea->high_range	= 0;
+    // Initialize fields with default values
+    pArea->name = str_dup("New Area");
+    if (!pArea->name)
+    {
+        log_string(LOG_ERR, "new_area: Failed to allocate memory for 'name'.");
+        PURGE_DATA(pArea);
+        return NULL;
+    }
 
+    pArea->builders = str_dup("None");
+    pArea->credits = str_dup("None");
+    pArea->security = 1;  // Default to lowest allowed security
+    pArea->pricemod = 1;
+    pArea->min_vnum = 0;
+    pArea->max_vnum = 0;
+    pArea->age = 0;
+    pArea->nplayer = 0;
+    pArea->empty = TRUE;  // ROM patch
+    pArea->vnum = top_area - 1;
+    pArea->low_range = 0;
+    pArea->high_range = 0;
+    pArea->area_flags = AREA_ADDED;
+
+    pArea->file_name = str_dup((char *)Format("area%d.are", pArea->vnum));
+    if (!pArea->file_name)
+    {
+        log_string(LOG_ERR, "new_area: Failed to allocate memory for 'file_name'.");
+        free_area(pArea); // Free all allocated data before returning
+        return NULL;
+    }
+
+    pArea->next = NULL;
+
+    log_string(LOG_GAME, Format("new_area: Area created with vnum: %d", pArea->vnum));
     return pArea;
 }
 
 
-void free_area( AREA_DATA *pArea )
+void free_area(AREA_DATA *pArea)
 {
-	Escape(pArea);
+    Escape(pArea);
 
-	PURGE_DATA( pArea->builders );
-	PURGE_DATA( pArea->credits);
-	PURGE_DATA( pArea->file_name );
-	PURGE_DATA( pArea->name );
-	PURGE_DATA(pArea);
+    // Log the area being freed
+    log_string(LOG_GAME, Format("free_area: Freeing area with vnum: %d", pArea->vnum));
+
+    // Free associated strings and ensure no dangling references
+    PURGE_DATA(pArea->builders);
+    PURGE_DATA(pArea->credits);
+    PURGE_DATA(pArea->file_name);
+    PURGE_DATA(pArea->name);
+
+    // Validate that resets are unlinked to avoid memory corruption
+    if (pArea->reset_first || pArea->reset_last)
+    {
+        log_string(LOG_ERR, Format("free_area: Area %d still has resets linked!", pArea->vnum));
+    }
+
+    // Finally, free the structure itself
+    PURGE_DATA(pArea);
     return;
 }
-
 
 EXIT_DATA *new_exit( void )
 {
@@ -1815,40 +2169,43 @@ void load_bans(void)
 	}
 }
 
-bool check_ban(char *site,int type)
+bool check_ban(char *site, int type)
 {
-	BAN_DATA *pban;
-	char host[MSL]={'\0'};
+    BAN_DATA *pban;
+    char host[MSL] = {'\0'};
 
-	strncpy(host,capitalize(site), sizeof(host));
-	host[0] = LOWER(host[0]);
+    // Use capitalize function as is, assuming it is defined elsewhere
+    strncpy(host, capitalize(site), sizeof(host));
 
-	for ( pban = ban_list; pban != NULL; pban = pban->next )
-	{
-		if(!IS_SET(pban->ban_flags,type))
-		{
-			continue;
-		}
+    // Replace LOWER macro with tolower
+    host[0] = tolower((unsigned char)host[0]);
 
-		if (IS_SET(pban->ban_flags,BAN_PREFIX)
-			&&  IS_SET(pban->ban_flags,BAN_SUFFIX)
-			&&  strstr(pban->name,host) != NULL)
-		{
-			return TRUE;
-		}
+    for (pban = ban_list; pban != NULL; pban = pban->next)
+    {
+        if (!IS_SET(pban->ban_flags, type))
+        {
+            continue;
+        }
 
-		if (IS_SET(pban->ban_flags,BAN_PREFIX) && !str_suffix(pban->name,host))
-		{
-			return TRUE;
-		}
+        if (IS_SET(pban->ban_flags, BAN_PREFIX) &&
+            IS_SET(pban->ban_flags, BAN_SUFFIX) &&
+            strstr(pban->name, host) != NULL)
+        {
+            return TRUE;
+        }
 
-		if (IS_SET(pban->ban_flags,BAN_SUFFIX) && !str_prefix(pban->name,host))
-		{
-			return TRUE;
-		}
-	}
+        if (IS_SET(pban->ban_flags, BAN_PREFIX) && !str_suffix(pban->name, host))
+        {
+            return TRUE;
+        }
 
-	return FALSE;
+        if (IS_SET(pban->ban_flags, BAN_SUFFIX) && !str_prefix(pban->name, host))
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 

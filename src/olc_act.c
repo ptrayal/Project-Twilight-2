@@ -710,67 +710,69 @@ AEDIT( aedit_flags )
 
 AEDIT( aedit_file )
 {
-	AREA_DATA *pArea;
-	AREA_DATA *tArea;
-	char file[MSL]={'\0'};
-	char file2[MSL]={'\0'};
-	int i, length;
-	bool found = FALSE;
-	file2[0] = '\0';
+    AREA_DATA *pArea;
+    AREA_DATA *tArea;
+    char file[MSL] = {'\0'};
+    char file2[MSL] = {'\0'};
+    int i, length;
+    bool found = FALSE;
+    file2[0] = '\0';
 
-	EDIT_AREA(ch, pArea);
+    EDIT_AREA(ch, pArea);
 
-	one_argument( argument, file );	/* Forces Lowercase */
+    one_argument( argument, file ); /* Forces Lowercase */
 
-	if ( IS_NULLSTR(argument) )
-	{
-		send_to_char( "Syntax:  filename [$file]\n\r", ch );
-		return FALSE;
-	}
+    if ( IS_NULLSTR(argument) )
+    {
+        send_to_char( "Syntax:  filename [$file]\n\r", ch );
+        return FALSE;
+    }
 
-	/*
-	 * Simple Syntax Check.
-	 */
-	length = strlen( argument );
-	if ( length > 15 )
-	{
-		send_to_char( "No more than eight characters allowed.\n\r", ch );
-		return FALSE;
-	}
+    /*
+     * Simple Syntax Check.
+     */
+    length = strlen( argument );
+    if ( length > 15 )
+    {
+        send_to_char( "No more than eight characters allowed.\n\r", ch );
+        return FALSE;
+    }
 
-	/*
-	 * Allow only letters and numbers.
-	 */
-	for ( i = 0; i < length; i++ )
-	{
-		if ( !isalnum( file[i] ) )
-		{
-			send_to_char( "Only letters and numbers are valid.\n\r", ch );
-			return FALSE;
-		}
-	}
+    /*
+     * Allow only letters and numbers.
+     */
+    for ( i = 0; i < length; i++ )
+    {
+        if ( !isalnum( file[i] ) )
+        {
+            send_to_char( "Only letters and numbers are valid.\n\r", ch );
+            return FALSE;
+        }
+    }
 
-	/* Prevent filename overwrite by Takeda (takeda@mathlab.sunysb.edu) */
-	strncat( file2, file, sizeof(file2) - strlen(file2) - 1 );
-	strncat( file2, ".are", sizeof(file2) - strlen(file2) - 1 );
-	for ( tArea = area_first; tArea; tArea = tArea->next )
-	{
-		if(!str_cmp(tArea->file_name,file2)) {
-			found = TRUE;
-			continue;
-		}
-	}
-	if(found == TRUE) {
-		send_to_char("There is a file with the same name!!\n",ch);
-		return FALSE;
-	}
+    /* Prevent filename overwrite by Takeda (takeda@mathlab.sunysb.edu) */
+    strncat( file2, file, sizeof(file2) - strlen(file2) - 1 );
+    strncat( file2, ".are", sizeof(file2) - strlen(file2) - 1 );
+    for ( tArea = area_first; tArea; tArea = tArea->next )
+    {
+        if(!str_cmp(tArea->file_name, file2))
+        {
+            found = TRUE;
+            continue;
+        }
+    }
+    if(found == TRUE)
+    {
+        send_to_char("There is a file with the same name!!\n", ch);
+        return FALSE;
+    }
 
-	PURGE_DATA( pArea->file_name );
-	strncat( file, ".are", sizeof(file2) - strlen(file2) - 1 );
-	pArea->file_name = str_dup( file );
+    PURGE_DATA( pArea->file_name );
+    strncat( file, ".are", sizeof(file2) - strlen(file2) - 1 );
+    pArea->file_name = str_dup( file );
 
-	send_to_char( "Filename set.\n\r", ch );
-	return TRUE;
+    send_to_char( "Filename set.\n\r", ch );
+    return TRUE;
 }
 
 
@@ -6515,7 +6517,8 @@ HEDIT( hedit_show )
 
     send_to_char( "Essential Fields.\n\r", ch );
 
-    send_to_char( Format("Trust: [%5d]  Keywords: %s\n\r", help->level, help->keyword), ch );
+    send_to_char( Format("Trust: [%5d]\n\r", help->level), ch );
+    send_to_char( Format("Keywords:  %s\n\r", help->keyword), ch );
     send_to_char( Format("Races:  %s\n\r", help->races), ch );
     send_to_char( Format("Clans:  %s\n\r", help->clans), ch );
 
@@ -6526,7 +6529,7 @@ HEDIT( hedit_show )
     send_to_char( Format("See also:  %s\n\r", help->see_also), ch );
     send_to_char( Format("Website:  %s\n\r", help->website), ch );
 
-    send_to_char("\n\rDo not use in conjunction with formatted fields.\n\r",ch);
+    send_to_char("\n\rDo not use in conjunction with formatted fields.\n\r", ch);
     send_to_char( Format("Unformatted:\n\r%s\n\r", help->unformatted), ch );
 
     return FALSE;
@@ -6756,63 +6759,168 @@ HEDIT( hedit_clans )
 }
 
 
+// HEDIT( hedit_races )
+// {
+// 	HELP_DATA *help;
+// 	char name[MSL]={'\0'};
+// 	char buf[MSL]={'\0'};
+
+// 	EDIT_HELP(ch, help);
+
+// 	one_argument( argument, name );
+
+// 	if ( IS_NULLSTR(name) )
+// 	{
+// 		send_to_char( "Syntax:  races [$race]  -toggles race\n\r", ch );
+// 		send_to_char( "Syntax:  races All      -allows everyone\n\r", ch );
+// 		return FALSE;
+// 	}
+
+// 	name[0] = UPPER( name[0] );
+
+// 	if ( strstr( help->races, name ) != NULL )
+// 	{
+// 		help->races = string_replace( help->races, name, "\0" );
+// 		help->races = string_unpad( help->races );
+
+// 		if ( help->races[0] == '\0' )
+// 		{
+// 			PURGE_DATA( help->races );
+// 			help->races = str_dup( "None" );
+// 		}
+// 		send_to_char( "Race removed.\n\r", ch );
+// 		return TRUE;
+// 	}
+// 	else
+// 	{
+// 		buf[0] = '\0';
+// 		if ( strstr( help->races, "None" ) != NULL )
+// 		{
+// 			help->races = string_replace( help->races, "None", "\0" );
+// 			help->races = string_unpad( help->races );
+// 		}
+
+// 		if (help->races[0] != '\0' )
+// 		{
+// 			strncat( buf, help->races, sizeof(buf) - strlen(buf) - 1 );
+// 			strncat( buf, " ", sizeof(buf) - strlen(buf) - 1 );
+// 		}
+// 		strncat( buf, name, sizeof(buf) - strlen(buf) - 1 );
+// 		PURGE_DATA( help->races );
+// 		help->races = string_proper( str_dup( buf ) );
+
+// 		send_to_char( "Race added.\n\r", ch );
+// 		send_to_char( help->races,ch);
+// 		return TRUE;
+// 	}
+
+// 	return FALSE;
+// }
+
 HEDIT( hedit_races )
 {
-	HELP_DATA *help;
-	char name[MSL]={'\0'};
-	char buf[MSL]={'\0'};
+    HELP_DATA *help;
+    char name[MSL] = {'\0'};
+    char buf[MSL] = {'\0'};
 
-	EDIT_HELP(ch, help);
+    EDIT_HELP(ch, help);
 
-	one_argument( argument, name );
+    // Ensure help->races is initialized
+    if (help->races == NULL)
+    {
+        help->races = str_dup("None");
+    }
 
-	if ( IS_NULLSTR(name) )
-	{
-		send_to_char( "Syntax:  races [$race]  -toggles race\n\r", ch );
-		send_to_char( "Syntax:  races All      -allows everyone\n\r", ch );
-		return FALSE;
-	}
+    // Extract the argument (race name, "all", or "clear")
+    one_argument(argument, name);
 
-	name[0] = UPPER( name[0] );
+    if (IS_NULLSTR(name))
+    {
+        send_to_char("Syntax:  races [$race]  - toggles race\n\r", ch);
+        send_to_char("Syntax:  races All      - allows everyone\n\r", ch);
+        send_to_char("Syntax:  races Clear    - removes all races\n\r", ch);
+        return FALSE;
+    }
 
-	if ( strstr( help->races, name ) != NULL )
-	{
-		help->races = string_replace( help->races, name, "\0" );
-		help->races = string_unpad( help->races );
+    // Normalize the input
+    string_proper(name);
 
-		if ( help->races[0] == '\0' )
-		{
-			PURGE_DATA( help->races );
-			help->races = str_dup( "None" );
-		}
-		send_to_char( "Race removed.\n\r", ch );
-		return TRUE;
-	}
-	else
-	{
-		buf[0] = '\0';
-		if ( strstr( help->races, "None" ) != NULL )
-		{
-			help->races = string_replace( help->races, "None", "\0" );
-			help->races = string_unpad( help->races );
-		}
+    // Handle "Clear" to reset the race list
+    if (!str_cmp(name, "Clear"))
+    {
+        PURGE_DATA(help->races);
+        help->races = str_dup("None");
+        send_to_char("All races have been cleared.\n\r", ch);
+        return TRUE;
+    }
 
-		if (help->races[0] != '\0' )
-		{
-			strncat( buf, help->races, sizeof(buf) - strlen(buf) - 1 );
-			strncat( buf, " ", sizeof(buf) - strlen(buf) - 1 );
-		}
-		strncat( buf, name, sizeof(buf) - strlen(buf) - 1 );
-		PURGE_DATA( help->races );
-		help->races = string_proper( str_dup( buf ) );
+    // Handle "All" as a special command
+    if (!str_cmp(name, "All"))
+    {
+        PURGE_DATA(help->races);
+        help->races = str_dup("All");
+        send_to_char("All races are now allowed.\n\r", ch);
+        return TRUE;
+    }
 
-		send_to_char( "Race added.\n\r", ch );
-		send_to_char( help->races,ch);
-		return TRUE;
-	}
+    // Validate the race name
+    int valid_race = race_lookup(name);
+    if (valid_race == 0)
+    {
+        send_to_char("Invalid race specified.\n\r", ch);
+        return FALSE;
+    }
 
-	return FALSE;
+    // Check if the race is already in the list
+    if (strstr(help->races, name) != NULL)
+    {
+        // Remove the race
+        help->races = string_replace(help->races, name, "\0");
+        help->races = string_unpad(help->races);
+
+        // Check if the list is empty and set to "None"
+        if (help->races[0] == '\0')
+        {
+            PURGE_DATA(help->races);
+            help->races = str_dup("None");
+        }
+
+        send_to_char("Race removed.\n\r", ch);
+        return TRUE;
+    }
+    else
+    {
+        // Add the race
+        if (strstr(help->races, "None") != NULL)
+        {
+            help->races = string_replace(help->races, "None", "\0");
+            help->races = string_unpad(help->races);
+        }
+
+        // Ensure there is enough space to add the race
+        if (strlen(help->races) + strlen(name) + 2 >= MSL)
+        {
+            send_to_char("Race list too long to add another race.\n\r", ch);
+            return FALSE;
+        }
+
+        // Construct the new race list
+        snprintf(buf, sizeof(buf), "%s%s%s",
+                 help->races[0] != '\0' ? help->races : "",
+                 help->races[0] != '\0' ? " " : "",
+                 name);
+
+        PURGE_DATA(help->races);
+        help->races = str_dup(buf);
+
+        send_to_char("Race added.\n\r", ch);
+        send_to_char(help->races, ch);
+        return TRUE;
+    }
+
+    return FALSE;
 }
+
 
 
 HEDIT( hedit_create )

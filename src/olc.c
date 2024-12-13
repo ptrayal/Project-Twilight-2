@@ -28,11 +28,7 @@
  **************************************************************************/
  
  
-#if defined(macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
-#endif
 #include <ctype.h>
 #include <stdlib.h>
 #include <time.h>
@@ -803,29 +799,29 @@ REACT *get_react_index( int x, int vnum )
  ****************************************************************************/
 HELP_DATA * get_help(char *argument)
 {
-	HELP_DATA *pHelp;
-	char argall[MIL]={'\0'};
-	char argone[MIL]={'\0'};
+    HELP_DATA *pHelp;
+    char argall[MIL] = {'\0'};
+    char argone[MIL] = {'\0'};
 
-	/* this parts handles help a b so that it returns help 'a b' */
-	argall[0] = '\0';
-	while (!IS_NULLSTR(argument) )
-	{
-		argument = one_argument(argument,argone);
-		if (!IS_NULLSTR(argall))
-			strncat(argall," ", sizeof(argall) - strlen(argall) - 1 );
-		strncat(argall,argone, sizeof(argall) - strlen(argall) - 1 );
-	}
+    /* this parts handles help a b so that it returns help 'a b' */
+    argall[0] = '\0';
+    while (!IS_NULLSTR(argument) )
+    {
+        argument = one_argument(argument, argone);
+        if (!IS_NULLSTR(argall))
+            strncat(argall, " ", sizeof(argall) - strlen(argall) - 1 );
+        strncat(argall, argone, sizeof(argall) - strlen(argall) - 1 );
+    }
 
-	for ( pHelp = help_list; pHelp != NULL; pHelp = pHelp->next )
-	{
-		if ( is_exact_name( argall, pHelp->keyword ) )
-		{
-		return pHelp;
-	}
-	}
+    for ( pHelp = help_list; pHelp != NULL; pHelp = pHelp->next )
+    {
+        if ( is_exact_name( argall, pHelp->keyword ) )
+        {
+            return pHelp;
+        }
+    }
 
-	return NULL;
+    return NULL;
 }
 
 
@@ -899,21 +895,21 @@ NOTE_DATA * get_kbg(char *argument, int type)
  ****************************************************************************/
 bool edit_done( CHAR_DATA *ch )
 {
-SCRIPT_DATA *pscript = NULL;
+    SCRIPT_DATA *pscript = NULL;
 
-	if(ch->desc->editor == ED_SCRIPT)
-	{
-	pscript = (SCRIPT_DATA *)ch->desc->pEdit;
-	if(!pscript->event)
-	{
-		send_to_char("You must associate the script with an event.\n\r",ch);
-		return TRUE;
-	}
-	}
+    if(ch->desc->editor == ED_SCRIPT)
+    {
+        pscript = (SCRIPT_DATA *)ch->desc->pEdit;
+        if(!pscript->event)
+        {
+            send_to_char("You must associate the script with an event.\n\r", ch);
+            return TRUE;
+        }
+    }
 
-	ch->desc->pEdit = NULL;
-	ch->desc->editor = 0;
-	return FALSE;
+    ch->desc->pEdit = NULL;
+    ch->desc->editor = 0;
+    return FALSE;
 }
 
 
@@ -2847,12 +2843,12 @@ void do_alist( CHAR_DATA *ch, char *argument )
 	if(IS_NPC(ch))
 		return;
 
-	send_to_char(Format("\n\r[%3s] [%-27s] [%-5s-%5s] [%-10s] %3s [%-10s]\n\r",
+	send_to_char(Format("\n\r\tY[\tn\tB%3s\tY]\tn \tY[\tn\tB%-27s\tY]\tn \tY[\tn\tB%-5s-%5s\tY]\tn \tY[\tn\tB%-10s\tY]\tn \tY[\tn\tB%3s\tY]\tn \tY[\tn\tB%-10s\tY]\tn\n\r",
 			"Num", "Area Name", "lvnum", "uvnum", "Filename", "Sec", "Builders"), ch);
 
 	for ( pArea = area_first; pArea; pArea = pArea->next )
 	{
-		send_to_char(Format("[%3d] %-29.29s (%-5d-%5d) %-12.12s [%d] [%-10.10s]\n\r",
+		send_to_char(Format("[%3d] %-29.29s (%-5d-%5d) %-12.12s [ %d ] [%-10.10s]\n\r",
 				pArea->vnum, pArea->name, pArea->min_vnum, pArea->max_vnum, pArea->file_name, pArea->security, pArea->builders), ch);
 	}
 
@@ -3603,178 +3599,233 @@ void load_notes(void)
 
 void load_thread(char *name, NOTE_DATA **list, int type, time_t free_time)
 {
-	FILE *fp;
-	NOTE_DATA *pnotelast;
-	char *tmp;
+    FILE *fp = NULL;
+    NOTE_DATA *pnotelast = NULL;
 
-//	ALLOC_DATA(pnotelast, NOTE_DATA, 1);
+    // Input validation
+    if (!name || !list)
+    {
+        log_string(LOG_ERR, "load_thread: Invalid input parameters.");
+        return;
+    }
 
-	if ( ( fp = fopen( name, "r" ) ) == NULL ) {
-//		PURGE_DATA(pnotelast);
-		return;
-	}
+    // Clear the pre-existing list
+    while (*list)
+    {
+        NOTE_DATA *temp = (*list)->next;
+        free_note(*list);
+        *list = temp;
+    }
 
-	pnotelast = NULL;
-	for ( ; ; )
-	{
-		NOTE_DATA *pnote;
-		char letter;
+    // Open the file
+    fp = fopen(name, "r");
+    if (!fp)
+    {
+        log_string(LOG_ERR, "load_thread: Unable to open file %s", name);
+        return;
+    }
 
-		do
-		{
-			letter = getc( fp );
-			if ( feof(fp) )
-			{
-				fclose( fp );
-				return;
-			}
-		}
-		while ( isspace(letter) );
-		ungetc( letter, fp );
+    while (1)
+    {
+        NOTE_DATA *pnote = NULL;
+        char letter;
 
-		ALLOC_DATA(pnote, NOTE_DATA, 1);
+        // Skip whitespace and check for EOF
+        do
+        {
+            letter = getc(fp);
+            if (feof(fp))
+            {
+                fclose(fp);
+                return; // Successful end of file
+            }
+        } while (isspace(letter));
+        ungetc(letter, fp);
 
-		tmp = fread_word(fp);
-		if ( str_cmp( tmp, "sender" ) && str_cmp( tmp, "author" ) )
-		{
-			free_note(pnote);
-			break;
-		}
+        // Allocate memory for the new note
+        ALLOC_DATA(pnote, NOTE_DATA, 1);
 
-		pnote->sender   = fread_string( fp );
+        if (!pnote)
+        {
+            log_string(LOG_ERR, "load_thread: Memory allocation failed.");
+            fclose(fp);
+            return;
+        }
 
-		if ( str_cmp( fread_word( fp ), "date" ) )
-				{
-						free_note(pnote);
-						break;
-				}
-		pnote->date     = fread_string( fp );
+        // Read and validate the fields
+        char *tmp = fread_word(fp);
+        if (str_cmp(tmp, "sender") && str_cmp(tmp, "author"))
+        {
+            log_string(LOG_BUG, "load_thread: Invalid keyword '%s', expected 'sender' or 'author'.", tmp);
+            free_note(pnote);
+            break;
+        }
+        pnote->sender = fread_string(fp);
 
-		if ( str_cmp( fread_word( fp ), "stamp" ) )
-				{
-						free_note(pnote);
-						break;
-				}
-		pnote->date_stamp = fread_number(fp);
+        if (str_cmp(fread_word(fp), "date"))
+        {
+            log_string(LOG_BUG, "load_thread: Expected 'date' keyword.");
+            free_note(pnote);
+            break;
+        }
+        pnote->date = fread_string(fp);
 
-		tmp = fread_word(fp);
-		if ( str_cmp( tmp, "to" )
-				&& str_cmp( tmp, "keyword" )
-				&& str_cmp( tmp, "categ" ) )
-				{
-						free_note(pnote);
-						break;
-				}
-		pnote->to_list  = fread_string( fp );
+        if (str_cmp(fread_word(fp), "stamp"))
+        {
+            log_string(LOG_BUG, "load_thread: Expected 'stamp' keyword.");
+            free_note(pnote);
+            break;
+        }
+        pnote->date_stamp = fread_number(fp);
 
-		tmp = fread_word(fp);
-		if ( str_cmp( tmp, "subject" )
-				&& str_cmp( tmp, "diff" ) )
-				{
-						free_note(pnote);
-						break;
-				}
-		pnote->subject  = fread_string( fp );
+        tmp = fread_word(fp);
+        if (str_cmp(tmp, "to") && str_cmp(tmp, "keyword") && str_cmp(tmp, "categ"))
+        {
+            log_string(LOG_BUG, "load_thread: Invalid keyword '%s', expected 'to', 'keyword', or 'categ'.", tmp);
+            free_note(pnote);
+            break;
+        }
+        pnote->to_list = fread_string(fp);
 
-		if ( str_cmp( fread_word( fp ), "success" ) )
-			pnote->successes = 1;
-		else {
-			const char * s = fread_string(fp);
-			pnote->successes = atoi(s);
-			PURGE_DATA(s);
-		}
-		if ( str_cmp( fread_word( fp ), "text" ) )
-				{
-						free_note(pnote);
-						break;
-				}
-		pnote->text     = fread_string( fp );
+        tmp = fread_word(fp);
+        if (str_cmp(tmp, "subject") && str_cmp(tmp, "diff"))
+        {
+            log_string(LOG_BUG, "load_thread: Invalid keyword '%s', expected 'subject' or 'diff'.", tmp);
+            free_note(pnote);
+            break;
+        }
+        pnote->subject = fread_string(fp);
 
-		if (type == NOTE_NOTE && free_time
-				&& pnote->date_stamp < current_time - free_time)
-		{
-			free_note(pnote);
-			continue;
-		}
+        if (str_cmp(fread_word(fp), "success"))
+        {
+            log_string(LOG_BUG, "load_thread: Missing 'success' field, defaulting to 1.");
+            pnote->successes = 1;
+        }
+        else
+        {
+            const char *success_str = fread_string(fp);
+            pnote->successes = atoi(success_str);
+            PURGE_DATA(success_str);
+        }
 
-		pnote->type = type;
+        if (str_cmp(fread_word(fp), "text"))
+        {
+            log_string(LOG_BUG, "load_thread: Missing 'text' field.");
+            free_note(pnote);
+            break;
+        }
+        pnote->text = fread_string(fp);
 
-		if (*list == NULL)
-			*list = pnote;
-		else
-			pnotelast->next = pnote;
+        // Discard old notes if necessary
+        if (type == NOTE_NOTE && free_time && pnote->date_stamp < current_time - free_time)
+        {
+            free_note(pnote);
+            continue;
+        }
 
-		pnotelast       = pnote;
-	}
+        // Add the note to the list
+        pnote->type = type;
+        pnote->next = NULL;
 
-	if(type == NOTE_NOTE)
-		strncpy( strArea, NOTE_FILE, sizeof(strArea) );
-	else if(type == NOTE_BACKGROUND)
-		strncpy( strArea, BG_FILE, sizeof(strArea) );
-	else if(type == NOTE_KNOWLEDGE)
-		strncpy( strArea, KNOW_FILE, sizeof(strArea) );
-	else if(type == NOTE_ARTICLE)
-		strncpy( strArea, NEWS_FILE, sizeof(strArea) );
-	fpArea = fp;
-	log_string(LOG_BUG, "Load_notes: bad key word.");
-	exit( 1 );
-	return;
+        if (!*list)
+            *list = pnote;
+        else
+            pnotelast->next = pnote;
+
+        pnotelast = pnote;
+    }
+
+    // Error handling
+    log_string(LOG_BUG, "load_thread: Error while reading file '%s'.", name);
+    fclose(fp);
 }
 
 void append_note(NOTE_DATA *pnote)
 {
-	FILE *fp;
-	NOTE_DATA **list;
-	NOTE_DATA *last;
-	char *name;
+    FILE *fp;
+    NOTE_DATA **list;
+    NOTE_DATA *last;
+    const char *name;
 
-	switch(pnote->type)
-	{
-	default:
-		return;
-	case NOTE_NOTE:
-		name = NOTE_FILE;
-		list = &note_list;
-		break;
-	case NOTE_BACKGROUND:
-		name = BG_FILE;
-		list = &bg_list;
-		break;
-	case NOTE_KNOWLEDGE:
-		name = KNOW_FILE;
-		list = &know_list;
-		break;
-	case NOTE_ARTICLE:
-		name = NEWS_FILE;
-		list = &news_list;
-		break;
-	}
+    // Validate pnote input
+    if (pnote == NULL)
+    {
+        log_string(LOG_ERR, "append_note: Null pointer for pnote.");
+        return;
+    }
 
-	if (*list == NULL)
-		*list = pnote;
-	else
-	{
-		for ( last = *list; last->next != NULL; last = last->next);
-		last->next = pnote;
-	}
+    // Determine the file and list based on note type
+    switch (pnote->type)
+    {
+    default:
+        log_string(LOG_ERR, "append_note: Invalid note type %d.", pnote->type);
+        return;
+    case NOTE_NOTE:
+        name = NOTE_FILE;
+        list = &note_list;
+        break;
+    case NOTE_BACKGROUND:
+        name = BG_FILE;
+        list = &bg_list;
+        break;
+    case NOTE_KNOWLEDGE:
+        name = KNOW_FILE;
+        list = &know_list;
+        break;
+    case NOTE_ARTICLE:
+        name = NEWS_FILE;
+        list = &news_list;
+        break;
+    }
 
-	closeReserve();
-	if ( ( fp = fopen(name, "a" ) ) == NULL )
-	{
-		perror(name);
-	}
-	else
-	{
-		fprintf( fp, "Sender  %s~\n", pnote->sender);
-		fprintf( fp, "Date    %s~\n", pnote->date);
-		fprintf( fp, "Stamp   %ld\n", pnote->date_stamp);
-		fprintf( fp, "To      %s~\n", pnote->to_list);
-		fprintf( fp, "Subject %s~\n", pnote->subject);
-		fprintf( fp, "Success %d~\n", pnote->successes);
-		fprintf( fp, "Text\n%s~\n", pnote->text);
-		fclose( fp );
-	}
-	openReserve();
+    // Add the note to the list safely
+    if (*list == NULL)
+    {
+        *list = pnote;
+    }
+    else
+    {
+        for (last = *list; last->next != NULL; last = last->next)
+            ;
+        last->next = pnote;
+    }
+
+    // Ensure reserve files are managed
+    closeReserve();
+    if ((fp = fopen(name, "a")) == NULL)
+    {
+        log_string(LOG_ERR, "append_note: Unable to open file %s for appending.", name);
+        perror(name);
+        openReserve(); // Reopen reserve to restore the state
+        return;
+    }
+
+    // Write the note data to the file with validation
+    if (pnote->sender == NULL || pnote->date == NULL || pnote->to_list == NULL ||
+        pnote->subject == NULL || pnote->text == NULL)
+    {
+        log_string(LOG_ERR, "append_note: Incomplete note data for note type %d.", pnote->type);
+        fclose(fp);
+        openReserve();
+        return;
+    }
+
+    // Append the note data safely
+    fprintf(fp, "Sender  %s~\n", pnote->sender);
+    fprintf(fp, "Date    %s~\n", pnote->date);
+    fprintf(fp, "Stamp   %ld\n", pnote->date_stamp);
+    fprintf(fp, "To      %s~\n", pnote->to_list);
+    fprintf(fp, "Subject %s~\n", pnote->subject);
+    fprintf(fp, "Success %d~\n", pnote->successes);
+    fprintf(fp, "Text\n%s~\n", pnote->text);
+
+    // Close the file safely
+    if (fclose(fp) != 0)
+    {
+        log_string(LOG_ERR, "append_note: Error closing file %s.", name);
+    }
+
+    openReserve(); // Restore the reserve file
 }
 
 bool is_note_to( CHAR_DATA *ch, NOTE_DATA *pnote )
@@ -3835,33 +3886,86 @@ bool is_note_to( CHAR_DATA *ch, NOTE_DATA *pnote )
 }
 
 
-void note_attach( CHAR_DATA *ch, int type )
+
+void note_attach(CHAR_DATA *ch, int type)
 {
-	NOTE_DATA *pnote;
+    NOTE_DATA *pnote;
 
-	if ( ch->pnote != NULL )
-	return;
+    // Input Validation
+    if (ch == NULL)
+    {
+        log_string(LOG_ERR, "note_attach: CHAR_DATA pointer is NULL.");
+        return;
+    }
 
-	pnote = new_note();
+    // Validate note type
+    if (type < NOTE_NOTE || type > NOTE_ARTICLE) // Adjust based on actual definitions
+    {
+        log_string(LOG_ERR, "note_attach: Invalid note type %d for character %s.", type, ch->name ? ch->name : "Unknown");
+        return;
+    }
 
-	pnote->next		= NULL;
-	PURGE_DATA( pnote->sender );
-	PURGE_DATA( pnote->date );
-	PURGE_DATA( pnote->to_list );
-	PURGE_DATA( pnote->subject );
-	PURGE_DATA( pnote->text );
-	pnote->sender	= str_dup( ch->name );
-	pnote->date		= NULL;
-	pnote->to_list	= NULL;
-	pnote->subject	= NULL;
-	pnote->text		= NULL;
-	pnote->type		= type;
-	if(type == NOTE_ARTICLE)
-	pnote->successes = 0;
-	ch->pnote		= pnote;
-	return;
+    // Check if the character already has an attached note
+    if (ch->pnote != NULL)
+    {
+        log_string(LOG_GAME, "note_attach: Character %s already has an attached note. Overwriting the existing note.", ch->name ? ch->name : "Unknown");
+        free_note(ch->pnote); // Free the existing note to prevent memory leaks
+        ch->pnote = NULL;
+    }
+
+    // Allocate a new note
+    pnote = new_note();
+    if (pnote == NULL)
+    {
+        log_string(LOG_ERR, "note_attach: Failed to allocate memory for a new note for character %s.", ch->name ? ch->name : "Unknown");
+        return;
+    }
+
+    // Initialize the new note
+    pnote->next = NULL;
+
+    // Clear any pre-existing data in the note fields
+    PURGE_DATA(pnote->sender);
+    PURGE_DATA(pnote->date);
+    PURGE_DATA(pnote->to_list);
+    PURGE_DATA(pnote->subject);
+    PURGE_DATA(pnote->text);
+
+    // Assign values to the note fields with validation
+    if (ch->name != NULL)
+    {
+        pnote->sender = str_dup(ch->name);
+    }
+    else
+    {
+        log_string(LOG_ERR, "note_attach: Character name is NULL. Assigning 'Unknown' as sender.");
+        pnote->sender = str_dup("Unknown");
+    }
+
+    pnote->date = str_dup(""); // Initialize as empty string; to be set when the note is saved
+    pnote->to_list = str_dup(""); // Initialize as empty string; to be set later
+    pnote->subject = str_dup(""); // Initialize as empty string; to be set later
+    pnote->text = str_dup(""); // Initialize as empty string; to be set later
+
+    // Set the note type
+    pnote->type = type;
+
+    // Initialize successes based on note type
+    if (type == NOTE_ARTICLE)
+    {
+        pnote->successes = 0;
+    }
+    else
+    {
+        pnote->successes = 1; // Default value
+    }
+
+    // Attach the note to the character
+    ch->pnote = pnote;
+
+    // Log the successful attachment
+    log_string(LOG_GAME, "note_attach: Attached a new note of type %d to character %s.", type, ch->name ? ch->name : "Unknown");
 }
-
 
 
 void note_remove( CHAR_DATA *ch, NOTE_DATA *pnote, bool bdelete)
@@ -3997,556 +4101,559 @@ void update_read(CHAR_DATA *ch, NOTE_DATA *pnote)
 
 void parse_note( CHAR_DATA *ch, char *argument, int type )
 {
-	NOTE_DATA *pnote;
-	NOTE_DATA **list;
-	DESCRIPTOR_DATA *d;
-	int vnum = 0;
-	int anum = 0;
-	char arg[MIL]={'\0'};
-	char arg2[MIL]={'\0'};
-	char *list_name;
+    NOTE_DATA *pnote;
+    NOTE_DATA **list;
+    DESCRIPTOR_DATA *d;
+    int vnum = 0;
+    int anum = 0;
+    char arg[MIL] = {'\0'};
+    char arg2[MIL] = {'\0'};
+    char *list_name;
 
-	time_t rawtime;
-	struct tm *info;
-	char buffer[100]={'\0'};
+    time_t rawtime;
+    struct tm *info;
+    char buffer[100] = {'\0'};
 
-	time( &rawtime );
+    time( &rawtime );
 
-	info = localtime( &rawtime );
+    info = localtime( &rawtime );
 
-	strftime(buffer,100,"%a %x at %I:%M%p", info); 	
+    strftime(buffer, 100, "%a %x at %I:%M%p", info);
 
-	CheckChNPC(ch);
+    CheckChNPC(ch);
 
-	switch(type)
-	{
-		default:
-		return;
-		case NOTE_NOTE:
-		list = &note_list;
-		list_name = "notes";
-		break;
-		case NOTE_BACKGROUND:
-		list = &bg_list;
-		list_name = "backgrounds";
-		break;
-		case NOTE_KNOWLEDGE:
-		list = &know_list;
-		list_name = "knowledges";
-		break;
-		case NOTE_ARTICLE:
-		list = &news_list;
-		list_name = "articles";
-		break;
-	}
+    switch(type)
+    {
+    default:
+        return;
+    case NOTE_NOTE:
+        list = &note_list;
+        list_name = "notes";
+        break;
+    case NOTE_BACKGROUND:
+        list = &bg_list;
+        list_name = "backgrounds";
+        break;
+    case NOTE_KNOWLEDGE:
+        list = &know_list;
+        list_name = "knowledges";
+        break;
+    case NOTE_ARTICLE:
+        list = &news_list;
+        list_name = "articles";
+        break;
+    }
 
-	argument = one_argument( argument, arg );
-	smash_tilde( argument );
+    argument = one_argument( argument, arg );
+    smash_tilde( argument );
 
-	if ( IS_NULLSTR(arg) || !str_prefix( arg, "read" ) )
-	{
-		bool fAll;
+    if ( IS_NULLSTR(arg) || !str_prefix( arg, "read" ) )
+    {
+        bool fAll;
 
-		if ( !str_cmp( argument, "all" ) )
-		{
-			fAll = TRUE;
-			anum = 0;
-		}
+        if ( !str_cmp( argument, "all" ) )
+        {
+            fAll = TRUE;
+            anum = 0;
+        }
 
-		else if ( IS_NULLSTR(argument) || !str_prefix(argument, "next"))
-			/* read next unread note */
-		{
-			vnum = 0;
-			for ( pnote = *list; pnote != NULL; pnote = pnote->next)
-			{
-				if (!hide_note(ch,pnote))
-				{
-					send_to_char( Format("From: %s\n\rTo: %s\n\rDate: %s\n\rMessage Number: [%3d]\n\rSubject Line:%s\n\r",
-						pnote->sender, pnote->to_list, pnote->date, vnum, pnote->subject), ch );
-					page_to_char( pnote->text, ch );
-					update_read(ch,pnote);
-					return;
-				}
-				else if (is_note_to(ch,pnote))
-					vnum++;
-			}
-			if(type == NOTE_NOTE)
-			{
-				send_to_char(Format("You have no unread %s.\n\r",list_name), ch);
-			}
-			else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE || type == NOTE_ARTICLE)
-			{
-				send_to_char(Format("Try using %s read [number] for reading.\n\r", list_name), ch);
-			}
-			return;
-		}
+        else if ( IS_NULLSTR(argument) || !str_prefix(argument, "next"))
+            /* read next unread note */
+        {
+            vnum = 0;
+            for ( pnote = *list; pnote != NULL; pnote = pnote->next)
+            {
+                if (!hide_note(ch, pnote))
+                {
+                    send_to_char( Format("From: %s\n\rTo: %s\n\rDate: %s\n\rMessage Number: [%3d]\n\rSubject Line:%s\n\r",
+                                         pnote->sender, pnote->to_list, pnote->date, vnum, pnote->subject), ch );
+                    page_to_char( pnote->text, ch );
+                    update_read(ch, pnote);
+                    return;
+                }
+                else if (is_note_to(ch, pnote))
+                    vnum++;
+            }
+            if(type == NOTE_NOTE)
+            {
+                send_to_char(Format("You have no unread %s.\n\r", list_name), ch);
+            }
+            else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE || type == NOTE_ARTICLE)
+            {
+                send_to_char(Format("Try using %s read [number] for reading.\n\r", list_name), ch);
+            }
+            return;
+        }
 
-		else if ( is_number( argument ) )
-		{
-			fAll = FALSE;
-			anum = atoi( argument );
-		}
-		else
-		{
-			send_to_char( "Read which number?\n\r", ch );
-			return;
-		}
+        else if ( is_number( argument ) )
+        {
+            fAll = FALSE;
+            anum = atoi( argument );
+        }
+        else
+        {
+            send_to_char( "Read which number?\n\r", ch );
+            return;
+        }
 
-		vnum = 0;
-		for ( pnote = *list; pnote != NULL; pnote = pnote->next )
-		{
-			if ( is_note_to( ch, pnote ) && ( vnum++ == anum || fAll ) )
-			{
-				if(type == NOTE_ARTICLE)
-				{
-					send_to_char( Format("[%3d] %s: %s\n\r", vnum -1, pnote->sender, pnote->subject), ch );
-					send_to_char( Format("%s\n\r", pnote->date), ch );
-					send_to_char( Format("Category: %s\n\r", pnote->to_list), ch);
-					send_to_char( Format("Suppression Level: %d\n\r", pnote->successes), ch);
-				}
-				else
-				{
-					send_to_char( Format("From: %s\n\r", pnote->sender), ch );
-					send_to_char( Format("To:   %s\n\r", pnote->to_list), ch );
-					send_to_char( Format("Date: %s\n\r", pnote->date), ch );
-					send_to_char( Format("Message Number: [%3d]", vnum - 1), ch );
-					send_to_char( Format("Subject Line: %s\n\r", pnote->subject), ch);
-					send_to_char("\tW----------\tn\n\r", ch);
-				}
-				page_to_char( pnote->text, ch );
-				update_read(ch,pnote);
-				return;
-			}
-		}
+        vnum = 0;
+        for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+        {
+            if ( is_note_to( ch, pnote ) && ( vnum++ == anum || fAll ) )
+            {
+                if(type == NOTE_ARTICLE)
+                {
+                    send_to_char( Format("[%3d] %s: %s\n\r", vnum - 1, pnote->sender, pnote->subject), ch );
+                    send_to_char( Format("%s\n\r", pnote->date), ch );
+                    send_to_char( Format("Category: %s\n\r", pnote->to_list), ch);
+                    send_to_char( Format("Suppression Level: %d\n\r", pnote->successes), ch);
+                }
+                else
+                {
+                    send_to_char( Format("\tWFrom\tn: %s\n\r", pnote->sender), ch );
+                    send_to_char( Format("\tWTo\tn:   %s\n\r", pnote->to_list), ch );
+                    send_to_char( Format("\tWDate\tn: %s\n\r", pnote->date), ch );
+                    send_to_char( Format("\tWMessage Number\tn: [%3d]\n\r", vnum - 1), ch );
+                    send_to_char( Format("\tWSubject Line\tn: %s\n\r", pnote->subject), ch);
+                    send_to_char("\tW----------\tn\n\r", ch);
+                }
+                page_to_char( pnote->text, ch );
+                update_read(ch, pnote);
+                return;
+            }
+        }
 
-		send_to_char(Format("There aren't that many %s.\n\r", list_name), ch);
-		return;
-	}
+        send_to_char(Format("There aren't that many %s.\n\r", list_name), ch);
+        return;
+    }
 
-	if ( !str_prefix( arg, "list" ) )
-	{
-		vnum = 0;
+    if ( !str_prefix( arg, "list" ) )
+    {
+        vnum = 0;
 
-		if(type ==NOTE_NOTE)
-		{
-			send_to_char( "\tWMessage | From            | To          | Subject Line\tn\n\r", ch );
-			send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
-		}
+        if(type == NOTE_NOTE)
+        {
+            send_to_char( "\tWMessage | From            | To          | Subject Line\tn\n\r", ch );
+            send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
+        }
 
-		if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
-		{
-			send_to_char( "\tW ID #   | Keywords\tn\n\r", ch);
-			send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
-		}
+        if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
+        {
+            send_to_char( "\tW ID #   | Keywords\tn\n\r", ch);
+            send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
+        }
 
-		if(type == NOTE_ARTICLE)
-		{
-			send_to_char("\tWArticle | Author | Category | Subject\tn\n\r", ch);
-			send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
+        if(type == NOTE_ARTICLE)
+        {
+            send_to_char("\tWArticle | Author | Category | Subject\tn\n\r", ch);
+            send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
 
-		}
+        }
 
-		for ( pnote = *list; pnote != NULL; pnote = pnote->next )
-		{
-			if ( is_note_to( ch, pnote ) )
-			{
-				if(type == NOTE_NOTE)
-				{
-					send_to_char( Format("\tY[%3d%s]  \tW|\tY %-15s \tW|\tY %-11s \tW|\tY %s\tn\n\r", vnum, hide_note(ch,pnote) ? " " : "N", pnote->sender, pnote->to_list, pnote->subject), ch );
-				}
-				else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
-				{
-					send_to_char( Format("\tY%3d%s    \tW|\tY %s\tn\n\r", vnum, hide_note(ch,pnote) ? " " : "N", pnote->to_list), ch );
-				}
-				else if(type == NOTE_ARTICLE)
-				{
-					send_to_char( Format("\tY %6d \tW|\tY %s  \tW|\tY %s: %s %s\tn\n\r", vnum, pnote->sender, pnote->to_list, pnote->subject, pnote->successes ? " (\tYSuppressed\tn)" : ""), ch );
-				}
-				vnum++;
-			}
-		}
-		if (!vnum)
-		{
-			switch(type)
-			{
-				case NOTE_NOTE:
-				send_to_char("There are no notes for you.\n\r",ch);
-				break;
-				case NOTE_BACKGROUND:
-				if(IS_ADMIN(ch))
-					send_to_char("There are no background entries.\n\r",ch);
-				else
-					send_to_char("Huh?\n\r",ch);
-				break;
-				case NOTE_KNOWLEDGE:
-				if(IS_ADMIN(ch))
-					send_to_char("There are no fact entries.\n\r",ch);
-				else
-					send_to_char("Huh?\n\r",ch);
-				break;
-				case NOTE_ARTICLE:
-				if(IS_ADMIN(ch))
-					send_to_char("There are no newspaper articles.\n\r",ch);
-				else
-					send_to_char("Huh?\n\r",ch);
-				break;
-			}
-		}
-		return;
-	}
+        for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+        {
+            if ( is_note_to( ch, pnote ) )
+            {
+                if(type == NOTE_NOTE)
+                {
+                    send_to_char( Format("\tY[%3d%s]  \tW|\tY %-15s \tW|\tY %-11s \tW|\tY %s\tn\n\r", vnum, hide_note(ch, pnote) ? " " : "N", pnote->sender, pnote->to_list, pnote->subject), ch );
+                }
+                else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
+                {
+                    send_to_char( Format("\tY%3d%s    \tW|\tY %s\tn\n\r", vnum, hide_note(ch, pnote) ? " " : "N", pnote->to_list), ch );
+                }
+                else if(type == NOTE_ARTICLE)
+                {
+                    send_to_char( Format("\tY %6d \tW|\tY %s  \tW|\tY %s: %s %s\tn\n\r", vnum, pnote->sender, pnote->to_list, pnote->subject, pnote->successes ? " (\tYSuppressed\tn)" : ""), ch );
+                }
+                vnum++;
+            }
+        }
+        if (!vnum)
+        {
+            switch(type)
+            {
+            case NOTE_NOTE:
+                send_to_char("There are no notes for you.\n\r", ch);
+                break;
+            case NOTE_BACKGROUND:
+                if(IS_ADMIN(ch))
+                    send_to_char("There are no background entries.\n\r", ch);
+                else
+                    send_to_char("Huh?\n\r", ch);
+                break;
+            case NOTE_KNOWLEDGE:
+                if(IS_ADMIN(ch))
+                    send_to_char("There are no fact entries.\n\r", ch);
+                else
+                    send_to_char("Huh?\n\r", ch);
+                break;
+            case NOTE_ARTICLE:
+                if(IS_ADMIN(ch))
+                    send_to_char("There are no newspaper articles.\n\r", ch);
+                else
+                    send_to_char("Huh?\n\r", ch);
+                break;
+            }
+        }
+        return;
+    }
 
-	if ( !str_prefix( arg, "suppression" ))
-	{
-		if(type == NOTE_ARTICLE)
-		{
-			argument = one_argument(argument, arg2);
-			if ( !is_number( argument ) || !is_number( arg2 )  )
-			{
-				send_to_char(
-					"Which article's suppression are you trying to affect?\n\r",
-					ch );
-				send_to_char(
-					"And what number of successes are you setting it to?\n\r", ch);
-				send_to_char(
-					"(Use 0 for unsuppressed)\n\r", ch);
-				return;
-			}
+    if ( !str_prefix( arg, "suppression" ))
+    {
+        if(type == NOTE_ARTICLE)
+        {
+            argument = one_argument(argument, arg2);
+            if ( !is_number( argument ) || !is_number( arg2 )  )
+            {
+                send_to_char(
+                    "Which article's suppression are you trying to affect?\n\r",
+                    ch );
+                send_to_char(
+                    "And what number of successes are you setting it to?\n\r", ch);
+                send_to_char(
+                    "(Use 0 for unsuppressed)\n\r", ch);
+                return;
+            }
 
-			anum = atoi( arg2 );
+            anum = atoi( arg2 );
 
-			vnum = 0;
-			for ( pnote = *list; pnote != NULL; pnote = pnote->next )
-			{
-				if ( is_note_to( ch, pnote ) && ( vnum++ == anum ) )
-				{
-					pnote->successes = atoi(argument);
-					save_notes(pnote->type);
-					send_to_char("Suppression level set.\n\r", ch);
-					return;
-				}
-			}
+            vnum = 0;
+            for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+            {
+                if ( is_note_to( ch, pnote ) && ( vnum++ == anum ) )
+                {
+                    pnote->successes = atoi(argument);
+                    save_notes(pnote->type);
+                    send_to_char("Suppression level set.\n\r", ch);
+                    return;
+                }
+            }
 
-			send_to_char("There aren't that many articles.\n\r",ch);
-			return;
-		}
-	}
+            send_to_char("There aren't that many articles.\n\r", ch);
+            return;
+        }
+    }
 
-	if ( !str_prefix( arg, "search" ) )
-	{
-		argument = one_argument(argument, arg2);
-		vnum = 0;
-		for ( pnote = *list; pnote != NULL; pnote = pnote->next )
-		{
-			if ( is_note_to( ch, pnote ) )
-			{
-				if(((!str_cmp(arg2, "to")
-					|| !str_cmp(arg2, "keywords")
-					|| !str_cmp(arg2, "category"))
-					&& strstr(pnote->to_list, argument))
-					|| ((!str_cmp(arg2, "subject")
-						|| !str_cmp(arg2, "difficulty"))
-					&& strstr(pnote->subject, argument))
-					|| ((!str_cmp(arg2, "text")
-						|| !str_cmp(arg2, "body")
-						|| !str_cmp(arg2, "contents"))
-					&& strstr(pnote->text, argument))
-					|| ((!str_cmp(arg2, "from")
-						|| !str_cmp(arg2, "by")
-						|| !str_cmp(arg2, "sender")
-						|| !str_cmp(arg2, "author"))
-					&& !str_cmp(pnote->sender, argument))
-					|| (!str_cmp(arg2, "suppressed")
-						&& type == NOTE_ARTICLE
-						&& pnote->successes))
-				{
-					if(type == NOTE_NOTE)
-					{
-						send_to_char( Format("[%3d%s] %s: %s\n\r", vnum, hide_note(ch,pnote) ? " " : "N", pnote->sender, pnote->subject), ch );
-					}
-					else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
-					{
-						send_to_char( Format("[%3d%s] %s: %s\n\r", vnum, hide_note(ch,pnote) ? " " : "N", pnote->sender, pnote->to_list), ch );
-					}
-					else if(type == NOTE_ARTICLE)
-					{
-						send_to_char( Format("[%3d %s] %s: %s%s\n\r", vnum, pnote->sender, pnote->to_list, pnote->subject, pnote->successes ? " (\tYSuppressed\tn)" : ""), ch );
-					}
-				}
-				vnum++;
-			}
-		}
-		if (!vnum)
-		{
-			switch(type)
-			{
-				case NOTE_NOTE:
-				send_to_char("Search found no notes.\n\r",ch);
-				break;
-				case NOTE_BACKGROUND:
-				if(IS_ADMIN(ch))
-					send_to_char("Search found no background entries.\n\r",ch);
-				else
-					send_to_char("Huh?\n\r",ch);
-				break;
-				case NOTE_KNOWLEDGE:
-				if(IS_ADMIN(ch))
-					send_to_char("Search found no knowledge entries.\n\r",ch);
-				else
-					send_to_char("Huh?\n\r",ch);
-				break;
-				case NOTE_ARTICLE:
-				if(IS_ADMIN(ch))
-					send_to_char("Search found no newspaper articles.\n\r",ch);
-				else
-					send_to_char("Huh?\n\r",ch);
-				break;
-			}
-		}
-		return;
-	}
+    if ( !str_prefix( arg, "search" ) )
+    {
+        argument = one_argument(argument, arg2);
+        vnum = 0;
+        for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+        {
+            if ( is_note_to( ch, pnote ) )
+            {
+                if(((!str_cmp(arg2, "to")
+                        || !str_cmp(arg2, "keywords")
+                        || !str_cmp(arg2, "category"))
+                        && strstr(pnote->to_list, argument))
+                        || ((!str_cmp(arg2, "subject")
+                             || !str_cmp(arg2, "difficulty"))
+                            && strstr(pnote->subject, argument))
+                        || ((!str_cmp(arg2, "text")
+                             || !str_cmp(arg2, "body")
+                             || !str_cmp(arg2, "contents"))
+                            && strstr(pnote->text, argument))
+                        || ((!str_cmp(arg2, "from")
+                             || !str_cmp(arg2, "by")
+                             || !str_cmp(arg2, "sender")
+                             || !str_cmp(arg2, "author"))
+                            && !str_cmp(pnote->sender, argument))
+                        || (!str_cmp(arg2, "suppressed")
+                            && type == NOTE_ARTICLE
+                            && pnote->successes))
+                {
+                    if(type == NOTE_NOTE)
+                    {
+                        send_to_char( Format("[%3d%s] %s: %s\n\r", vnum, hide_note(ch, pnote) ? " " : "N", pnote->sender, pnote->subject), ch );
+                    }
+                    else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
+                    {
+                        send_to_char( Format("[%3d%s] %s: %s\n\r", vnum, hide_note(ch, pnote) ? " " : "N", pnote->sender, pnote->to_list), ch );
+                    }
+                    else if(type == NOTE_ARTICLE)
+                    {
+                        send_to_char( Format("[%3d %s] %s: %s%s\n\r", vnum, pnote->sender, pnote->to_list, pnote->subject, pnote->successes ? " (\tYSuppressed\tn)" : ""), ch );
+                    }
+                }
+                vnum++;
+            }
+        }
+        if (!vnum)
+        {
+            switch(type)
+            {
+            case NOTE_NOTE:
+                send_to_char("Search found no notes.\n\r", ch);
+                break;
+            case NOTE_BACKGROUND:
+                if(IS_ADMIN(ch))
+                    send_to_char("Search found no background entries.\n\r", ch);
+                else
+                    send_to_char("Huh?\n\r", ch);
+                break;
+            case NOTE_KNOWLEDGE:
+                if(IS_ADMIN(ch))
+                    send_to_char("Search found no knowledge entries.\n\r", ch);
+                else
+                    send_to_char("Huh?\n\r", ch);
+                break;
+            case NOTE_ARTICLE:
+                if(IS_ADMIN(ch))
+                    send_to_char("Search found no newspaper articles.\n\r", ch);
+                else
+                    send_to_char("Huh?\n\r", ch);
+                break;
+            }
+        }
+        return;
+    }
 
-	if ( !str_prefix( arg, "remove" ) )
-	{
-		if ( !is_number( argument ) )
-		{
-			send_to_char( "Remove which number?\n\r", ch );
-			return;
-		}
+    if ( !str_prefix( arg, "remove" ) )
+    {
+        if ( !is_number( argument ) )
+        {
+            send_to_char( "Remove which number?\n\r", ch );
+            return;
+        }
 
-		anum = atoi( argument );
-		vnum = 0;
-		for ( pnote = *list; pnote != NULL; pnote = pnote->next )
-		{
-			if ( is_note_to( ch, pnote ) && vnum++ == anum )
-			{
-				note_remove( ch, pnote, FALSE );
-				send_to_char( "Ok.\n\r", ch );
-				return;
-			}
-		}
+        anum = atoi( argument );
+        vnum = 0;
+        for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+        {
+            if ( is_note_to( ch, pnote ) && vnum++ == anum )
+            {
+                note_remove( ch, pnote, FALSE );
+                send_to_char( "Ok.\n\r", ch );
+                return;
+            }
+        }
 
-		send_to_char(Format("There aren't that many %s.",list_name),ch);
-		return;
-	}
+        send_to_char(Format("There aren't that many %s.", list_name), ch);
+        return;
+    }
 
-	if ( !str_prefix( arg, "delete" ) && get_trust(ch) >= MAX_LEVEL - 1)
-	{
-		if ( !is_number( argument ) )
-		{
-			send_to_char( "Note delete which number?\n\r", ch );
-			return;
-		}
+    if ( !str_prefix( arg, "delete" ) && get_trust(ch) >= MAX_LEVEL - 1)
+    {
+        if ( !is_number( argument ) )
+        {
+            send_to_char( "Note delete which number?\n\r", ch );
+            return;
+        }
 
-		anum = atoi( argument );
-		vnum = 0;
-		for ( pnote = *list; pnote != NULL; pnote = pnote->next )
-		{
-			if ( is_note_to( ch, pnote ) && vnum++ == anum )
-			{
-				note_remove( ch, pnote,TRUE );
-				send_to_char( "Ok.\n\r", ch );
-				return;
-			}
-		}
+        anum = atoi( argument );
+        vnum = 0;
+        for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+        {
+            if ( is_note_to( ch, pnote ) && vnum++ == anum )
+            {
+                note_remove( ch, pnote, TRUE );
+                send_to_char( "Ok.\n\r", ch );
+                return;
+            }
+        }
 
-		send_to_char(Format("There aren't that many %s.",list_name), ch);
-		return;
-	}
+        send_to_char(Format("There aren't that many %s.", list_name), ch);
+        return;
+    }
 
-	if ( !str_prefix( arg, "body" ) )
-	{
-		note_attach( ch,type );
-		if (ch->pnote->type != type)
-		{
-			send_to_char("You already have a note, background, knowledge, or newspaper\n\r",ch);
-			send_to_char("article in progress.\n\r",ch);
-			return;
-		}
+    if ( !str_prefix( arg, "body" ) )
+    {
+        note_attach( ch, type );
+        if (ch->pnote->type != type)
+        {
+            send_to_char("You already have a note, background, knowledge, or newspaper\n\r", ch);
+            send_to_char("article in progress.\n\r", ch);
+            return;
+        }
 
-		if(IS_NULLSTR(argument))
-		{
-			string_append( ch, &ch->pnote->text );
-			return;
-		}
+        if(IS_NULLSTR(argument))
+        {
+            string_append( ch, &ch->pnote->text );
+            return;
+        }
 
-		send_to_char("Syntax: note body\n\rThis will load the string editor.\n\r", ch);
-		return;
-	}
+        send_to_char("Syntax: note body\n\rThis will load the string editor.\n\r", ch);
+        return;
+    }
 
-	if ( !str_prefix( arg, "subject" ) || !str_prefix(arg, "difficulty") )
-	{
-		note_attach( ch,type );
-		if (ch->pnote->type != type)
-		{
-			send_to_char("You already have a note, background, knowledge, or newspaper\n\r",ch);
-			send_to_char("article in progress.\n\r",ch);
-			return;
-		}
+    if ( !str_prefix( arg, "subject" ) || !str_prefix(arg, "difficulty") )
+    {
+        note_attach( ch, type );
+        if (ch->pnote->type != type)
+        {
+            send_to_char("You already have a note, background, knowledge, or newspaper\n\r", ch);
+            send_to_char("article in progress.\n\r", ch);
+            return;
+        }
 
-		if (!is_number(argument) && (ch->pnote->type == NOTE_BACKGROUND
-			|| ch->pnote->type == NOTE_KNOWLEDGE))
-		{
-			send_to_char("Difficulty must be a number from 1 to 10.\n\r",ch);
-			return;
-		}
-		else if(is_number(argument) && (ch->pnote->type == NOTE_BACKGROUND
-			|| ch->pnote->type == NOTE_KNOWLEDGE))
-		{
-			if( 1 > atoi(argument) || atoi(argument) > 10 )
-			{
-				send_to_char("Difficulty must be a number from 1 to 10.\n\r",ch);
-				return;
-			}
-		}
+        if (!is_number(argument) && (ch->pnote->type == NOTE_BACKGROUND
+                                     || ch->pnote->type == NOTE_KNOWLEDGE))
+        {
+            send_to_char("Difficulty must be a number from 1 to 10.\n\r", ch);
+            return;
+        }
+        else if(is_number(argument) && (ch->pnote->type == NOTE_BACKGROUND
+                                        || ch->pnote->type == NOTE_KNOWLEDGE))
+        {
+            if( 1 > atoi(argument) || atoi(argument) > 10 )
+            {
+                send_to_char("Difficulty must be a number from 1 to 10.\n\r", ch);
+                return;
+            }
+        }
 
-		PURGE_DATA( ch->pnote->subject );
-		ch->pnote->subject = str_dup( argument );
-		send_to_char( "Ok.\n\r", ch );
-		return;
-	}
+        PURGE_DATA( ch->pnote->subject );
+        ch->pnote->subject = str_dup( argument );
+        send_to_char( "Ok.\n\r", ch );
+        return;
+    }
 
-	if ( !str_prefix( arg, "to" ) || !str_prefix( arg, "keywords" )
-		|| !str_prefix( arg, "category" ) )
-	{
-		note_attach( ch,type );
-		if (ch->pnote->type != type)
-		{
-			send_to_char("You already have a note, background, knowledge, or newspaper\n\r",ch);
-			send_to_char("article in progress.\n\r",ch);
-			return;
-		}
-		PURGE_DATA( ch->pnote->to_list );
-		ch->pnote->to_list = str_dup( argument );
-		send_to_char( "Ok.\n\r", ch );
-		return;
-	}
+    if ( !str_prefix( arg, "to" ) || !str_prefix( arg, "keywords" )
+            || !str_prefix( arg, "category" ) )
+    {
+        note_attach( ch, type );
+        if (ch->pnote->type != type)
+        {
+            send_to_char("You already have a note, background, knowledge, or newspaper\n\r", ch);
+            send_to_char("article in progress.\n\r", ch);
+            return;
+        }
+        PURGE_DATA( ch->pnote->to_list );
+        ch->pnote->to_list = str_dup( argument );
+        send_to_char( "Ok.\n\r", ch );
+        return;
+    }
 
-	if ( !str_prefix( arg, "clear" ) )
-	{
-		if ( ch->pnote != NULL )
-		{
-			free_note(ch->pnote);
-			ch->pnote = NULL;
-		}
+    if ( !str_prefix( arg, "clear" ) )
+    {
+        if ( ch->pnote != NULL )
+        {
+            free_note(ch->pnote);
+            ch->pnote = NULL;
+        }
 
-		send_to_char( "Ok.\n\r", ch );
-		return;
-	}
+        send_to_char( "Ok.\n\r", ch );
+        return;
+    }
 
-	if ( !str_prefix( arg, "show" ) )
-	{
-		if ( ch->pnote == NULL )
-		{
-			send_to_char( "You have no note, background, knowledge, or newspaper\n\r",ch);
-			send_to_char("article in progress.\n\r",ch);
-			return;
-		}
+    if ( !str_prefix( arg, "show" ) )
+    {
+        if ( ch->pnote == NULL )
+        {
+            send_to_char( "You have no note, background, knowledge, or newspaper\n\r", ch);
+            send_to_char("article in progress.\n\r", ch);
+            return;
+        }
 
-		if (ch->pnote->type != type)
-		{
-			send_to_char("You aren't working on that kind of text.\n\r",ch);
-			return;
-		}
+        if (ch->pnote->type != type)
+        {
+            send_to_char("You aren't working on that kind of text.\n\r", ch);
+            return;
+        }
 
-		if(type == NOTE_NOTE)
-		{
-			send_to_char(Format("%s: %s\n\rTo: %s\n\r", ch->pnote->sender, ch->pnote->subject, ch->pnote->to_list), ch);
-		}
-		else if (type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
-		{
-			send_to_char(Format("Author: %s Difficulty: %s\n\rKeywords: %s\n\r", ch->pnote->sender, ch->pnote->subject, ch->pnote->to_list), ch);
-		}
-		else if (type == NOTE_ARTICLE)
-		{
-			send_to_char(Format("Author: %s Subject: %s\n\rCategory: %s\n\r", ch->pnote->sender, ch->pnote->subject, ch->pnote->to_list), ch);
-		}
-		send_to_char( ch->pnote->text, ch );
-		return;
-	}
+        if(type == NOTE_NOTE)
+        {
+            send_to_char(Format("%s: %s\n\rTo: %s\n\r", ch->pnote->sender, ch->pnote->subject, ch->pnote->to_list), ch);
+        }
+        else if (type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
+        {
+            send_to_char(Format("Author: %s Difficulty: %s\n\rKeywords: %s\n\r", ch->pnote->sender, ch->pnote->subject, ch->pnote->to_list), ch);
+        }
+        else if (type == NOTE_ARTICLE)
+        {
+            send_to_char(Format("Author: %s Subject: %s\n\rCategory: %s\n\r", ch->pnote->sender, ch->pnote->subject, ch->pnote->to_list), ch);
+        }
+        send_to_char( ch->pnote->text, ch );
+        return;
+    }
 
-	if ( !str_prefix( arg, "post" ) || !str_prefix(arg, "send"))
-	{
-		char *strtime;
+    if ( !str_prefix( arg, "post" ) || !str_prefix(arg, "send"))
+    {
+        char *strtime;
 
-		if ( ch->pnote == NULL )
-		{
-			send_to_char( "You have no note in progress.\n\r", ch );
-			return;
-		}
+        if ( ch->pnote == NULL )
+        {
+            send_to_char( "You have no note in progress.\n\r", ch );
+            return;
+        }
 
-		if (ch->pnote->type != type)
-		{
-			send_to_char("You aren't working on that kind of note.\n\r",ch);
-			return;
-		}
+        if (ch->pnote->type != type)
+        {
+            send_to_char("You aren't working on that kind of note.\n\r", ch);
+            return;
+        }
 
-		if (!str_cmp(ch->pnote->to_list,""))
-		{
-			if(type == NOTE_NOTE)
-				send_to_char(
-					"You need to provide a recipient (name, all, or admin).\n\r",
-					ch);
-			else if(type == NOTE_BACKGROUND)
-				send_to_char("You need to provide at least one keyword or room vnum.\n\r", ch);
-			else if(type == NOTE_KNOWLEDGE)
-				send_to_char("You need to provide at least one keyword.\n\r", ch);
-			else if(type == NOTE_ARTICLE) {
-				send_to_char("Article placed in general news stream.\n\r", ch);
-				PURGE_DATA(ch->pnote->to_list);
-				ch->pnote->to_list = str_dup("General");
-			}
-			return;
-		}
+        if (!str_cmp(ch->pnote->to_list, ""))
+        {
+            if(type == NOTE_NOTE)
+                send_to_char(
+                    "You need to provide a recipient (name, all, or admin).\n\r",
+                    ch);
+            else if(type == NOTE_BACKGROUND)
+                send_to_char("You need to provide at least one keyword or room vnum.\n\r", ch);
+            else if(type == NOTE_KNOWLEDGE)
+                send_to_char("You need to provide at least one keyword.\n\r", ch);
+            else if(type == NOTE_ARTICLE)
+            {
+                send_to_char("Article placed in general news stream.\n\r", ch);
+                PURGE_DATA(ch->pnote->to_list);
+                ch->pnote->to_list = str_dup("General");
+            }
+            return;
+        }
 
-		if (!str_cmp(ch->pnote->subject,""))
-		{
-			if(type == NOTE_NOTE || type == NOTE_ARTICLE)
-				send_to_char("You need to provide a subject.\n\r",ch);
-			else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
-				send_to_char("You need to provide a difficulty.\n\r", ch);
-			return;
-		}
+        if (!str_cmp(ch->pnote->subject, ""))
+        {
+            if(type == NOTE_NOTE || type == NOTE_ARTICLE)
+                send_to_char("You need to provide a subject.\n\r", ch);
+            else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
+                send_to_char("You need to provide a difficulty.\n\r", ch);
+            return;
+        }
 
-		ch->pnote->next			= NULL;
-		strtime				= buffer;
-		strtime[strlen(strtime)-1]	= '\0';
-		PURGE_DATA( ch->pnote->date );
-		ch->pnote->date			= str_dup( strtime );
-		ch->pnote->date_stamp		= current_time;
+        ch->pnote->next			= NULL;
+        strtime				= buffer;
+        strtime[strlen(strtime) - 1]	= '\0';
+        PURGE_DATA( ch->pnote->date );
+        ch->pnote->date			= str_dup( strtime );
+        ch->pnote->date_stamp		= current_time;
 
-		if(type == NOTE_NOTE || type == NOTE_ARTICLE)
-		{
-			send_to_char("Posted.\n\r",ch);
-		}
-		else
-		{
-			if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
-			{
-				send_to_char("Added.\n\r", ch);
-			}
-		}
+        if(type == NOTE_NOTE || type == NOTE_ARTICLE)
+        {
+            send_to_char("Posted.\n\r", ch);
+        }
+        else
+        {
+            if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
+            {
+                send_to_char("Added.\n\r", ch);
+            }
+        }
 
-		for(d = descriptor_list; d != NULL; d = d->next) {
-			if((type == NOTE_ARTICLE || type == NOTE_BACKGROUND
-				|| type == NOTE_KNOWLEDGE)
-				&& (IS_ADMIN(d->character)
-					|| (d->original != NULL && IS_ADMIN(d->original)))) {
-				send_to_char(Format("A new item has been added to %s by %s\n\r", list_name, ch->name), d->character);
-		}
-		else
-		{
-			if(d->character && is_note_to(d->character, ch->pnote))
-				send_to_char("A new note has been delivered.\n\r", d->character);
-		}
-	}
+        for(d = descriptor_list; d != NULL; d = d->next)
+        {
+            if((type == NOTE_ARTICLE || type == NOTE_BACKGROUND
+                    || type == NOTE_KNOWLEDGE)
+                    && (IS_ADMIN(d->character)
+                        || (d->original != NULL && IS_ADMIN(d->original))))
+            {
+                send_to_char(Format("A new item has been added to %s by %s\n\r", list_name, ch->name), d->character);
+            }
+            else
+            {
+                if(d->character && is_note_to(d->character, ch->pnote))
+                    send_to_char("A new note has been delivered.\n\r", d->character);
+            }
+        }
 
-	append_note(ch->pnote);
-	ch->pnote = NULL;
-	return;
-}
+        append_note(ch->pnote);
+        ch->pnote = NULL;
+        return;
+    }
 
-send_to_char( "You can't do that.\n\r", ch );
-return;
+    send_to_char( "You can't do that.\n\r", ch );
+    return;
 }
 
 NOTE_DATA * find_bg_keyword(char *arg)
@@ -4577,71 +4684,110 @@ NOTE_DATA * find_knowledge_keyword(char *arg)
 
 void load_papers()
 {
-	FILE *fp;
-	NEWSPAPER *pnewslast;
-	int i = 0;
-	bool No_Problem = FALSE;
+    FILE *fp;
+    NEWSPAPER *pnewslast;
+    int i = 0;
+    bool No_Problem = FALSE;
 
-	if ( ( fp = fopen( PAPER_FILE, "r" ) ) == NULL )
-		return;
+    fp = fopen(PAPER_FILE, "r");
+    if (!fp)
+    {
+        log_string(LOG_ERR, "load_papers: Unable to open the file %s", PAPER_FILE);
+        return;  // If file cannot be opened, we should return and not crash.
+    }
 
-	pnewslast = NULL;
-	for ( ; ; )
-	{
-		NEWSPAPER *pnews;
-		char letter;
+    pnewslast = NULL;
+    
+    while (1)
+    {
+        NEWSPAPER *pnews;
+        char letter;
 
-		No_Problem = FALSE;
+        No_Problem = FALSE;
 
-		do
-		{
-			letter = getc( fp );
-			if ( feof(fp) )
-			{
-				fclose( fp );
-				update_news_stands();
-				return;
-			}
-		}
-		while ( isspace(letter) );
-		ungetc( letter, fp );
+        // Skip leading whitespace and check for end of file.
+        do
+        {
+            letter = getc(fp);
+            if (feof(fp))
+            {
+                fclose(fp);
+                update_news_stands();
+                return;
+            }
+        } while (isspace(letter));
 
-		ALLOC_DATA(pnews, NEWSPAPER, 1);
+        ungetc(letter, fp);  // Put the character back to process next.
 
-		if ( str_cmp( fread_word( fp ), "Name" ))
-			break;
-		pnews->name   = fread_string( fp );
+        // Allocate memory for the newspaper.
+        ALLOC_DATA(pnews, NEWSPAPER, 1);
+        if (!pnews)
+        {
+            log_string(LOG_ERR, "load_papers: Memory allocation failed for newspaper.");
+            fclose(fp);
+            return;
+        }
 
-		if ( str_cmp( fread_word( fp ), "States" ))
-			break;
-		pnews->on_stands   = fread_number( fp );
-		pnews->cost	   = fread_number( fp );
+        // Read the "Name" keyword.
+        if (str_cmp(fread_word(fp), "Name"))
+        {
+            log_string(LOG_BUG, "load_papers: Missing or invalid 'Name' keyword.");
+            break;  // Exit on error.
+        }
+        pnews->name = fread_string(fp);  // Read the name of the newspaper.
+        if (!pnews->name)
+        {
+            log_string(LOG_BUG, "load_papers: Failed to read newspaper name.");
+            break;
+        }
 
-		if ( str_cmp( fread_word( fp ), "Articles" ))
-			break;
-		for(i=0;i<MAX_ARTICLES;i++)
-			pnews->articles[i]   = fread_number( fp );
+        // Read the "States" keyword and the subsequent data.
+        if (str_cmp(fread_word(fp), "States"))
+        {
+            log_string(LOG_BUG, "load_papers: Missing or invalid 'States' keyword.");
+            break;  // Exit on error.
+        }
+        pnews->on_stands = fread_number(fp);
+        pnews->cost = fread_number(fp);
 
-		if (paper_list == NULL)
-			paper_list           = pnews;
-		else
-			pnewslast->next     = pnews;
+        // Read the "Articles" keyword and the articles list.
+        if (str_cmp(fread_word(fp), "Articles"))
+        {
+            log_string(LOG_BUG, "load_papers: Missing or invalid 'Articles' keyword.");
+            break;  // Exit on error.
+        }
+        for (i = 0; i < MAX_ARTICLES; i++)
+        {
+            pnews->articles[i] = fread_number(fp);  // Read article indexes.
+        }
 
-		pnewslast       = pnews;
+        // Link the newspaper to the list.
+        if (paper_list == NULL)
+        {
+            paper_list = pnews;
+        }
+        else
+        {
+            pnewslast->next = pnews;
+        }
 
-		No_Problem = TRUE;
-	}
+        pnewslast = pnews;
+        pnewslast->next = NULL;  // Ensure the 'next' pointer is NULL for the last newspaper.
 
-	if(!No_Problem)
-	{
-		strncpy( strArea, PAPER_FILE, sizeof(strArea) );
-		fpArea = fp;
-		log_string(LOG_BUG, "Load_papers: bad key word.");
-		exit( 1 );
-	}
+        No_Problem = TRUE;  // Mark that the newspaper was loaded successfully.
+    }
 
-	return;
+    if (!No_Problem)
+    {
+        // If there was an error during loading, log it and exit.
+        log_string(LOG_BUG, "load_papers: Bad keyword or other error while loading newspapers.");
+        fclose(fp);
+        exit(1);  // Exit to prevent further issues.
+    }
+
+    return;
 }
+
 
 void save_papers()
 {
