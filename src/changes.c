@@ -128,12 +128,12 @@ void load_changes()
         char *trimmedLine = str_strip(line);
 
         fprintf(debug_file, "Read line: %s\n", trimmedLine);
-        log_string(LOG_GAME, Format("DEBUG: Read line: %s\n", trimmedLine));
+        // log_string(LOG_GAME, Format("DEBUG: Read line: %s\n", trimmedLine));
 
         if (strcmp(trimmedLine, "<change>") == 0)
         {
             printf("DEBUG: Found <change> tag\n"); // Debug print
-            log_string(LOG_GAME, "DEBUG: Found <change> tag\n");
+            // log_string(LOG_GAME, "DEBUG: Found <change> tag\n");
 
             change = (struct change_data *)malloc(sizeof(struct change_data));
             if (change)
@@ -149,7 +149,7 @@ void load_changes()
         else if (strcmp(trimmedLine, "</change>") == 0)
         {
             printf("DEBUG: Found </change> tag\n"); // Debug print
-            log_string(LOG_GAME, "DEBUG: Found </change> tag\n");
+            // log_string(LOG_GAME, "DEBUG: Found </change> tag\n");
 
             if (change)
             {
@@ -173,7 +173,7 @@ void load_changes()
             if (name && value)
             {
                 fprintf(debug_file, "Found tag: %s, value: %s\n", name, value);
-                log_string(LOG_GAME, Format("DEBUG: Found tag: %s, value: %s\n", name, value));
+                // log_string(LOG_GAME, Format("DEBUG: Found tag: %s, value: %s\n", name, value));
 
                 if (strcmp(name, "imm") == 0)
                     change->imm = str_dup(value);

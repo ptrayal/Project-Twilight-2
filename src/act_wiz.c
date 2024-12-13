@@ -1013,9 +1013,10 @@ void do_ostat( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-    send_to_char( Format("Name(s): %s\n\r", obj->name), ch );
+	send_to_char( Format("\tWShort Description\tn: %s\n\r", obj->short_descr), ch);
+    send_to_char( Format("\tWName(s)\tn: %s\n\r", obj->name), ch );
     send_to_char( Format("Vnum: %d  Type: %s  Resets: %d\n\r", obj->pIndexData->vnum, item_name(obj->item_type), obj->pIndexData->reset_num), ch );
-    send_to_char( Format("Short description: %s\n\rLong description: %s\n\r", obj->short_descr, obj->description), ch );
+    send_to_char( Format("Long description: %s\n\r",obj->description), ch );
     send_to_char( Format("Wear bits: %s\n\r", flag_string( wear_flags, obj->wear_flags )), ch );
     send_to_char( Format("Extra bits: %s\n\r", flag_string( extra_flags, obj->extra_flags )), ch );
 	send_to_char( Format("Material: %s\n\r", obj->material), ch);

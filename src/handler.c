@@ -28,11 +28,7 @@
  **************************************************************************/
  
  
-#if defined(Macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
-#endif
 #include <ctype.h>
 #include <time.h>
 #include "twilight.h"
@@ -2562,19 +2558,53 @@ void obj_from_room( OBJ_DATA *obj )
 	return;
 }
 
-/*
- * Move an obj into a room.
- */
-void obj_to_room( OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex )
+void obj_to_room(OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex)
 {
-    obj->next_content		= pRoomIndex->contents;
-    pRoomIndex->contents	= obj;
-    obj->in_room		= pRoomIndex;
-    obj->carried_by		= NULL;
-    obj->in_obj			= NULL;
+    // Validate parameters
+    if (obj == NULL)
+    {
+        log_string(LOG_BUG, "obj_to_room: NULL object passed.");
+        return;
+    }
+
+    if (pRoomIndex == NULL)
+    {
+        log_string(LOG_BUG, Format("obj_to_room: NULL room index for object '%s'.", obj->name ? obj->name : "(unknown)"));
+        return;
+    }
+
+    // Clear existing associations if any
+    if (obj->carried_by)
+    {
+        log_string(LOG_BUG, Format("obj_to_room: Object '%s' is being carried; clearing carried_by.", obj->name));
+        obj->carried_by = NULL;
+    }
+
+    if (obj->in_obj)
+    {
+        log_string(LOG_BUG, Format("obj_to_room: Object '%s' is inside another object; clearing in_obj.", obj->name));
+        obj->in_obj = NULL;
+    }
+
+    // Ensure the object is not already in a room
+    if (obj->in_room)
+    {
+        log_string(LOG_BUG, Format("obj_to_room: Object '%s' is already in a room; removing from previous room.", obj->name));
+        obj_from_room(obj);  // Ensure obj_from_room handles removing objects safely
+    }
+
+    // Link the object to the room's contents
+    obj->next_content = pRoomIndex->contents;
+    pRoomIndex->contents = obj;
+
+    // Update the object's room reference
+    obj->in_room = pRoomIndex;
+
+    // Log successful placement
+    log_string(LOG_GAME, Format("obj_to_room: Object '%s' moved to room vnum %d.", obj->name, pRoomIndex->vnum));
+
     return;
 }
-
 /*
  * Move an object into an object.
  */
@@ -3254,58 +3284,58 @@ void deduct_cost(CHAR_DATA *ch, int cost)
  */
 OBJ_DATA *create_money( int dollars, int cents )
 {
-	char buf[MSL]={'\0'};
-	OBJ_DATA *obj;
+    char buf[MSL] = {'\0'};
+    OBJ_DATA *obj;
 
-	if ( dollars < 0 || cents < 0 || (dollars == 0 && cents == 0) )
-	{
-		log_string(LOG_BUG, "Create_money: zero or negative money.");
-		dollars = UMAX(1,dollars);
-		cents = UMAX(1,cents);
-	}
+    if ( dollars < 0 || cents < 0 || (dollars == 0 && cents == 0) )
+    {
+        log_string(LOG_BUG, "Create_money: zero or negative money.");
+        dollars = UMAX(1, dollars);
+        cents = UMAX(1, cents);
+    }
 
-	if (dollars == 0 && cents == 1)
-	{
-		obj = create_object( get_obj_index( OBJ_VNUM_CENT_ONE ));
-	}
-	else if (dollars == 1 && cents == 0)
-	{
-		obj = create_object( get_obj_index( OBJ_VNUM_DOLLAR_ONE));
-	}
-	else if (cents == 0)
-	{
-		obj = create_object( get_obj_index( OBJ_VNUM_DOLLARS_SOME ));
-		snprintf( buf, sizeof(buf), obj->short_descr, dollars );
-		PURGE_DATA( obj->short_descr );
-		obj->short_descr        = str_dup( buf );
-		obj->value[1]           = dollars;
-		obj->cost               = dollars;
-		obj->weight		= dollars/5000;
-	}
-	else if (dollars == 0)
-	{
-		obj = create_object( get_obj_index( OBJ_VNUM_CENTS_SOME ));
-		snprintf( buf, sizeof(buf), obj->short_descr, cents );
-		PURGE_DATA( obj->short_descr );
-		obj->short_descr        = str_dup( buf );
-		obj->value[0]           = cents;
-		obj->cost               = cents;
-		obj->weight		= cents/200;
-	}
+    if (dollars == 0 && cents == 1)
+    {
+        obj = create_object( get_obj_index( OBJ_VNUM_CENT_ONE ));
+    }
+    else if (dollars == 1 && cents == 0)
+    {
+        obj = create_object( get_obj_index( OBJ_VNUM_DOLLAR_ONE));
+    }
+    else if (cents == 0)
+    {
+        obj = create_object( get_obj_index( OBJ_VNUM_DOLLARS_SOME ));
+        snprintf( buf, sizeof(buf), obj->short_descr, dollars );
+        PURGE_DATA( obj->short_descr );
+        obj->short_descr        = str_dup( buf );
+        obj->value[1]           = dollars;
+        obj->cost               = dollars;
+        obj->weight		= dollars / 5000;
+    }
+    else if (dollars == 0)
+    {
+        obj = create_object( get_obj_index( OBJ_VNUM_CENTS_SOME ));
+        snprintf( buf, sizeof(buf), obj->short_descr, cents );
+        PURGE_DATA( obj->short_descr );
+        obj->short_descr        = str_dup( buf );
+        obj->value[0]           = cents;
+        obj->cost               = cents;
+        obj->weight		= cents / 200;
+    }
 
-	else
-	{
-		obj = create_object( get_obj_index( OBJ_VNUM_COINS ));
-		snprintf( buf, sizeof(buf), obj->short_descr, cents, dollars );
-		PURGE_DATA( obj->short_descr );
-		obj->short_descr	= str_dup( buf );
-		obj->value[0]		= cents;
-		obj->value[1]		= dollars;
-		obj->cost		= 100 * dollars + cents;
-		obj->weight		= dollars / 50 + cents / 20;
-	}
+    else
+    {
+        obj = create_object( get_obj_index( OBJ_VNUM_COINS ));
+        snprintf( buf, sizeof(buf), obj->short_descr, cents, dollars );
+        PURGE_DATA( obj->short_descr );
+        obj->short_descr	= str_dup( buf );
+        obj->value[0]		= cents;
+        obj->value[1]		= dollars;
+        obj->cost		= 100 * dollars + cents;
+        obj->weight		= dollars / 50 + cents / 20;
+    }
 
-	return obj;
+    return obj;
 }
 
 /*
@@ -3490,95 +3520,95 @@ bool can_see_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
  */
 bool can_see_main( CHAR_DATA *ch, CHAR_DATA *victim )
 {
-	/* RT changed so that WIZ_INVIS has levels */
-	if ( ch == victim )
-	{
-		return TRUE;
-	}
+    /* RT changed so that WIZ_INVIS has levels */
+    if ( ch == victim )
+    {
+        return TRUE;
+    }
 
-	if ( get_trust(ch) < victim->invis_level)
-	{
-		return FALSE;
-	}
+    if ( get_trust(ch) < victim->invis_level)
+    {
+        return FALSE;
+    }
 
-	if (get_trust(ch) < victim->incog_level && ch->in_room != victim->in_room)
-	{
-		return FALSE;
-	}
+    if (get_trust(ch) < victim->incog_level && ch->in_room != victim->in_room)
+    {
+        return FALSE;
+    }
 
-	if ( (!IS_NPC(ch) && IS_SET(ch->plr_flags, PLR_HOLYLIGHT))
-		|| (IS_NPC(ch) && IS_ADMIN(ch)))
-	{
-		return TRUE;
-	}
+    if ( (!IS_NPC(ch) && IS_SET(ch->plr_flags, PLR_HOLYLIGHT))
+            || (IS_NPC(ch) && IS_ADMIN(ch)))
+    {
+        return TRUE;
+    }
 
-	if ( IS_AFFECTED(ch, AFF_BLIND) )
-	{
-		return FALSE;
-	}
+    if ( IS_AFFECTED(ch, AFF_BLIND) )
+    {
+        return FALSE;
+    }
 
-	if ( room_is_dark( ch->in_room ) && !IS_AFFECTED(ch, AFF_INFRARED)
-		&& !IS_AFFECTED(ch, AFF_DARK_VISION) )
-	{
-		return FALSE;
-	}
+    if ( room_is_dark( ch->in_room ) && !IS_AFFECTED(ch, AFF_INFRARED)
+            && !IS_AFFECTED(ch, AFF_DARK_VISION) )
+    {
+        return FALSE;
+    }
 
-	if ( room_is_dark( ch->in_room ) && IS_AFFECTED(ch, AFF_INFRARED)
-		&& IS_SET(ch->form, FORM_COLD_BLOOD) )
-	{
-		return FALSE;
-	}
+    if ( room_is_dark( ch->in_room ) && IS_AFFECTED(ch, AFF_INFRARED)
+            && IS_SET(ch->form, FORM_COLD_BLOOD) )
+    {
+        return FALSE;
+    }
 
-	if ( IS_AFFECTED(victim, AFF_INVISIBLE) && (!IS_AFFECTED(ch, AFF_DETECT_INVIS)
-		|| (!IS_NPC(ch) && ch->race == race_lookup("vampire")
-			&& ch->disc[DISC_AUSPEX] < affect_level(victim, AFF_INVISIBLE))
-		|| (!IS_NPC(ch) && ch->race == race_lookup("faerie")
-			&& (ch->disc[DISC_ACTOR] < 1 || ch->disc[DISC_ART])
-			&& ch->ability[KENNING].value < affect_level(victim, AFF_INVISIBLE))
-		|| (!IS_NPC(ch) && ch->race == race_lookup("werewolf")
-			&& affect_level(ch, AFF_TRUE_SCENT)
-			< affect_level(victim, AFF_INVISIBLE))) )
-	{
-		return FALSE;
-	}
+    if ( IS_AFFECTED(victim, AFF_INVISIBLE) && (!IS_AFFECTED(ch, AFF_DETECT_INVIS)
+            || (!IS_NPC(ch) && ch->race == race_lookup("vampire")
+                && ch->disc[DISC_AUSPEX] < affect_level(victim, AFF_INVISIBLE))
+            || (!IS_NPC(ch) && ch->race == race_lookup("faerie")
+                && (ch->disc[DISC_ACTOR] < 1 || ch->disc[DISC_ART])
+                && ch->ability[KENNING].value < affect_level(victim, AFF_INVISIBLE))
+            || (!IS_NPC(ch) && ch->race == race_lookup("werewolf")
+                && affect_level(ch, AFF_TRUE_SCENT)
+                < affect_level(victim, AFF_INVISIBLE))) )
+    {
+        return FALSE;
+    }
 
-	if ( IS_SET(victim->act, ACT_CHIMERAE)
-		&& (!IS_AFFECTED(ch, AFF_ENCHANTED)
-			|| race_lookup("faerie") != ch->race))
-	{
-		return FALSE;
-	}
+    if ( IS_SET(victim->act, ACT_CHIMERAE)
+            && (!IS_AFFECTED(ch, AFF_ENCHANTED)
+                || race_lookup("faerie") != ch->race))
+    {
+        return FALSE;
+    }
 
     /* sneaking */
-	if ( IS_AFFECTED(victim, AFF_SNEAK)
-		&&   !IS_AFFECTED(ch,AFF_DETECT_HIDDEN)
-		&&   victim->fighting == NULL)
-	{
-		int fail = 0;
-		fail = dice_rolls(ch,
-			(get_curr_stat(ch, STAT_DEX) + ch->ability[STEALTH].value),
-			(get_curr_stat(victim,STAT_PER) + victim->ability[ALERTNESS].value));
+    if ( IS_AFFECTED(victim, AFF_SNEAK)
+            &&   !IS_AFFECTED(ch, AFF_DETECT_HIDDEN)
+            &&   victim->fighting == NULL)
+    {
+        int fail = 0;
+        fail = dice_rolls(ch,
+                          (get_curr_stat(ch, STAT_DEX) + ch->ability[STEALTH].value),
+                          (get_curr_stat(victim, STAT_PER) + victim->ability[ALERTNESS].value));
 
-		if (fail > 0)
-			return FALSE;
-		if (fail <= 0)
-			return TRUE;
-	}
+        if (fail > 0)
+            return FALSE;
+        if (fail <= 0)
+            return TRUE;
+    }
 
-	if ( IS_AFFECTED(victim, AFF_HIDE)
-		&&   victim->fighting == NULL
-		&&   (!IS_AFFECTED(ch, AFF_DETECT_HIDDEN)
-			||   (ch->race != race_lookup("vampire") && ch->disc[DISC_AUSPEX] < 1) ))
+    if ( IS_AFFECTED(victim, AFF_HIDE)
+            &&   victim->fighting == NULL
+            &&   (!IS_AFFECTED(ch, AFF_DETECT_HIDDEN)
+                  ||   (ch->race != race_lookup("vampire") && ch->disc[DISC_AUSPEX] < 1) ))
 
-	{
-		if((!IS_NATURAL(victim) && !IS_NATURAL(ch))
-			&& (ch->disc[DISC_AUSPEX] < victim->disc[DISC_OBFUSCATE]))
-		{
-			return FALSE;
-		}
-	}
+    {
+        if((!IS_NATURAL(victim) && !IS_NATURAL(ch))
+                && (ch->disc[DISC_AUSPEX] < victim->disc[DISC_OBFUSCATE]))
+        {
+            return FALSE;
+        }
+    }
 
-	return TRUE;
+    return TRUE;
 }
 
 /*
@@ -3993,11 +4023,11 @@ MEMORY * gen_memory(CHAR_DATA *ch, CHAR_DATA *stranger)
 
 int response_level(CHAR_DATA *ch, CHAR_DATA *mobile)
 {
-int curr = 0;
-MEMORY *mem;
+    int curr = 0;
+    MEMORY *mem;
 
     if((mem = memory_search(mobile, ch->name)) == NULL)
-	mem = gen_memory(mobile, ch);
+        mem = gen_memory(mobile, ch);
 
     curr = mem->attitude - mobile->condition[COND_PAIN] - mobile->condition[COND_FRENZY] - mobile->condition[COND_ANGER] + mobile->condition[COND_FEAR];
     curr = UMAX(curr, 1);
@@ -4011,9 +4041,9 @@ MEMORY *mem;
 char * extract_name(char *string, char *name)
 {
 
-name = "";
+    name = "";
 
-return string;
+    return string;
 }
 
 
@@ -4024,22 +4054,22 @@ void response(REACT *pReact)
 
 void AI(CHAR_DATA *ch, char *string)
 {
-	REACT *r;
-	CHAR_DATA *vch;
-	char name[MSL]={'\0'};
+    REACT *r;
+    CHAR_DATA *vch;
+    char name[MSL] = {'\0'};
 
-	string = extract_name(string, name);
+    string = extract_name(string, name);
 
-	vch = get_char_room(ch, name);
+    vch = get_char_room(ch, name);
 
-	for(r = ch->personality->matrix[(response_level(vch, ch))]; r;
-			r = r->next_in_matrix_loc)
-	{
-		if(is_name(r->trig, string))
-		{
-			response(r);
-		}
-	}
+    for(r = ch->personality->matrix[(response_level(vch, ch))]; r;
+            r = r->next_in_matrix_loc)
+    {
+        if(is_name(r->trig, string))
+        {
+            response(r);
+        }
+    }
 }
 
 /*
@@ -4047,115 +4077,116 @@ void AI(CHAR_DATA *ch, char *string)
  */
 void trigger_test( const char *string, CHAR_DATA *ch, CHAR_DATA *vict )
 {
-SCRIPT_DATA *ps;
+    SCRIPT_DATA *ps;
 
-    if(ch != NULL && ch->in_room != NULL) {
-	if(ch->in_room->event != NULL)
-	{
-		if(!ch->in_room->event->stop)
-		{
-		for(ps = ch->in_room->event->script_list; ps; ps = ps->next_in_event)
-		{
-		    if(strstr((char *)string, ps->trigger) && ps->actor == ch->pIndexData->vnum && ch->pIndexData != NULL)
-			{
-				ch->script = new_script();
-				ch->script->delay = ps->delay;
-				PURGE_DATA(ch->script->reaction);
-				ch->script->reaction = str_dup(ps->reaction);
-				PURGE_DATA(ch->script->trigger);
-				ch->script->trigger = str_dup(ps->trigger);
-				PURGE_DATA(ch->script->author);
-				ch->script->author = str_dup(ps->author);
-				ch->script->active = TRUE;
-				ch->script->event = ps->event;
-				ch->script->next = NULL;
-				ch->script->next_in_event = NULL;
-			}
-		}
-		}
-	}
-	else if(IS_NPC(ch) && IS_SET(ch->act, ACT_INTELLIGENT))
-	{
-	    /* Here is where will be the AI wrappers */
-	    AI(ch, (char *)string);
-	}
-	else if(ch->pIndexData && ch->pIndexData->triggers != NULL && ch->script == NULL)
-	{
-	    for(ps = ch->pIndexData->triggers; ps; ps = ps->next_in_event)
-	    {
-		if(strstr((char *)string, ps->trigger))
-		{
-		    ch->script = new_script();
-		    ch->script->delay = ps->delay;
-		    if(ch->script->delay <= 0)
-		    {
-			ch->script->delay = 1;
-		    }
-		    PURGE_DATA(ch->script->reaction);
-		    if (!IS_NULLSTR(ps->reaction))
-		    	ch->script->reaction = str_dup(ps->reaction);
-		    else
-		    	ch->script->reaction = str_dup("");
-		    PURGE_DATA(ch->script->trigger);
-		    ch->script->trigger = str_dup(ps->trigger);
-		    ch->script->active = TRUE;
-		    ch->script->next = NULL;
-		    ch->script->next_in_event = NULL;
-		}
-	    }
-	}
-	else if(ch->pIndexData && HAS_TRIGGER( ch, TRIG_ACT ) && MOBtrigger )
-		mp_act_trigger((char *)string, ch, vict, NULL, NULL, TRIG_ACT);
+    if(ch != NULL && ch->in_room != NULL)
+    {
+        if(ch->in_room->event != NULL)
+        {
+            if(!ch->in_room->event->stop)
+            {
+                for(ps = ch->in_room->event->script_list; ps; ps = ps->next_in_event)
+                {
+                    if(strstr((char *)string, ps->trigger) && ps->actor == ch->pIndexData->vnum && ch->pIndexData != NULL)
+                    {
+                        ch->script = new_script();
+                        ch->script->delay = ps->delay;
+                        PURGE_DATA(ch->script->reaction);
+                        ch->script->reaction = str_dup(ps->reaction);
+                        PURGE_DATA(ch->script->trigger);
+                        ch->script->trigger = str_dup(ps->trigger);
+                        PURGE_DATA(ch->script->author);
+                        ch->script->author = str_dup(ps->author);
+                        ch->script->active = TRUE;
+                        ch->script->event = ps->event;
+                        ch->script->next = NULL;
+                        ch->script->next_in_event = NULL;
+                    }
+                }
+            }
+        }
+        else if(IS_NPC(ch) && IS_SET(ch->act, ACT_INTELLIGENT))
+        {
+            /* Here is where will be the AI wrappers */
+            AI(ch, (char *)string);
+        }
+        else if(ch->pIndexData && ch->pIndexData->triggers != NULL && ch->script == NULL)
+        {
+            for(ps = ch->pIndexData->triggers; ps; ps = ps->next_in_event)
+            {
+                if(strstr((char *)string, ps->trigger))
+                {
+                    ch->script = new_script();
+                    ch->script->delay = ps->delay;
+                    if(ch->script->delay <= 0)
+                    {
+                        ch->script->delay = 1;
+                    }
+                    PURGE_DATA(ch->script->reaction);
+                    if (!IS_NULLSTR(ps->reaction))
+                        ch->script->reaction = str_dup(ps->reaction);
+                    else
+                        ch->script->reaction = str_dup("");
+                    PURGE_DATA(ch->script->trigger);
+                    ch->script->trigger = str_dup(ps->trigger);
+                    ch->script->active = TRUE;
+                    ch->script->next = NULL;
+                    ch->script->next_in_event = NULL;
+                }
+            }
+        }
+        else if(ch->pIndexData && HAS_TRIGGER( ch, TRIG_ACT ) && MOBtrigger )
+            mp_act_trigger((char *)string, ch, vict, NULL, NULL, TRIG_ACT);
     }
 }
 
 void clear_character(CHAR_DATA *ch)
 {
-	int i = 0;
-	AFFECT_DATA *af;
-	QUEST_DATA *q;
-	TRAIT_DATA *trait;
+    int i = 0;
+    AFFECT_DATA *af;
+    QUEST_DATA *q;
+    TRAIT_DATA *trait;
 
-	PURGE_DATA(ch->pcdata->bamfin);
-	PURGE_DATA(ch->pcdata->bamfout);
-	PURGE_DATA(ch->pcdata->title);
-	ch->pcdata->bamfin = NULL;
-	ch->pcdata->bamfout = NULL;
-	ch->pcdata->title = str_dup(" is new to the city.");
+    PURGE_DATA(ch->pcdata->bamfin);
+    PURGE_DATA(ch->pcdata->bamfout);
+    PURGE_DATA(ch->pcdata->title);
+    ch->pcdata->bamfin = NULL;
+    ch->pcdata->bamfout = NULL;
+    ch->pcdata->title = str_dup(" is new to the city.");
 
-	ch->pcdata->last_note = current_time - 60*60*24*14;
+    ch->pcdata->last_note = current_time - 60 * 60 * 24 * 14;
 
-	ch->summonner = NULL;
-	if(ch->pet)
-	{
-		ch->pet->master = NULL;
-		ch->pet = NULL;
-	}
-	while(ch->affected)
-	{
-		af = ch->affected;
-		ch->affected = ch->affected->next;
-		free_affect(af);
-	}
-	ch->pnote = NULL;
-	ch->in_room = NULL;
-	ch->was_in_room = NULL;
-	if(ch->quest)
-	{
-		for(q = quest_list; q; q = q->next)
-		{
-			if(q->next == ch->quest)
-				q->next = ch->quest->next;
-		}
-		free_quest(ch->quest);
-		ch->quest = NULL;
-	}
-	while(ch->traits)
-	{
-		trait = ch->traits;
-		ch->traits = ch->traits->next;
-		free_trait(trait);
-	}
+    ch->summonner = NULL;
+    if(ch->pet)
+    {
+        ch->pet->master = NULL;
+        ch->pet = NULL;
+    }
+    while(ch->affected)
+    {
+        af = ch->affected;
+        ch->affected = ch->affected->next;
+        free_affect(af);
+    }
+    ch->pnote = NULL;
+    ch->in_room = NULL;
+    ch->was_in_room = NULL;
+    if(ch->quest)
+    {
+        for(q = quest_list; q; q = q->next)
+        {
+            if(q->next == ch->quest)
+                q->next = ch->quest->next;
+        }
+        free_quest(ch->quest);
+        ch->quest = NULL;
+    }
+    while(ch->traits)
+    {
+        trait = ch->traits;
+        ch->traits = ch->traits->next;
+        free_trait(trait);
+    }
     ch->on_phone = 0;
     ch->attitude = 0;
     ch->shape = 0;
@@ -4170,11 +4201,11 @@ void clear_character(CHAR_DATA *ch)
     ch->affected_by2 = 0;
     for(i = 0; i < MAX_DISC; i++)
     {
-	ch->disc[i] = 0;
+        ch->disc[i] = 0;
     }
     for(i = 0; i < MAX_SKILL; i++)
     {
-	ch->learned[i] = 0;
+        ch->learned[i] = 0;
     }
     ch->saving_throw = 0;
     ch->carry_weight = 0;
@@ -4183,21 +4214,21 @@ void clear_character(CHAR_DATA *ch)
     ch->torpor_timer = 0;
     ch->power_timer = 0;
     ch->blood_timer = 0;
-    for(i=0;i<MAX_ABIL;i++)
+    for(i = 0; i < MAX_ABIL; i++)
     {
-	ch->ability[i].value = 0;
+        ch->ability[i].value = 0;
     }
-    for(i=0;i<10;i++)
+    for(i = 0; i < 10; i++)
     {
-	ch->condition[i] = 0;
+        ch->condition[i] = 0;
     }
-    for(i=0;i<MAX_BG;i++)
+    for(i = 0; i < MAX_BG; i++)
     {
-	ch->backgrounds[i] = 0;
+        ch->backgrounds[i] = 0;
     }
-    for(i=0;i<MAX_INFL;i++)
+    for(i = 0; i < MAX_INFL; i++)
     {
-	ch->influences[i] = 0;
+        ch->influences[i] = 0;
     }
     ch->daze = 0;
     ch->wait = 0;

@@ -811,7 +811,7 @@ void do_autolist(CHAR_DATA *ch, char *argument)
 		return;
 
 	send_to_char("\tW|---------------------------|\tn\n\r",ch);
-	send_to_char( Format("\tW| \tY%-16s \tW| \tY%s \tW|\tn\n\r", "Config", "Status"), ch);
+	send_to_char( Format("\tW| \tY%-16s \tW| \tY%s \tW|\tn\n\r", "Configurations", "Status"), ch);
 	send_to_char("\tW|---------------------------|\tn\n\r",ch);
 
 	send_to_char( Format("\tW|\tn %-16s \tW|\tn", "Autoexit"), ch);
@@ -2317,105 +2317,168 @@ void do_help( CHAR_DATA *ch, char *argument )
 
 
 /* whois command */
-void do_whois (CHAR_DATA *ch, char *argument)
+void do_whois(CHAR_DATA *ch, char *argument)
 {
-	CHAR_DATA *wch;
-	char arg[MIL]={'\0'};
-	bool online = FALSE;
-	bool in_char_list = FALSE;
+    CHAR_DATA *wch = NULL;
+    char arg[MIL] = {'\0'};
+    bool online = FALSE;
+    bool in_char_list = FALSE;
 
-	CheckCH(ch);
+    // Validate the invoking character
+    if (ch == NULL)
+    {
+        log_string(LOG_ERR, "do_whois: Null invoking character.");
+        return;
+    }
 
-	one_argument(argument,arg);
+    CheckCH(ch);
 
-	send_to_char("\n\r", ch);
+    // Parse arguments
+    one_argument(argument, arg);
 
-	if (IS_NULLSTR(arg))
-	{
-		send_to_char("You must provide a name.\n\r",ch);
-		return;
-	}
+    // Early exit if no argument provided
+    if (IS_NULLSTR(arg))
+    {
+        send_to_char("You must provide a name.\n\r", ch);
+        log_string(LOG_ERR, "do_whois: No name provided by %s.", ch->name);
+        return;
+    }
 
-	if(is_online(arg)) 
-		online = TRUE;
-	if(pc_in_char_list(arg)) 
-		in_char_list = TRUE;
+    // Detect online or in character list
+    online = is_online(arg);
+    in_char_list = pc_in_char_list(arg);
 
-	if((wch = get_player(arg)) == NULL)
-	{
-		send_to_char("No such player exists.\n\r", ch);
-		return;
-	}
+    // Ensure previous character associations are cleared
+    if (!online && !in_char_list)
+    {
+        free_char(wch);
+        wch = NULL;
+    }
 
-	/*
-	 * Format it up.
-	 */
-	if(IS_ADMIN(ch))
-	{
-		send_to_char (Format("\tW############################ [ \tC%12s %s\tn \tW] ############################\tn\n\r", wch->name, IS_NULLSTR(wch->surname) ? "" : wch->surname), ch);
-		send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Position", staff_status[wch->trust].name), ch);
-		send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Gender", gender_string(wch)), ch);
-		send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Appearance", appearance_string(wch)), ch);
-		send_to_char (Format("Famous?    : %s\n\r", fame_table[wch->backgrounds[FAME_STATUS]].name), ch);
-		send_to_char (Format("Available for RP : %s\n\r", wch->pcdata->rpok_string), ch);
-		send_to_char("\tW###########################################################################\tn\n\r",ch);
-		send_to_char (Format("Race          : %s\n\r", wch->race < MAX_PC_RACE ? pc_race_table[wch->race].name:"     "), ch);
-		send_to_char (Format("Clan/Tribe    : %s\n\r", capitalize(clan_table[wch->clan].name)), ch);
-		send_to_char (Format("AFK: %s\n\r", IS_SET(wch->comm, COMM_AFK) ? "\tRA\tn": ""), ch);
-		send_to_char("\tW###########################################################################\tn\n\r",ch);
-		send_to_char(Format ("In area:     \tg%s\tn\n\r", wch->in_room->area->name), ch);
-		send_to_char(Format ("In room:     \tg%s\tn\n\r", wch->in_room->name), ch);
-		send_to_char(Format ("Room vnum:   \tg%d\tn\n\r", wch->in_room->vnum), ch);
-		send_to_char("\tW###########################################################################\tn\n\r",ch);
-		send_to_char(Format ("Client:         %s (Version: %s)\n\r", wch->desc->pProtocol->pVariables[eMSDP_CLIENT_ID]->pValueString, wch->desc->pProtocol->pVariables[eMSDP_CLIENT_VERSION]->pValueString), ch);
-		send_to_char(Format ("Protocols:     "), ch);
+    // Fetch player data
+    if ((wch = get_player(arg)) == NULL)
+    {
+        send_to_char("No such player exists.\n\r", ch);
+        log_string(LOG_GAME, "do_whois: Player '%s' not found.", arg);
+        return;
+    }
 
-        if (wch->desc->pProtocol->bNAWS )
-            send_to_char(Format (" NAWS"), ch);
-        if (wch->desc->pProtocol->bTTYPE )
-            send_to_char(Format (" TTYPE"), ch);
-        if (wch->desc->pProtocol->bMSP )
-            send_to_char(Format (" MSP"), ch);
-        if (wch->desc->pProtocol->bATCP )
-            send_to_char(Format (" ATCP"), ch);
-        if (wch->desc->pProtocol->b256Support )
-            send_to_char(Format (" 256Colours"), ch);
-        if (wch->desc->pProtocol->bMXP )
+    /*
+     * Display WHOIS Information
+     */
+    send_to_char("\n\r", ch);
+    if (IS_ADMIN(ch))
+    {
+        log_string(LOG_COMMAND, "do_whois: Admin '%s' queried player '%s'.", ch->name, wch->name);
+
+        // Basic information
+        send_to_char(Format("\tW############################ [ \tB%-12s %s\tn \tW] ############################\tn\n\r", 
+                            wch->name, IS_NULLSTR(wch->surname) ? "" : wch->surname), ch);
+        send_to_char(Format("\tW%-10s\tn : \tG%s\tn\n\r", "Position", staff_status[wch->trust].name), ch);
+        send_to_char(Format("\tW%-10s\tn : \tG%s\tn\n\r", "Gender", gender_string(wch)), ch);
+        send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Appearance", appearance_string(wch)), ch);
+        send_to_char (Format("Famous?    : %s\n\r", fame_table[wch->backgrounds[FAME_STATUS]].name), ch);
+        send_to_char (Format("Available for RP : %s\n\r", wch->pcdata->rpok_string), ch);
+
+        send_to_char("\tW###########################################################################\tn\n\r",ch);
+        send_to_char (Format("Race          : %s\n\r", wch->race < MAX_PC_RACE ? pc_race_table[wch->race].name:"     "), ch);
+        send_to_char (Format("Clan/Tribe    : %s\n\r", capitalize(clan_table[wch->clan].name)), ch);
+        send_to_char (Format("AFK: %s\n\r", IS_SET(wch->comm, COMM_AFK) ? "\tRA\tn": ""), ch);
+
+        send_to_char("\tW###########################################################################\tn\n\r",ch);
+
+
+        // Room details with validation
+        if (wch->in_room && wch->in_room->area)
         {
-              send_to_char(Format (" MXP (%s)",  wch->desc->pProtocol->pMXPVersion), ch);
+            send_to_char(Format("In area:     \tg%s\tn\n\r", wch->in_room->area->name), ch);
+            send_to_char(Format("In room:     \tg%s\tn\n\r", wch->in_room->name), ch);
+            send_to_char(Format("Room vnum:   \tg%d\tn\n\r", wch->in_room->vnum), ch);
+            send_to_char("\tW###########################################################################\tn\n\r",ch);
+
         }
-        if (wch->desc->pProtocol->bMCCP)
-            send_to_char(Format (" MCCP"), ch);
-        if (wch->desc->pProtocol->bMSDP )
-            send_to_char(Format (" MSDP"), ch);
-        send_to_char(Format("\n\r"), ch);
+        else
+        {
+            send_to_char("Location details unavailable.\n\r", ch);
+            log_string(LOG_ERR, "do_whois: Invalid location for player '%s'.", wch->name);
+        }
 
+        // Protocol handling
+        if (wch->desc && wch->desc->pProtocol)
+        {
+            const char *client_id = "Unknown";
+            const char *client_version = "Unknown";
 
-		if (wch->desc && wch->desc->pProtocol && wch->desc->pProtocol->pVariables[eMSDP_UTF_8]->ValueInt == 1)
-			send_to_char (Format("UTF-8 Enabled : Yes\n\r"), ch);
-		else
-			send_to_char (Format("UTF-8 Enabled : No\n\r"), ch);
-		send_to_char("\tW###########################################################################\tn\n\r",ch);
-	}
-	else
-	{
-		send_to_char (Format("\tW##### [ \tC%s%s%s\tn \tW] #####\tn\n\r", wch->name, IS_NULLSTR(wch->surname) ? "" : wch->surname), ch);
-		send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Position", staff_status[wch->trust].name), ch);
-		send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Gender", gender_string(wch)), ch);
-		send_to_char (Format("\tW%-10s\tn : \tG%s\tn\n\r", "Appearance", appearance_string(wch)), ch);
-		send_to_char (Format("Available for RP : %s\n\r", wch->pcdata->rpok_string), ch);
-		send_to_char("\tW######################################\tn\n\r",ch);
-	}
+            if (wch->desc->pProtocol->pVariables[eMSDP_CLIENT_ID] &&
+                wch->desc->pProtocol->pVariables[eMSDP_CLIENT_ID]->pValueString)
+            {
+                client_id = wch->desc->pProtocol->pVariables[eMSDP_CLIENT_ID]->pValueString;
+            }
 
-	if(!IS_NULLSTR(wch->married))
-		act("$N is married to $t.", ch, wch->married, wch, TO_CHAR, 1);
+            if (wch->desc->pProtocol->pVariables[eMSDP_CLIENT_VERSION] &&
+                wch->desc->pProtocol->pVariables[eMSDP_CLIENT_VERSION]->pValueString)
+            {
+                client_version = wch->desc->pProtocol->pVariables[eMSDP_CLIENT_VERSION]->pValueString;
+            }
 
-	if(!online && !in_char_list) free_char(wch);
+            send_to_char(Format("Client:         %s (Version: %s)\n\r", client_id, client_version), ch);
 
-	do_profession(ch, arg);
+            send_to_char("Protocols:     ", ch);
+            if (wch->desc->pProtocol->bNAWS) send_to_char(" NAWS", ch);
+            if (wch->desc->pProtocol->bTTYPE) send_to_char(" TTYPE", ch);
+            if (wch->desc->pProtocol->bMSP) send_to_char(" MSP", ch);
+            if (wch->desc->pProtocol->bATCP) send_to_char(" ATCP", ch);
+            if (wch->desc->pProtocol->b256Support) send_to_char(" 256Colours", ch);
+            if (wch->desc->pProtocol->bMXP) send_to_char(Format(" MXP (%s)", wch->desc->pProtocol->pMXPVersion), ch);
+            if (wch->desc->pProtocol->bMCCP) send_to_char(" MCCP", ch);
+            if (wch->desc->pProtocol->bMSDP) send_to_char(" MSDP", ch);
+            send_to_char("\n\r", ch);
 
-	do_laston(ch, arg);
+            if (wch->desc->pProtocol->pVariables[eMSDP_UTF_8] &&
+                wch->desc->pProtocol->pVariables[eMSDP_UTF_8]->ValueInt == 1)
+            {
+                send_to_char("UTF-8 Enabled : Yes\n\r", ch);
+            }
+            else
+            {
+                send_to_char("UTF-8 Enabled : No\n\r", ch);
+            }
+	        send_to_char("\tW###########################################################################\tn\n\r",ch);
+
+        }
+        else
+        {
+            send_to_char("Client:         Unknown (Version: Unknown)\n\r", ch);
+            send_to_char("Protocols:     None detected.\n\r", ch);
+            log_string(LOG_ERR, "do_whois: Protocol details missing for player '%s'.", wch->name);
+        }
+
+        // Additional validation or display logic here
+    }
+    else
+    {
+        log_string(LOG_COMMAND, "do_whois: Player '%s' queried player '%s'.", ch->name, wch->name);
+        send_to_char(Format("\tW##### [ \tC%s%s%s\tn \tW] #####\tn\n\r", wch->name, IS_NULLSTR(wch->surname) ? "" : wch->surname), ch);
+    }
+
+    // Check marriage status
+    if (!IS_NULLSTR(wch->married))
+    {
+        act("$N is married to $t.", ch, wch->married, wch, TO_CHAR, 1);
+    }
+
+    // Cleanup
+    if (!online && !in_char_list)
+    {
+        free_char(wch);
+        wch = NULL;
+    }
+
+    // Execute additional commands
+    do_profession(ch, arg);
+    // do_laston(ch, arg);
 }
+
 
 void do_profession(CHAR_DATA *ch, char *argument)
 {
@@ -4616,6 +4679,7 @@ void do_trainingcost(CHAR_DATA *ch, char *argument)
 	if(IS_NULLSTR(argument))
 	{
 		send_to_char("What do you want to calculate the cost for?\n\r", ch);
+		send_to_char("Syntax: costcalc [stat/ability/power/virtue]\n\r", ch);
 		return;
 	}
 
@@ -6063,4 +6127,103 @@ void do_testarray (CHAR_DATA *ch, char *argument)
 
 	send_to_char( Format("Length of pRoomIndex->exit: %d\n\r", (int)( sizeof(pRoomIndex->exit) / sizeof(pRoomIndex->exit[0]) )), ch);
 
+}
+
+// Comparison function for qsort
+int compare_help_topics(const void *a, const void *b) {
+    const HELP_DATA *help1 = *(const HELP_DATA **)a;
+    const HELP_DATA *help2 = *(const HELP_DATA **)b;
+
+    if (!help1 || !help2) return 0;
+    if (!help1->topic) return -1;
+    if (!help2->topic) return 1;
+
+    return strcmp(help1->topic, help2->topic);
+}
+
+// Function to sort help entries
+HELP_DATA **sort_help_entries(HELP_DATA *help_list, int *count, int trust_level) {
+    HELP_DATA *pHelp;
+    HELP_DATA **help_array;
+    int help_count = 0;
+
+    // Count valid help entries
+    for (pHelp = help_list; pHelp != NULL; pHelp = pHelp->next) {
+        if (pHelp->level >= 0 && pHelp->level <= trust_level)
+            help_count++;
+    }
+
+    if (help_count == 0) {
+        *count = 0;
+        return NULL;
+    }
+
+    // Allocate array for sorting
+    help_array = malloc(help_count * sizeof(HELP_DATA *));
+    if (!help_array)
+        return NULL;
+
+    // Populate the array
+    help_count = 0;
+    for (pHelp = help_list; pHelp != NULL; pHelp = pHelp->next) {
+        if (pHelp->level >= 0 && pHelp->level <= trust_level) {
+            help_array[help_count++] = pHelp;
+        }
+    }
+
+    // Sort the array
+    qsort(help_array, help_count, sizeof(HELP_DATA *), compare_help_topics);
+
+    *count = help_count;
+    return help_array;
+}
+
+void do_index(CHAR_DATA *ch, char *argument)
+{
+    HELP_DATA **sorted_help;
+    BUFFER *output;
+    bool found = FALSE;
+    char header[256] = {'\0'};
+    int help_count, i;
+
+    CheckCH(ch);
+
+    output = new_buf();
+
+    add_buf(output, "\tY------------------------------------------------------------------\tn\n\r");
+    snprintf(header, sizeof(header), "\tY|\tn \tB%-33s\tn \tY|\tn \tB%s\tn                      \tY|\tn\n\r", "Help Keywords", "Topic");
+    add_buf(output, header);
+    add_buf(output, "\tY------------------------------------------------------------------\tn\n\r");
+
+    // Sort help entries
+    sorted_help = sort_help_entries(help_list, &help_count, get_trust(ch));
+    if (!sorted_help)
+    {
+        add_buf(output, "No help files found.\n\r");
+        page_to_char(buf_string(output), ch);
+        free_buf(output);
+        return;
+    }
+
+    // Add sorted entries to the buffer
+    for (i = 0; i < help_count; i++)
+    {
+        HELP_DATA *pHelp = sorted_help[i];
+        char line[256] = {'\0'};
+
+        snprintf(line, sizeof(line), "%-35s \tY|\tn %s\n\r", pHelp->keyword, pHelp->topic);
+        add_buf(output, line);
+
+        found = TRUE;
+    }
+
+    free(sorted_help); // Free the allocated array
+
+    if (!found)
+    {
+        add_buf(output, "No help files found.\n\r");
+    }
+
+    page_to_char(buf_string(output), ch);
+    free_buf(output);
 }

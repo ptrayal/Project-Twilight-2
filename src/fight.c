@@ -160,44 +160,47 @@ void do_shoot (CHAR_DATA *ch, char *argument)
 
 int aggravated(CHAR_DATA *ch, CHAR_DATA *vch, void *pObj, int combo)
 {
-	OBJ_DATA *obj = (OBJ_DATA *) pObj;
-	OBJ_INDEX_DATA *ammo = NULL;
+    OBJ_DATA *obj = (OBJ_DATA *) pObj;
+    OBJ_INDEX_DATA *ammo = NULL;
 
-	if(obj != NULL)
-	{
-		if(obj->item_type == ITEM_WEAPON && obj->value[0] != WEAPON_FIREARM)
-		{
-			switch(material_lookup(obj->material))
-			{
-			case 0 : return material_table[0].agg; break;
-			}
-			if(attack_table[obj->value[3]].agg) return 1;
-		}
+    if(obj != NULL)
+    {
+        if(obj->item_type == ITEM_WEAPON && obj->value[0] != WEAPON_FIREARM)
+        {
+            switch(material_lookup(obj->material))
+            {
+            case 0 :
+                return material_table[0].agg;
+                break;
+            }
+            if(attack_table[obj->value[3]].agg) return 1;
+        }
 
-		if(obj->value[0] == WEAPON_FIREARM)
-		{
-			ammo = get_obj_index(obj->value[2]);
-			if(attack_table[ammo->value[3]].agg) return 1;
-			if(ammo->value[4] > 0) return ammo->value[4];
-		}
+        if(obj->value[0] == WEAPON_FIREARM)
+        {
+            ammo = get_obj_index(obj->value[2]);
+            if(attack_table[ammo->value[3]].agg) return 1;
+            if(ammo->value[4] > 0) return ammo->value[4];
+        }
 
-		if(obj->value[0] != WEAPON_FIREARM && obj->material != NULL
-				&& !str_cmp(obj->material, "silver")
-				&& vch->race == race_lookup("werewolf"))
-			return 1;
+        if(obj->value[0] != WEAPON_FIREARM && obj->material != NULL
+                && !str_cmp(obj->material, "silver")
+                && vch->race == race_lookup("werewolf"))
+            return 1;
 
-		if(ammo != NULL
-				&& !IS_NULLSTR(ammo->material) && !str_cmp(ammo->material, "silver")
-				&& vch->race == race_lookup("werewolf"))
-			return 1;
-	}
+        if(ammo != NULL
+                && !IS_NULLSTR(ammo->material) && !str_cmp(ammo->material, "silver")
+                && vch->race == race_lookup("werewolf"))
+            return 1;
+    }
 
-	if(combo > -1) {
-		if(IS_AFFECTED(ch, AFF_CLAWED)) return 1;
-		if(attack_table[ch->dam_type].agg) return 1;
-	}
+    if(combo > -1)
+    {
+        if(IS_AFFECTED(ch, AFF_CLAWED)) return 1;
+        if(attack_table[ch->dam_type].agg) return 1;
+    }
 
-	return 0;
+    return 0;
 }
 
 void shooting (CHAR_DATA *ch, CHAR_DATA *victim, BODY_DATA *target)
@@ -314,187 +317,188 @@ int combo_damage(CHAR_DATA *ch, int combo)
 
 void close_combat (CHAR_DATA *ch, CHAR_DATA *victim, int combo)
 {
-	OBJ_DATA *obj = get_eq_char(ch, WEAR_WIELD);
-	int diff = 0, fail = ch->combo_success, dam = 0, agg = 0;
-	int dist = range(ch,victim);
-	int pos = -1;
-	int dt = 0, dt1 = 0;
-	if(obj != NULL) {
-		if(victim->race == race_lookup("faerie") && !str_cmp(obj->material, "iron"))
-		{
-			dt = attack_table[DAM_IRON].damage;
-			dt1 = TYPE_HIT+DAM_IRON;
-		}
-		else
-		{
-			dt = attack_table[obj->value[3]].damage;
-			dt1 = TYPE_HIT + obj->value[3];
-		}
-	} 
-	else
-	{
-		dt = attack_table[ch->dam_type+1].damage;
-		dt1 = TYPE_HIT + ch->dam_type+1;
-	}
+    OBJ_DATA *obj = get_eq_char(ch, WEAR_WIELD);
+    int diff = 0, fail = ch->combo_success, dam = 0, agg = 0;
+    int dist = range(ch, victim);
+    int pos = -1;
+    int dt = 0, dt1 = 0;
+    if(obj != NULL)
+    {
+        if(victim->race == race_lookup("faerie") && !str_cmp(obj->material, "iron"))
+        {
+            dt = attack_table[DAM_IRON].damage;
+            dt1 = TYPE_HIT + DAM_IRON;
+        }
+        else
+        {
+            dt = attack_table[obj->value[3]].damage;
+            dt1 = TYPE_HIT + obj->value[3];
+        }
+    }
+    else
+    {
+        dt = attack_table[ch->dam_type + 1].damage;
+        dt1 = TYPE_HIT + ch->dam_type + 1;
+    }
 
-	if((combo != 4 || combo != 5)
-			&& (combo < 8 || combo > 10)
-			&& (combo < 15 || combo > 35))
-		return;
+    if((combo != 4 || combo != 5)
+            && (combo < 8 || combo > 10)
+            && (combo < 15 || combo > 35))
+        return;
 
-	if(obj != NULL && obj->item_type == ITEM_WEAPON
-			&& obj->value[0] == WEAPON_FIREARM)
-	{
-		shooting(ch, victim, NULL);
-		return;
-	}
+    if(obj != NULL && obj->item_type == ITEM_WEAPON
+            && obj->value[0] == WEAPON_FIREARM)
+    {
+        shooting(ch, victim, NULL);
+        return;
+    }
 
-	if(IS_SET(victim->form, FORM_MIST) || IS_SET(victim->form, FORM_INTANGIBLE))
-	{
-		send_to_char("You can't do any damage to a mist!", ch);
-		act("$n's blow passes right through $N.", ch,NULL,victim,TO_NOTVICT,0);
-		act("$n's blow passes right through you.", ch,NULL,victim,TO_VICT,1);
-		return;
-	}
+    if(IS_SET(victim->form, FORM_MIST) || IS_SET(victim->form, FORM_INTANGIBLE))
+    {
+        send_to_char("You can't do any damage to a mist!", ch);
+        act("$n's blow passes right through $N.", ch, NULL, victim, TO_NOTVICT, 0);
+        act("$n's blow passes right through you.", ch, NULL, victim, TO_VICT, 1);
+        return;
+    }
 
-	if(IS_SET(victim->form, FORM_BLOOD))
-	{
-		send_to_char("You can't do any damage to a puddle!", ch);
-		act("$n's blow passes right through $N.", ch,NULL,victim,TO_NOTVICT,0);
-		act("$n's blow passes right through you.", ch,NULL,victim,TO_VICT,1);
-		return;
-	}
+    if(IS_SET(victim->form, FORM_BLOOD))
+    {
+        send_to_char("You can't do any damage to a puddle!", ch);
+        act("$n's blow passes right through $N.", ch, NULL, victim, TO_NOTVICT, 0);
+        act("$n's blow passes right through you.", ch, NULL, victim, TO_VICT, 1);
+        return;
+    }
 
-	if(IS_SET(victim->form, FORM_SHADOW) && dt != DAM_FIRE)
-	{
-		send_to_char("You can't do any damage to a shadow!", ch);
-		act("$n's blow passes right through $N.", ch,NULL,victim,TO_NOTVICT,0);
-		act("$n's blow passes right through you.", ch,NULL,victim,TO_VICT,1);
-		return;
-	}
+    if(IS_SET(victim->form, FORM_SHADOW) && dt != DAM_FIRE)
+    {
+        send_to_char("You can't do any damage to a shadow!", ch);
+        act("$n's blow passes right through $N.", ch, NULL, victim, TO_NOTVICT, 0);
+        act("$n's blow passes right through you.", ch, NULL, victim, TO_VICT, 1);
+        return;
+    }
 
-	if(hit_blocked((at_part_type)combo_strike_part(combo), victim->combat_flag))
-	{
-		act("$N blocks your strike!",ch, NULL, victim, TO_CHAR,1);
-		act("You block $n's strike!",ch, NULL, victim, TO_VICT,1);
-		act("$N blocks $n's strike!",ch, NULL, victim, TO_NOTVICT,0);
-		victim->condition[COND_PAIN] += 3;
-		return;
-	}
+    if(hit_blocked((at_part_type)combo_strike_part(combo), victim->combat_flag))
+    {
+        act("$N blocks your strike!", ch, NULL, victim, TO_CHAR, 1);
+        act("You block $n's strike!", ch, NULL, victim, TO_VICT, 1);
+        act("$N blocks $n's strike!", ch, NULL, victim, TO_NOTVICT, 0);
+        victim->condition[COND_PAIN] += 3;
+        return;
+    }
 
-	if (obj != NULL && obj->item_type == ITEM_WEAPON && !combo_table[combo].footstrike)
-	{
-		diff = obj->value[1] + combo_table[combo].diff + ch->balance;
-		if (diff > 10) diff = 10;
-		if (diff < 5) diff = 5;
-		agg = aggravated(ch, victim, obj, combo);
-	}
-	else
-	{
-		diff = 6 + combo_table[combo].diff + ch->balance;
-		if (diff > 10) diff = 10;
-		if (diff < 4) diff = 4;
-		agg = aggravated(ch, victim, obj, combo);
-	}
+    if (obj != NULL && obj->item_type == ITEM_WEAPON && !combo_table[combo].footstrike)
+    {
+        diff = obj->value[1] + combo_table[combo].diff + ch->balance;
+        if (diff > 10) diff = 10;
+        if (diff < 5) diff = 5;
+        agg = aggravated(ch, victim, obj, combo);
+    }
+    else
+    {
+        diff = 6 + combo_table[combo].diff + ch->balance;
+        if (diff > 10) diff = 10;
+        if (diff < 4) diff = 4;
+        agg = aggravated(ch, victim, obj, combo);
+    }
 
-	if (can_see(ch,victim))
-	{
-		if (dist > 0)
-		{
-			send_to_char("You aren't close enough to hit them!\n\r", ch);
-			fail = 0;
-			return;
-		}
-		if(IS_NPC(ch))
-		{
-			if (obj != NULL && dist == 0 && !combo_table[combo].footstrike)
-				fail = dice_rolls(ch, (get_curr_stat(ch, STAT_DEX) + ch->ability[MELEE].value), diff);
-			else
-				fail = dice_rolls(ch, (get_curr_stat(ch, STAT_DEX) + ch->ability[BRAWL].value), diff);
-		}
-		if (fail > 0)
-		{
-			if (obj != NULL && !combo_table[combo].footstrike)
-			{
-				dam = dice_rolls(ch, (obj->value[2] + combo_damage(ch, combo)), DAMAGE_DIFFICULTY);
-				if (dam > 0)
-				{
-					pos = damage(ch,victim,dam,dt1,dt,TRUE,agg,combo);
-					victim->condition[COND_FRENZY] += UMAX(1, victim->condition[COND_PAIN] + victim->condition[COND_ANGER] - 30);
-					gain_condition(ch, COND_ANGER, -5);
-					if(get_points(ch) > get_points(victim))
-					{
-						gain_condition(victim, COND_FEAR, 5);
-						gain_condition(victim, COND_FRENZY, victim->condition[COND_FEAR]);
-					}
-				}
-			}
-			else if (obj == NULL || obj->item_type != ITEM_WEAPON)
-			{
-				dam = dice_rolls(ch, combo_damage(ch, combo), DAMAGE_DIFFICULTY);
-				if (dam > 0)
-				{
-					if(ch->race==race_lookup("werewolf")
-							&& ch->auspice==auspice_lookup("ahroun")
-							&& ch->disc[DISC_AUSPICE] >1)
-						dam++;
-					pos = damage(ch,victim, dam, dt1, dt, TRUE, agg, combo);
-					victim->condition[COND_FRENZY] += UMAX(1, victim->condition[COND_PAIN] + victim->condition[COND_ANGER] - 30);
-					gain_condition(ch, COND_ANGER, -5);
-					if(get_points(ch) > get_points(victim))
-					{
-						gain_condition(victim, COND_FEAR, 5);
-						gain_condition(victim, COND_FRENZY, victim->condition[COND_FEAR]);
-					}
-				}
-			}
-			victim->condition[COND_PAIN] += 5;
-		}
-		if (fail == 0)
-		{
-			send_to_char(Format("You missed %s.\n\r", IS_NPC(victim) ? victim->short_descr : victim->name), ch);
-			if( (can_see(victim,ch)) )
-			{
-				send_to_char(Format("%s missed you.\n\r", IS_NPC(ch) ? ch->short_descr : ch->name), victim);
-			}
-			else
-			{
-				send_to_char(Format("Someone took a swing at you.\n\r"), victim);
-			}
-			pos = P_FIGHT;
-		}
-		if (fail < 0)
-		{
-			do_botch(ch, combo);
-			pos = P_FIGHT;
-			ch->condition[COND_ANGER] += 3;
-		}
-	}
+    if (can_see(ch, victim))
+    {
+        if (dist > 0)
+        {
+            send_to_char("You aren't close enough to hit them!\n\r", ch);
+            fail = 0;
+            return;
+        }
+        if(IS_NPC(ch))
+        {
+            if (obj != NULL && dist == 0 && !combo_table[combo].footstrike)
+                fail = dice_rolls(ch, (get_curr_stat(ch, STAT_DEX) + ch->ability[MELEE].value), diff);
+            else
+                fail = dice_rolls(ch, (get_curr_stat(ch, STAT_DEX) + ch->ability[BRAWL].value), diff);
+        }
+        if (fail > 0)
+        {
+            if (obj != NULL && !combo_table[combo].footstrike)
+            {
+                dam = dice_rolls(ch, (obj->value[2] + combo_damage(ch, combo)), DAMAGE_DIFFICULTY);
+                if (dam > 0)
+                {
+                    pos = damage(ch, victim, dam, dt1, dt, TRUE, agg, combo);
+                    victim->condition[COND_FRENZY] += UMAX(1, victim->condition[COND_PAIN] + victim->condition[COND_ANGER] - 30);
+                    gain_condition(ch, COND_ANGER, -5);
+                    if(get_points(ch) > get_points(victim))
+                    {
+                        gain_condition(victim, COND_FEAR, 5);
+                        gain_condition(victim, COND_FRENZY, victim->condition[COND_FEAR]);
+                    }
+                }
+            }
+            else if (obj == NULL || obj->item_type != ITEM_WEAPON)
+            {
+                dam = dice_rolls(ch, combo_damage(ch, combo), DAMAGE_DIFFICULTY);
+                if (dam > 0)
+                {
+                    if(ch->race == race_lookup("werewolf")
+                            && ch->auspice == auspice_lookup("ahroun")
+                            && ch->disc[DISC_AUSPICE] > 1)
+                        dam++;
+                    pos = damage(ch, victim, dam, dt1, dt, TRUE, agg, combo);
+                    victim->condition[COND_FRENZY] += UMAX(1, victim->condition[COND_PAIN] + victim->condition[COND_ANGER] - 30);
+                    gain_condition(ch, COND_ANGER, -5);
+                    if(get_points(ch) > get_points(victim))
+                    {
+                        gain_condition(victim, COND_FEAR, 5);
+                        gain_condition(victim, COND_FRENZY, victim->condition[COND_FEAR]);
+                    }
+                }
+            }
+            victim->condition[COND_PAIN] += 5;
+        }
+        if (fail == 0)
+        {
+            send_to_char(Format("You missed %s.\n\r", IS_NPC(victim) ? victim->short_descr : victim->name), ch);
+            if( (can_see(victim, ch)) )
+            {
+                send_to_char(Format("%s missed you.\n\r", IS_NPC(ch) ? ch->short_descr : ch->name), victim);
+            }
+            else
+            {
+                send_to_char(Format("Someone took a swing at you.\n\r"), victim);
+            }
+            pos = P_FIGHT;
+        }
+        if (fail < 0)
+        {
+            do_botch(ch, combo);
+            pos = P_FIGHT;
+            ch->condition[COND_ANGER] += 3;
+        }
+    }
 
-	if(pos == P_FIGHT)
-	{
-		if( victim != ch )
-		{
-			if(victim->position > P_STUN)
-			{
-				if(victim->fighting == NULL)
-					set_fighting( victim, ch );
-				if(victim->timer <= 4)
-					victim->position = P_FIGHT;
-			}
+    if(pos == P_FIGHT)
+    {
+        if( victim != ch )
+        {
+            if(victim->position > P_STUN)
+            {
+                if(victim->fighting == NULL)
+                    set_fighting( victim, ch );
+                if(victim->timer <= 4)
+                    victim->position = P_FIGHT;
+            }
 
-			if(victim->position > P_STUN)
-			{
-				if(ch->fighting == NULL)
-					set_fighting( ch, victim );
-			}
+            if(victim->position > P_STUN)
+            {
+                if(ch->fighting == NULL)
+                    set_fighting( ch, victim );
+            }
 
-			if(victim->master == ch)
-			{
-				stop_follower( victim );
-			}
-		}
-	}
+            if(victim->master == ch)
+            {
+                stop_follower( victim );
+            }
+        }
+    }
 
 }
 
@@ -2051,97 +2055,92 @@ void do_move_dodge (CHAR_DATA *ch, char *string)
 
 void do_move_touch (CHAR_DATA *ch, char *string)
 {
-CHAR_DATA *victim;
-int d = 4;
-int fail;
+    CHAR_DATA *victim;
+    int d = 4;
+    int fail;
 
     d -= ch->balance;
     if(d > 10)
-	d = 10;
+        d = 10;
 
-    fail = dice_rolls(ch, get_curr_stat(ch, STAT_DEX)
-				+ ch->ability[BRAWL].value, d);
+    fail = dice_rolls(ch, get_curr_stat(ch, STAT_DEX) + ch->ability[BRAWL].value, d);
 
     if(ch->combat_flag == -1 && ch->position == P_FIGHT)
     {
-	send_to_char("You have cancelled your move for this combat round.\n\r",
-				ch);
-	return;
+        send_to_char("You have cancelled your move for this combat round.\n\r", ch);
+        return;
     }
 
     if(part_in_use(ch, MOVE_TOUCH))
     {
-	send_to_char("You've already made use of that part in this combo!\n\r",
-				ch);
-	return;
+        send_to_char("You've already made use of that part in this combo!\n\r", ch);
+        return;
     }
 
     if(ch->act_points < 1)
     {
-	send_to_char("You don't have enough action points left!", ch);
-	return;
+        send_to_char("You don't have enough action points left!", ch);
+        return;
     }
 
-    if((victim = get_char_room(ch, string)) == NULL
-	&& ch->fighting == NULL)
+    if((victim = get_char_room(ch, string)) == NULL && ch->fighting == NULL)
     {
-	send_to_char("Who're you attacking?\n\r", ch);
-	return;
+        send_to_char("Who're you attacking?\n\r", ch);
+        return;
     }
 
     if(victim == NULL && ch->fighting != NULL)
-	victim = ch->fighting;
+        victim = ch->fighting;
 
     if(victim == NULL)
     {
-	send_to_char("Who're you attacking?\n\r", ch);
-	return;
+        send_to_char("Who're you attacking?\n\r", ch);
+        return;
     }
 
     if(victim == ch)
     {
-	send_to_char("Don't go hitting yourself like that.\n\r", ch);
-	return;
+        send_to_char("Don't go hitting yourself like that.\n\r", ch);
+        return;
     }
 
     if(IS_AFFECTED(ch, AFF_CHARM) && victim == ch->master)
     {
-	send_to_char("You can't attack your dear master!\n\r", ch);
-	return;
+        send_to_char("You can't attack your dear master!\n\r", ch);
+        return;
     }
 
     if(IS_SET(victim->act2, ACT2_RP_ING) && ch->fighting == NULL)
     {
-	send_to_char(
-	    "You cannot use ooc combat on a person in character.\n\r", ch);
-	return;
+        send_to_char("You cannot use ooc combat on a person in character.\n\r", ch);
+        return;
     }
 
     if(victim == NULL && ch->fighting != NULL)
-	victim = ch->fighting;
+        victim = ch->fighting;
 
     if(ch->fighting == NULL || ch->fighting != victim)
-    set_fighting(ch, victim);
+        set_fighting(ch, victim);
 
-    if(fail<=0)
+    if(fail <= 0)
     {
-	act_new(combo_table[MOVE_TOUCH].botch_to_char,
-		ch,NULL,victim,TO_CHAR,P_REST,1);
-	act_new(combo_table[MOVE_TOUCH].botch_to_vict,
-		ch,NULL,victim,TO_VICT,P_REST,1);
-	act_new(combo_table[MOVE_TOUCH].botch_to_room,
-		ch,NULL,victim,TO_NOTVICT,P_REST,0);
-	ch->balance -= 1;
+        act_new(combo_table[MOVE_TOUCH].botch_to_char,
+                ch, NULL, victim, TO_CHAR, P_REST, 1);
+        act_new(combo_table[MOVE_TOUCH].botch_to_vict,
+                ch, NULL, victim, TO_VICT, P_REST, 1);
+        act_new(combo_table[MOVE_TOUCH].botch_to_room,
+                ch, NULL, victim, TO_NOTVICT, P_REST, 0);
+        ch->balance -= 1;
     }
     else
     {
-	act_new(combo_table[MOVE_TOUCH].to_char,
-		ch,NULL,victim,TO_CHAR,P_REST,1);
-	act_new(combo_table[MOVE_TOUCH].to_vict,
-		ch,NULL,victim,TO_VICT,P_REST,1);
-	act_new(combo_table[MOVE_TOUCH].to_room,
-		ch,NULL,victim,TO_NOTVICT,P_REST,0);
-	add_to_combo(ch,victim, MOVE_TOUCH);
+        act_new(combo_table[MOVE_TOUCH].to_char,
+                ch, NULL, victim, TO_CHAR, P_REST, 1);
+        act_new(combo_table[MOVE_TOUCH].to_vict,
+                ch, NULL, victim, TO_VICT, P_REST, 1);
+        act_new(combo_table[MOVE_TOUCH].to_room,
+                ch, NULL, victim, TO_NOTVICT, P_REST, 0);
+        add_to_combo(ch, victim, MOVE_TOUCH);
     }
     ch->combo_success = fail;
 }
@@ -2243,27 +2242,27 @@ void do_move_tongue (CHAR_DATA *ch, char *string)
 
 void do_challenge(CHAR_DATA *ch, char *argument)
 {
-	CHAR_DATA *vch;
-	char arg[MIL]={'\0'};
+    CHAR_DATA *vch;
+    char arg[MIL] = {'\0'};
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Who are you challenging over what?\n\r", ch);
-		return;
-	}
+    if(IS_NULLSTR(argument))
+    {
+        send_to_char("Who are you challenging over what?\n\r", ch);
+        return;
+    }
 
-	argument = one_argument(argument, arg);
-	if((vch = get_char_world(ch, arg)) == NULL)
-	{
-		send_to_char("They aren't online right now.\n\r", ch);
-		return;
-	}
+    argument = one_argument(argument, arg);
+    if((vch = get_char_world(ch, arg)) == NULL)
+    {
+        send_to_char("They aren't online right now.\n\r", ch);
+        return;
+    }
 
-	argument = one_argument(argument, arg);
-	if(!str_prefix(arg, "leadership"))
-	{
-	}
-	else if(!str_prefix(arg, "status"))
-	{
-	}
+    argument = one_argument(argument, arg);
+    if(!str_prefix(arg, "leadership"))
+    {
+    }
+    else if(!str_prefix(arg, "status"))
+    {
+    }
 }

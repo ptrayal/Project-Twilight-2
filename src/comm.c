@@ -2016,8 +2016,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 			return;
 		}
 
-		if (check_ban(d->host,BAN_PERMIT)
-				&& !IS_SET(ch->plr_flags,PLR_PERMIT))
+		if (check_ban(d->host,BAN_PERMIT) && !IS_SET(ch->plr_flags,PLR_PERMIT))
 		{
 			log_string( LOG_CONNECT, Format("Denying access to %s@%s. Host %s banned.", argument, d->host, d->host) );
 			write_to_buffer(d,"Your site has been banned from this mud.\n\r",0);
@@ -3490,44 +3489,44 @@ void send_to_room( const char *argument, ROOM_INDEX_DATA *room )
  */
 void page_to_char( const char *txt, CHAR_DATA *ch )
 {
-	DESCRIPTOR_DATA *d;
-	if ( !ch || txt == NULL || ch->desc == NULL || IS_NULLSTR(txt) )
-		return;
-	d = ch->desc;
-	if (ch->lines == 0 )
-	{
-		send_to_char(txt,ch);
-		return;
-	}
-	/*
-	 * If there is already some data being "paged" for this descriptor,
-	 * append the new string.
-	 */
-	if( !IS_NULLSTR( d->showstr_head ) )
-	{
-		char *fub;
-		int i = 0;
-		int size_new = strlen( txt ) + strlen( d->showstr_head ) + 2;
-		ALLOC_DATA(fub, char, size_new);
-		fub[0] = '\0';
-		strncat( fub, d->showstr_head, size_new );
-		if (IS_NULLSTR(d->showstr_point))
-			i = strlen(fub);
-		else
-			i = strlen( fub ) - strlen( d->showstr_point );
-		strncat( fub, txt, size_new );
-		PURGE_DATA(d->showstr_head);
-		d->showstr_head = str_dup(fub);
-		d->showstr_point = (char *)d->showstr_head + i;
-		PURGE_DATA(fub);
-		fub = NULL;
-		return;
-	}
-	if(!IS_NULLSTR(d->showstr_head))
-		PURGE_DATA(d->showstr_head);
-	d->showstr_head = str_dup(txt);
-	d->showstr_point = (char *)d->showstr_head;
-	show_string(ch->desc,"");
+    DESCRIPTOR_DATA *d;
+    if ( !ch || txt == NULL || ch->desc == NULL || IS_NULLSTR(txt) )
+        return;
+    d = ch->desc;
+    if (ch->lines == 0 )
+    {
+        send_to_char(txt, ch);
+        return;
+    }
+    /*
+     * If there is already some data being "paged" for this descriptor,
+     * append the new string.
+     */
+    if( !IS_NULLSTR( d->showstr_head ) )
+    {
+        char *fub;
+        int i = 0;
+        int size_new = strlen( txt ) + strlen( d->showstr_head ) + 2;
+        ALLOC_DATA(fub, char, size_new);
+        fub[0] = '\0';
+        strncat( fub, d->showstr_head, size_new );
+        if (IS_NULLSTR(d->showstr_point))
+            i = strlen(fub);
+        else
+            i = strlen( fub ) - strlen( d->showstr_point );
+        strncat( fub, txt, size_new );
+        PURGE_DATA(d->showstr_head);
+        d->showstr_head = str_dup(fub);
+        d->showstr_point = (char *)d->showstr_head + i;
+        PURGE_DATA(fub);
+        fub = NULL;
+        return;
+    }
+    if(!IS_NULLSTR(d->showstr_head))
+        PURGE_DATA(d->showstr_head);
+    d->showstr_head = str_dup(txt);
+    d->showstr_point = (char *)d->showstr_head;
+    show_string(ch->desc, "");
 }
 
 /* string pager */

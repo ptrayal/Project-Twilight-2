@@ -28,13 +28,8 @@
  **************************************************************************/
  
  
-#if defined(Macintosh)
-#include <types.h>
-#include <time.h>
-#else
 #include <sys/types.h>
 #include <sys/time.h>
-#endif
 #include <malloc.h>
 #include <stdlib.h>
 #include <time.h>
