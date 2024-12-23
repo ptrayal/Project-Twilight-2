@@ -4779,35 +4779,37 @@ void do_experience(CHAR_DATA *ch, char *argument)
 
 void do_generation(CHAR_DATA *ch, char *argument)
 {
-	CHAR_DATA *victim;
+    CHAR_DATA *victim;
 
-	CheckCH(ch);
+    CheckCH(ch);
 
-	if(!IS_ADMIN(ch))
-	{
-		send_to_char(Format("Your generation is: %d.\n\r", ch->gen), ch);
-		return;
-	}
+    if (!IS_ADMIN(ch))
+    {
+        send_to_char(Format("Your generation is: %d.\n\r", ch->gen), ch);
+        return;
+    }
 
-	if(IS_NULLSTR(argument))
-	{
-		send_to_char("Whose generation do you wish to check?\n\r", ch);
-		return;
-	}
+    if (IS_NULLSTR(argument))
+    {
+        send_to_char("Syntax: generation <character_name>\n\r", ch);
+        send_to_char("This command allows you to check the generation of a character.\n\r", ch);
+        send_to_char("If no argument is provided, it will only check your generation if you are not an admin.\n\r", ch);
+        return;
+    }
 
-	if((victim = get_char_world(ch, argument)) == NULL)
-	{
-		send_to_char("They aren't here.\n\r", ch);
-		return;
-	}
+    if ((victim = get_char_world(ch, argument)) == NULL)
+    {
+        send_to_char("They aren't here.\n\r", ch);
+        return;
+    }
 
-	if(victim->race != race_lookup("vampire"))
-	{
-		send_to_char( "Not being a vampire, generation has no meaning for them.\n\r", ch);
-		return;
-	}
+    if (victim->race != race_lookup("vampire"))
+    {
+        send_to_char("Not being a vampire, generation has no meaning for them.\n\r", ch);
+        return;
+    }
 
-	send_to_char(Format("%s resides in generation %d.\n\r", victim->name, victim->gen), ch);
+    send_to_char(Format("%s resides in generation %d.\n\r", victim->name, victim->gen), ch);
 }
 
 void do_stats(CHAR_DATA *ch, char *argument)
