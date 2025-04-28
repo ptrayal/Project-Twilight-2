@@ -212,7 +212,7 @@ void save_changes()
 
     if ((fp = fopen(CHANGE_FILE, "w")) == NULL)
     {
-        log_string(LOG_ERR, "Error writing to changes.xml");
+        log_string(LOG_ERR, "Error: Unable to open changes.xml for writing");
         return;
     }
 
@@ -221,17 +221,34 @@ void save_changes()
 
     log_string(LOG_GAME, "DEBUG: change_list = %p, change_last = %p\n", (void *)change_list, (void *)change_last);
 
-    // This is where the changes are written using the 'write_change' function
     for (change = change_last; change; change = change->prev)
     {
         if (change->imm && change->date && change->text)
         {
-            write_change(fp, change);
+            if (fprintf(fp, "  <change>\n") < 0 ||
+                fprintf(fp, "    <imm>%s</imm>\n", change->imm) < 0 ||
+                fprintf(fp, "    <date>%s</date>\n", change->date) < 0 ||
+                fprintf(fp, "    <text>%s</text>\n", change->text) < 0 ||
+                fprintf(fp, "  </change>\n") < 0)
+            {
+                log_string(LOG_ERR, "Error: Failed to write change to file");
+                fclose(fp);
+                return;
+            }
         }
     }
 
     fprintf(fp, "</changes>\n");
-    fclose(fp);
+
+    if (fflush(fp) != 0)
+    {
+        log_string(LOG_ERR, "Error: Failed to flush file buffer");
+    }
+
+    if (fclose(fp) != 0)
+    {
+        log_string(LOG_ERR, "Error: Failed to close changes.xml");
+    }
 }
 
 char *current_date()

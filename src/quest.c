@@ -4,11 +4,7 @@
  * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
 
-#if defined(Macintosh)
-#include <types.h>
-#else
 #include <sys/types.h>
-#endif
 #include <time.h>
 #include "twilight.h"
 #include "tables.h"

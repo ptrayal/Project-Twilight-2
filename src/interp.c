@@ -383,7 +383,6 @@ const	struct	cmd_type	cmd_table	[] =
 		{	"whois",		do_whois,		P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
 		{	"whorp",		do_whorp,		P_DEAD,		0,	L_NRM,	0,	A|B|E,	0 },
 		{	"wield",		do_wear,		P_REST,		0,	L_NRM,	1,	B|H,	0 },
-		{	"wimpy",		do_nocommand,	P_DEAD,		0,	L_NRM,	0,	A|B,	0 },
 		{	"withdraw",		do_withdrawal,	P_DEAD,		0,	L_NRM,	1,	B|H,	0 },
 		{	"wizlist",		do_wizlist,		P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
 		{	"wrap",			do_wrap,		P_REST,		0,	L_NRM,	1,	A|B|H,	0 },

@@ -2733,30 +2733,37 @@ int flag_value( const struct flag_type *flag_table, char *argument)
  Purpose:	Returns string with name(s) of the flags or stat entered.
  Called by:	act_olc.c, olc.c, and olc_save.c.
  ****************************************************************************/
-char *flag_string( const struct flag_type *flag_table, int bits )
+
+char *flag_string(const struct flag_type *flag_table, int bits)
 {
-	static char buf[512]={'\0'};
-	int  flag;
+    static char buf[512];
+    int flag;
+    bool first = true;
 
-	buf[0] = '\0';
+    buf[0] = '\0';
 
-	for (flag = 0; flag_table[flag].name != NULL; flag++)
-	{
-	if ( !is_stat( flag_table ) && IS_SET(bits, flag_table[flag].bit) )
-	{
-		strncat( buf, " ", sizeof(buf) - strlen(buf) - 1 );
-		strncat( buf, flag_table[flag].name, sizeof(buf) - strlen(buf) - 1 );
-	}
-	else
-	if ( flag_table[flag].bit == bits )
-	{
-		strncat( buf, " ", sizeof(buf) - strlen(buf) - 1 );
-		strncat( buf, flag_table[flag].name, sizeof(buf) - strlen(buf) - 1 );
-		break;
-	}
-	}
-	return (!IS_NULLSTR(buf)) ? buf+1 : (char *)"none";
+    for (flag = 0; flag_table[flag].name != NULL; flag++)
+    {
+        if (!is_stat(flag_table) && IS_SET(bits, flag_table[flag].bit))
+        {
+            if (!first)
+                strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
+            strncat(buf, flag_table[flag].name, sizeof(buf) - strlen(buf) - 1);
+            first = false;
+        }
+        else if (flag_table[flag].bit == bits)
+        {
+            if (!first)
+                strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
+            strncat(buf, flag_table[flag].name, sizeof(buf) - strlen(buf) - 1);
+            first = false;
+            break;
+        }
+    }
+
+    return (!IS_NULLSTR(buf)) ? buf : (char *)"none";
 }
+
 
 /*****************************************************************************
  Name:		power_string( table, flags/stat )

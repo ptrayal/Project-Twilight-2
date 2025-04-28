@@ -16,7 +16,7 @@
 #include "grid.h"
 
 //Creation/Destruction
-GRID_DATA * create_grid(int width)
+GRID_DATA *create_grid(int width)
 {
     GRID_DATA *new_grid;
 
@@ -31,10 +31,10 @@ GRID_DATA * create_grid(int width)
     return new_grid;
 }
 
-GRID_DATA * destroy_grid( GRID_DATA *grid )
+GRID_DATA *destroy_grid( GRID_DATA *grid )
 {
-    GRID_ROW * row, *row_next = NULL;
-    GRID_CELL * cell, *cell_next;
+    GRID_ROW *row, *row_next = NULL;
+    GRID_CELL *cell, *cell_next;
 
     if(grid->first_row)
         for(row = grid->first_row; row; row = row_next )
@@ -68,7 +68,7 @@ GRID_ROW *create_row(GRID_DATA *grid)
 
 }
 
-GRID_ROW * destroy_row( GRID_ROW *row )
+GRID_ROW *destroy_row( GRID_ROW *row )
 {
     if(row->grid)
         grid_remove_row(row);
@@ -89,7 +89,7 @@ GRID_CELL *create_cell(GRID_ROW *row, int width)
     return new_cell;
 }
 
-GRID_CELL * destroy_cell(GRID_CELL *cell)
+GRID_CELL *destroy_cell(GRID_CELL *cell)
 {
     if( cell->row )
         row_remove_cell(cell);
@@ -203,7 +203,7 @@ void cell_append_contents (GRID_CELL *cell, char *fmt, ...)
 }
 
 //IF you don't already have a cell, but you have a row, use this to create a cell with the contents of fmt.
-GRID_CELL * row_append_cell (GRID_ROW *row, int width, char *fmt, ...)
+GRID_CELL *row_append_cell (GRID_ROW *row, int width, char *fmt, ...)
 {
     char buf[MSL];
     GRID_CELL *cell;
