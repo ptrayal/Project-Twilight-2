@@ -1661,30 +1661,6 @@ void do_look( CHAR_DATA *ch, char *argument )
         if (!can_see_obj(ch, obj))
             continue;
 
-        pdesc = get_extra_descr(arg3, obj->extra_descr);
-        if (pdesc != NULL)
-        {
-            if (++count == number)
-            {
-                send_to_char(pdesc, ch);
-                send_to_char("\n\r", ch);
-                return;
-            }
-            continue;
-        }
-
-        pdesc = get_extra_descr(arg3, obj->pIndexData->extra_descr);
-        if (pdesc != NULL)
-        {
-            if (++count == number)
-            {
-                send_to_char(pdesc, ch);
-                send_to_char("\n\r", ch);
-                return;
-            }
-            continue;
-        }
-
         if (!str_prefix(arg3, "package") && IS_SET(obj->extra2, OBJ_PACKAGED))
         {
             if (++count == number)
@@ -1743,6 +1719,19 @@ void do_look( CHAR_DATA *ch, char *argument )
 
                 send_to_char(obj->full_desc, ch);
                 send_to_char("\n\r", ch);
+
+                // Now show extra descriptions, if available.
+                pdesc = get_extra_descr(arg3, obj->extra_descr);
+                if (pdesc == NULL)
+                    pdesc = get_extra_descr(arg3, obj->pIndexData->extra_descr);
+
+                if (pdesc != NULL)
+                {
+                    send_to_char("\twAdditional Details\tn:\n\r", ch);
+                    send_to_char(pdesc, ch);
+                }
+
+
                 state_obj_cond(obj, ch);
                 return;
             }

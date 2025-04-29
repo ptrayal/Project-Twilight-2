@@ -104,42 +104,54 @@ void do_influences (CHAR_DATA *ch, char *argument)
 	return;
 }
 
+#define COLUMN_WIDTH 4
+
 int influence_commands(CHAR_DATA *ch, char *argument)
 {
-	int cmd = 0;
-	int col = 0;
-	int j = NO_FLAG;
+    int cmd = 0;
+    int col = 0;
+    int influence_type = NO_FLAG;
 
-	if(!IS_NULLSTR(argument) && (j = flag_value(influence_table, argument)) == NO_FLAG)
-	{
-		send_to_char("No such influence type.\n\r", ch);
-		return FALSE;
-	}
+    if (!IS_NULLSTR(argument))
+    {
+        influence_type = flag_value(influence_table, argument);
+        if (influence_type == NO_FLAG)
+        {
+            send_to_char("\tRWarning:  No such influence type.\tn\n\r", ch);
+            return FALSE;
+        }
+    }
 
-	for( cmd = 0; influence_cmd_table[cmd].name != NULL; cmd++ )
-	{
-		int i = 0;
-		i = influence_cmd_table[cmd].type;
-		if(ch->influences[i] >= influence_cmd_table[cmd].level)
-		{
-			if(j == NO_FLAG || i == j)
-			{
-				send_to_char(Format("\t<send href='influence %s'>%-12s\t</send> | ", influence_cmd_table[cmd].name, influence_cmd_table[cmd].name), ch);
-				if(++col % 4 == 0)
-					send_to_char("\n\r", ch);
-			}
-		}
-	}
+    for (cmd = 0; influence_cmd_table[cmd].name != NULL; cmd++)
+    {
+        int type_index = influence_cmd_table[cmd].type;
 
-	if(IS_ADMIN(ch))
-	{
-		send_to_char(Format("%-12s", "synopsis"), ch);
-		col++;
-	}
+        if (ch->influences[type_index] >= influence_cmd_table[cmd].level)
+        {
+            if (influence_type == NO_FLAG || type_index == influence_type)
+            {
+                send_to_char(Format("\t<send href='influence %s'>%-12s\t</send> | ",
+                                    influence_cmd_table[cmd].name,
+                                    influence_cmd_table[cmd].name), ch);
 
-	if(col %6 != 0)
-		send_to_char("\n\r", ch);
-	return TRUE;
+                if (++col % COLUMN_WIDTH == 0)
+                    send_to_char("\n\r", ch);
+            }
+        }
+    }
+
+    if (IS_ADMIN(ch))
+    {
+        send_to_char(Format("%-12s", "synopsis"), ch);
+        if (++col % COLUMN_WIDTH == 0)
+            send_to_char("\n\r", ch);
+    }
+
+    // Ensure output ends properly aligned
+    if (col % COLUMN_WIDTH != 0)
+        send_to_char("\n\r", ch);
+
+    return TRUE;
 }
 
 int influence_advance(CHAR_DATA *ch, char *argument)
@@ -230,15 +242,15 @@ int influence_adminlist(CHAR_DATA *ch, char *argument)
 /* Church Influence */
 int church_collection(CHAR_DATA *ch, char *argument)
 {
-	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_CHA) + ch->ability[LEADERSHIP].value, 7);
+	int successcheck = dice_rolls(ch, get_curr_stat(ch, STAT_CHA) + ch->ability[LEADERSHIP].value, 7);
 
-	if(fail > 0)
+	if(successcheck > 0)
 	{
-		send_to_char(Format("\tGSuccess\tn: You manage to collect $%d.\n\r", fail * 100), ch);
-		ch->dollars += fail * 100;
+		send_to_char(Format("\tGSuccess\tn: You manage to collect $%d.\n\r", successcheck * 100), ch);
+		ch->dollars += successcheck * 100;
 		ch->infl_timer = 1;
 	}
-	else if(fail == 0)
+	else if(successcheck == 0)
 	{
 		send_to_char("\tYFailure\tn: You fail to move people to donate.\n\r", ch);
 		ch->infl_timer = 2;
@@ -303,7 +315,7 @@ int church_research(CHAR_DATA *ch, char *argument)
 
 int church_tipoff(CHAR_DATA *ch, char *argument)
 {
-	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_CHA) + ch->ability[SUBTERFUGE].value, 7);
+	int successcheck = dice_rolls(ch, get_curr_stat(ch, STAT_CHA) + ch->ability[SUBTERFUGE].value, 7);
 	CHAR_DATA *vch;
 
 	if((vch = get_char_world(ch, argument)) == NULL)
@@ -314,25 +326,25 @@ int church_tipoff(CHAR_DATA *ch, char *argument)
 
 	if(vch->hunter_vis > 0)
 	{
-		fail += vch->hunter_vis/10;
+		successcheck += vch->hunter_vis/10;
 	}
 
 	/* Fail conditions. */
-	if(fail < 0)
+	if(successcheck < 0)
 	{
-		send_to_char("Your story is openly ridiculed by your peers.\n\r", ch);
+		send_to_char("\tRBOTCH\tn:Your story is openly ridiculed by your peers.\n\r", ch);
 		ch->influences[INFL_CHURCH] -= 2;
 		return FALSE;
 	}
-	else if(fail < 2)
+	else if(successcheck < 2)
 	{
-		send_to_char("Nobody believes your story.\n\r", ch);
+		send_to_char("\tYFailure\tn: Nobody believes your story.\n\r", ch);
 		ch->influences[INFL_CHURCH]--;
 		return FALSE;
 	}
 
 	/* Generate hunter and set on target. */
-	send_to_char("The word is spread about that individual.\n\r", ch);
+	send_to_char("\tGSuccess\tn: The word is spread about that individual.\n\r", ch);
 	gen_hunter(vch);
 	ch->infl_timer = 3;
 	ch->influences[INFL_CHURCH]--;
