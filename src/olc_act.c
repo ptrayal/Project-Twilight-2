@@ -3711,10 +3711,8 @@ OEDIT( oedit_ed )
 
     	for ( ed = pObj->extra_descr; ed; ed = ed->next )
     	{
-			EXTRA_DESCR_DATA *ped = NULL;
     		if ( is_name( keyword, ed->keyword ) )
     			break;
-    		ped = ed;
     	}
 
     	if ( !ed )

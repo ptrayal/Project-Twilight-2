@@ -739,6 +739,7 @@ void save_resets( FILE *fp, AREA_DATA *pArea )
 
 					case 'O':
 						pLastObj = get_obj_index( pReset->arg1 );
+						(void)pLastObj; /* Used in VERBOSE mode only */
 						pRoom = get_room_index( pReset->arg3 );
 						fprintf( fp, "O 0 %d 0 %d\n",
 								pReset->arg1,
@@ -747,6 +748,7 @@ void save_resets( FILE *fp, AREA_DATA *pArea )
 
 					case 'P':
 						pLastObj = get_obj_index( pReset->arg1 );
+						(void)pLastObj; /* Used in VERBOSE mode only */
 						fprintf( fp, "P 0 %d %d %d %d\n",
 								pReset->arg1,
 								pReset->arg2,

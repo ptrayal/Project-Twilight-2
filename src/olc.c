@@ -1391,6 +1391,7 @@ void rsedit( CHAR_DATA *ch, char *argument )
 	int  cmd = 0;
 
 	EDIT_REACT(ch, pScript);
+	(void)pScript; /* Suppress unused warning - macro sets variable */
 	smash_tilde( argument );
 	strncpy( arg, argument, sizeof(arg) );
 	argument = one_argument( argument, command );
@@ -1433,6 +1434,7 @@ void hedit( CHAR_DATA *ch, char *argument, int type )
 	char arg[MIL]={'\0'};
 
 	EDIT_HELP(ch, pHelp);
+	(void)pHelp; /* Suppress unused warning - macro sets variable */
 	smash_tilde( argument );
 	strncpy( arg, argument, sizeof(arg) );
 	argument = one_argument( argument, command );
@@ -1489,6 +1491,7 @@ void kbedit( CHAR_DATA *ch, char *argument, int type )
 	char arg[MIL]={'\0'};
 
 	EDIT_NOTE(ch, pNote);
+	(void)pNote; /* Suppress unused warning - macro sets variable */
 	smash_tilde( argument );
 	strncpy( arg, argument, sizeof(arg) );
 	argument = one_argument( argument, command );
