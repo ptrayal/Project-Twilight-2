@@ -1,7 +1,7 @@
 # Project-Twilight-2
 
 ## Color Formatting
-Headers should be bright blue
-Keywords should be bright white
-Warning should be in bright red
-Borders should be in bright yellow
+1.  Headers should be bright blue
+2.  Keywords should be bright white
+3.  Warning should be in bright red
+4.  Borders should be in bright yellow
