@@ -1946,7 +1946,7 @@ int update_news_stands ()
 	for(obj = published; new_ob; obj = new_ob)
 	{
 		new_ob = obj->next;
-		free_obj(obj);
+		extract_obj(obj);
 	}
 
 	return TRUE;
