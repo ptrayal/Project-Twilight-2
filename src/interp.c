@@ -545,6 +545,7 @@ const	struct	cmd_type	cmd_table	[] =
 	{	"bg",				do_bg,				P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"bonus",			do_bonus,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"clone",			do_clone,			P_DEAD,	ST,	L_ALL,	1,	A|B|E,	0 },
+	{	"copyover",			do_copyover,		P_DEAD, IM, L_ALL,  1,  A|B|E,	0 },
 	{	"deny",				do_deny,			P_DEAD,	MA,	L_ALL,	1,	A|B|E,	0 },
 	{	"disconnect",		do_disconnect,		P_DEAD,	WA,	L_ALL,	1,	A|B|E,	0 },
 	{	"dwalk",			do_dream_walk,		P_SLEEP,	WA,	L_NRM,	1,	B|C|G|H,	0 },

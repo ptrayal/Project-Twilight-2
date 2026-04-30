@@ -895,7 +895,7 @@ int init_socket( int port )
 int main( int argc, char **argv )
 {
 	struct timeval now_time;
-	// bool fCopyOver = FALSE;
+	bool fCopyOver = FALSE;
 
 	/*
 	 * Init time.
@@ -931,14 +931,14 @@ int main( int argc, char **argv )
 		}
 
 		/* Are we recovering from a copyover? */
-		if (argv[3] && argv[3][0])
+		if (argv[3] && !strcmp(argv[3], "copyover"))
 		{
-			// fCopyOver = TRUE;
-			control = atoi(argv[3]);
+			fCopyOver = TRUE;
+			control = atoi(argv[4]);
 		}
 		else
 			{
-			// fCopyOver = FALSE;
+			fCopyOver = FALSE;
 			}
 	}
 
@@ -950,7 +950,7 @@ int main( int argc, char **argv )
 	/*
 	 * Run the game.
 	 */
-		//	if (!fCopyOver)
+		if (!fCopyOver)
 		control = init_socket( port );
 
 	boot_db( );
@@ -958,10 +958,9 @@ int main( int argc, char **argv )
 	log_string( LOG_CONNECT, Format("Project Twilight loaded on port %d.", port) );
 	log_string( LOG_CONNECT, "Project Twilight restarted." );
 
-/*
 	if(fCopyOver)
 		copyover_recover();
-*/
+
 	game_loop_unix( control );
 	/* shutdown_web(); */
 

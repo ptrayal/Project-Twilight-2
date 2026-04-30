@@ -1684,6 +1684,7 @@ void do_look( CHAR_DATA *ch, char *argument )
 				send_to_char(Format("\tW|\tn %-8s: %-64s \tW|\tn\n\r", "Material", obj->material), ch);
 				send_to_char("\tW+----------------------------------------------------------------------------+\tn\n\r", ch);
 
+				// Special Weapons Block of Information
 				if (obj->item_type == ITEM_WEAPON)
 				{
 					send_to_char(Format("\tW|\tn %-11s: ", "Weapon Type"), ch);

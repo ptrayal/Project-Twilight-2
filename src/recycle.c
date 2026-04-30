@@ -195,7 +195,7 @@ void free_help(HELP_DATA *help)
     // Free the HELP_DATA structure itself
     PURGE_DATA(help);
 
-    log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
+    // log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
 }
 
 
@@ -303,7 +303,7 @@ void free_note(NOTE_DATA *note)
         return;
     }
 
-    log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
+    // log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
 
     // Clear dynamically allocated fields
     PURGE_DATA(note->date);
@@ -408,7 +408,7 @@ DESCRIPTOR_DATA *new_descriptor(void)
         return NULL;
     }
 
-    log_string(LOG_GAME, "Created new descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
+    // log_string(LOG_GAME, "Created new descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
     return d;
 }
 
@@ -421,7 +421,7 @@ void free_descriptor(DESCRIPTOR_DATA *d)
         return;
     }
 
-    log_string(LOG_GAME, "Freeing descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
+    // log_string(LOG_GAME, "Freeing descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
 
     // Clear dynamically allocated fields
     PURGE_DATA(d->host);
@@ -446,7 +446,7 @@ void free_descriptor(DESCRIPTOR_DATA *d)
     // Finally, free the descriptor structure itself
     PURGE_DATA(d);
 
-    log_string(LOG_GAME, "Descriptor successfully freed in function %s at line %d", __FUNCTION__, __LINE__);
+    // log_string(LOG_GAME, "Descriptor successfully freed in function %s at line %d", __FUNCTION__, __LINE__);
 }
 
 
@@ -480,7 +480,7 @@ GEN_DATA *new_gen_data(void)
 
     gen->next = NULL; // Clear any links to other GEN_DATA structures
 
-    log_string(LOG_GAME, "new_gen_data: Successfully created a new GEN_DATA instance at %p.", (void *)gen);
+    // log_string(LOG_GAME, "new_gen_data: Successfully created a new GEN_DATA instance at %p.", (void *)gen);
     return gen;
 }
 
@@ -494,7 +494,7 @@ void free_gen_data(GEN_DATA *gen)
     }
 
     // Log the operation
-    log_string(LOG_GAME, "free_gen_data: Freeing GEN_DATA at memory location %p.", (void *)gen);
+    // log_string(LOG_GAME, "free_gen_data: Freeing GEN_DATA at memory location %p.", (void *)gen);
 
     // Reset all fields to safe defaults
     gen->freebies = 0;
@@ -517,7 +517,7 @@ void free_gen_data(GEN_DATA *gen)
     // Free the GEN_DATA structure itself
     PURGE_DATA(gen);
 
-    log_string(LOG_GAME, "free_gen_data: Successfully freed GEN_DATA.");
+    // log_string(LOG_GAME, "free_gen_data: Successfully freed GEN_DATA.");
 }
 
 
@@ -867,7 +867,7 @@ EXTRA_DESCR_DATA *new_extra_descr(void)
     ed->successes = 0;
     ed->next = NULL;
 
-    log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
+    // log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
     return ed;
 }
 
@@ -880,18 +880,18 @@ void free_extra_descr(EXTRA_DESCR_DATA *ed)
         return;
     }
 
-    log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
+    // log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
 
     // Clear dynamically allocated strings
     if (ed->keyword)
     {
         PURGE_DATA(ed->keyword);
-        log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
+        // log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
     }
     if (ed->description)
     {
         PURGE_DATA(ed->description);
-        log_string(LOG_GAME, "free_extra_descr: Cleared description.");
+        // log_string(LOG_GAME, "free_extra_descr: Cleared description.");
     }
 
     // Reset all fields to avoid dangling references
@@ -907,7 +907,7 @@ void free_extra_descr(EXTRA_DESCR_DATA *ed)
     // Free the structure
     PURGE_DATA(ed);
 
-    log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
+    // log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
 }
 
 COMBAT_DATA *new_combat_move(void)
@@ -1007,7 +1007,7 @@ OBJ_DATA *new_obj(void)
     obj->pIndexData     = NULL;
     obj->in_room        = NULL;
 
-    log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
+    // log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
     return obj;
 }
 
@@ -1015,7 +1015,7 @@ void free_obj(OBJ_DATA *obj)
 {
     Escape(obj);
 
-    log_string(LOG_GAME, "Freeing OBJ_DATA.");
+    // log_string(LOG_GAME, "Freeing OBJ_DATA.");
 
     // Clear and free affect data
     AFFECT_DATA *paf, *paf_next;
@@ -1063,7 +1063,7 @@ void free_obj(OBJ_DATA *obj)
     // Final cleanup
     PURGE_DATA(obj);
 
-    log_string(LOG_GAME, "OBJ_DATA successfully freed.");
+    // log_string(LOG_GAME, "OBJ_DATA successfully freed.");
 }
 
 
@@ -1080,7 +1080,7 @@ CHAR_DATA *new_char (void)
         return NULL;
     }
 
-    log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
+    // log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
 
 
 	ch->hunted			= FALSE;
@@ -1238,7 +1238,7 @@ void free_char (CHAR_DATA *ch)
         return;
     }
 
-    log_string(LOG_GAME, "Freeing CHAR_DATA structure.");
+    // log_string(LOG_GAME, "Freeing CHAR_DATA structure.");
 
 
 	OBJ_DATA *obj;
@@ -1258,7 +1258,7 @@ void free_char (CHAR_DATA *ch)
     {
         obj_next = obj->next_content;
         extract_obj(obj);
-        log_string(LOG_GAME, "Freed carried object.");
+        // log_string(LOG_GAME, "Freed carried object.");
     }
 
     // Remove all effects
@@ -1266,14 +1266,14 @@ void free_char (CHAR_DATA *ch)
     {
         paf_next = paf->next;
         affect_remove(ch, paf);
-        log_string(LOG_GAME, "Removed affect.");
+        // log_string(LOG_GAME, "Removed affect.");
     }
 
     // Free the script if present
     if (ch->script)
     {
         free_script(ch->script);
-        log_string(LOG_GAME, "Freed script data.");
+        // log_string(LOG_GAME, "Freed script data.");
     }
 	PURGE_DATA(ch->aifile);
 	PURGE_DATA(ch->alt_description);
@@ -1304,7 +1304,7 @@ void free_char (CHAR_DATA *ch)
     if (ch->pcdata)
     {
         free_pcdata(ch->pcdata);
-        log_string(LOG_GAME, "Freed PC-specific data.");
+        // log_string(LOG_GAME, "Freed PC-specific data.");
     }
 
 	ch->ghouled_by = NULL;

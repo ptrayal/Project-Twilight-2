@@ -4578,6 +4578,9 @@ void do_copyover (CHAR_DATA *ch, char * argument)
 	FILE *fp;
 	DESCRIPTOR_DATA *d, *d_next;
 	char buf [100]={'\0'};
+	char buf_port[20]={'\0'};
+	char buf_logfile[20]={'\0'};
+	char buf_control[20]={'\0'};
 	extern int port, control;
 
 	CheckCH(ch);
@@ -4626,7 +4629,11 @@ void do_copyover (CHAR_DATA *ch, char * argument)
 	//	shutdown_web();
 
 	//	 exec - descriptors are inherited
-	execl (EXE_FILE, "Project", (char *)Format("%d", port), Format("%d", atoi(logfile) + 1), "copyover", (char *)Format("%d", control),  (char *) NULL);
+	// Format() uses a static buffer, so we need separate buffers for each argument
+	snprintf(buf_port, sizeof(buf_port), "%d", port);
+	snprintf(buf_logfile, sizeof(buf_logfile), "%d", atoi(logfile) + 1);
+	snprintf(buf_control, sizeof(buf_control), "%d", control);
+	execl (EXE_FILE, "Project", buf_port, buf_logfile, "copyover", buf_control, (char *) NULL);
 
 	//	 Failed - sucessful exec will not return
 	perror ("do_copyover: execl");
@@ -4661,13 +4668,13 @@ void copyover_recover ()
 
 	for (;;)
 	{
-		if (fscanf (fp, "%d %s %s\n", &desc, name, host) == -1)
+		if (fscanf (fp, "%d %s %s\n", &desc, name, host) != 3)
         {
-            log_string(LOG_ERR,"copyover_recover: error");
+            log_string(LOG_ERR,"copyover_recover: fscanf error");
+            fclose(fp);
             return;
         }
 
-		// fscanf (fp, "%d %s %s\n", &desc, name, host);
 		if (desc == -1)
 			break;
 
@@ -4680,6 +4687,7 @@ void copyover_recover ()
 
 		d = new_descriptor();
 		d->descriptor = desc;
+		d->pProtocol = ProtocolCreate();
 
 		PURGE_DATA( d->host );
 		d->host = str_dup (host);
