@@ -601,9 +601,6 @@ void do_delchange(CHAR_DATA *ch, char *argument)
         send_to_char("Change removed.\n\r", ch);
     }
 
-    changecount--;
-    save_changes();
-
     return;
 }
 
