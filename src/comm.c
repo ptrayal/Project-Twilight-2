@@ -2376,7 +2376,19 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 						write_to_buffer( d, Format("\tGAuspice: %10s\n\rBreed: %10s\tn\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 					}
 
-					write_to_buffer( d, "What is your sex (M/F)?\n\r", 0 );
+					send_to_char(creation_progress(2, 12), ch);
+					write_to_buffer( d, "=== SEX SELECTION ===\n\r\n\r", 0 );
+					if (d && d->pProtocol && d->pProtocol->bMXP)
+					{
+						write_to_buffer( d, "1. Male   \t<send href='male'>[ Select ]\t</send>\n\r", 0 );
+						write_to_buffer( d, "2. Female \t<send href='female'>[ Select ]\t</send>\n\r\n\r", 0 );
+					}
+					else
+					{
+						write_to_buffer( d, "1. Male\n\r", 0 );
+						write_to_buffer( d, "2. Female\n\r\n\r", 0 );
+					}
+					write_to_buffer( d, "What is your sex? (Type 'male', 'female', '1', or '2')\n\r", 0 );
 					d->connected = CON_GET_NEW_SEX;
 					break;
 
@@ -2384,14 +2396,29 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 				case CON_GET_NEW_SEX:
 					switch ( argument[0] )
 					{
+						case '1':
 						case 'm': case 'M': ch->sex = SEX_MALE;
 						ch->pcdata->true_sex = SEX_MALE;
 						break;
+						case '2':
 						case 'f': case 'F': ch->sex = SEX_FEMALE;
 						ch->pcdata->true_sex = SEX_FEMALE;
 						break;
 						default:
-							write_to_buffer( d, "\tRThat's not a sex.\n\rWhat IS your sex?\tn\n\r", 0 );
+							send_to_char(creation_progress(2, 12), ch);
+							write_to_buffer( d, "=== SEX SELECTION ===\n\r\n\r", 0 );
+							if (d && d->pProtocol && d->pProtocol->bMXP)
+							{
+								write_to_buffer( d, "1. Male   \t<send href='male'>[ Select ]\t</send>\n\r", 0 );
+								write_to_buffer( d, "2. Female \t<send href='female'>[ Select ]\t</send>\n\r\n\r", 0 );
+							}
+							else
+							{
+								write_to_buffer( d, "1. Male\n\r", 0 );
+								write_to_buffer( d, "2. Female\n\r\n\r", 0 );
+							}
+							write_to_buffer( d, "\tRThat's not a valid selection.\tn\n\r", 0 );
+							write_to_buffer( d, "What is your sex? (Type 'male', 'female', '1', or '2')\n\r", 0 );
 							return;
 					}
 
@@ -2603,17 +2630,20 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							return;
 						}
 						write_to_buffer(d, "\n\r", 2 );
-						if(ch->race == race_lookup("werewolf")) 
+						send_to_char(creation_progress(3, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
 							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
-						write_to_buffer(d,"Time to assign some dots.\n\r", 0 );
+						write_to_buffer(d,"=== PHYSICAL ATTRIBUTES ===\n\r", 0 );
+						write_to_buffer(d,"Time to assign some dots.\n\r\n\r", 0 );
 						for(i = 0; i < 3; i++)
 						{
-							send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].name, stat_table[i].name),ch );
+							send_to_char(format_stat_line(d, capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].desc), ch);
 						}
-						send_to_char( "\n\rChoices are: list,premise,add,minus,help and done.\n\r" ,ch);
-						send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->stat_dots[0]),ch);
+						send_to_char("\n\r", ch);
+						send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->stat_dots[0], dot_plural(ch->gen_data->stat_dots[0])), ch);
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r" ,ch);
 						d->connected = CON_ASSIGN_PHYS;
 						break;
 
@@ -2630,45 +2660,49 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 							else
 							{
-								if(ch->race == race_lookup("werewolf")) 
+								send_to_char(creation_progress(4, 12), ch);
+								if(ch->race == race_lookup("werewolf"))
 								{
 									write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 								}
-								write_to_buffer(d,"Time to assign some dots.\n\r", 0 );
+								write_to_buffer(d,"=== SOCIAL ATTRIBUTES ===\n\r", 0 );
+								write_to_buffer(d,"Time to assign some dots.\n\r\n\r", 0 );
 								for(i = 3; i < 6; i++)
 								{
-									send_to_char(Format("%s : %d\n\r",capitalize(stat_table[i].name), ch->perm_stat[i]),ch);
+									send_to_char(format_stat_line(d, capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].desc), ch);
 								}
-								send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
-								write_to_buffer( d, "\n\r", 2 );
-								send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->stat_dots[1]), ch);
+								send_to_char("\n\r", ch);
+								send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->stat_dots[1], dot_plural(ch->gen_data->stat_dots[1])), ch);
+								send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 								d->connected = CON_ASSIGN_SOC;
 								break;
 							}
 						}
 
-						if (!parse_gen_physical(ch,argument))
+						parse_gen_physical(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(3, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							if(ch->race == race_lookup("werewolf")) 
-							{
-								write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
-							}
-							for(i = 0; i < 3; i++)
-							{
-								send_to_char(Format("%s : %d\n\r",capitalize(stat_table[i].name), ch->perm_stat[i]),ch);
-							}
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d,"=== PHYSICAL ATTRIBUTES ===\n\r\n\r", 0 );
+						for(i = 0; i < 3; i++)
+						{
+							send_to_char(format_stat_line(d, capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].desc), ch);
+						}
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->stat_dots[0] != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->stat_dots[0]), ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->stat_dots[0], dot_plural(ch->gen_data->stat_dots[0])), ch);
 						}
 						else
-							{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
-							}
-						send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+						{
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
+						}
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 						break;
 
 					case CON_ASSIGN_SOC:
@@ -2682,46 +2716,50 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 							else
 							{
-								if(ch->race == race_lookup("werewolf")) 
+								send_to_char(creation_progress(5, 12), ch);
+								if(ch->race == race_lookup("werewolf"))
 								{
 									write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 								}
-								write_to_buffer(d, "Time to assign some dots.\n\r", 0 );
+								write_to_buffer(d,"=== MENTAL ATTRIBUTES ===\n\r", 0 );
+								write_to_buffer(d,"Time to assign some dots.\n\r\n\r", 0 );
 								for(i = 6; i < 9; i++)
 								{
-									send_to_char(Format("%s : %d\n\r",capitalize(stat_table[i].name), ch->perm_stat[i]),ch);
+									send_to_char(format_stat_line(d, capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].desc), ch);
 								}
-								send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
-								write_to_buffer( d, "\n\r", 2 );
-								send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->stat_dots[2]), ch);
+								send_to_char("\n\r", ch);
+								send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->stat_dots[2], dot_plural(ch->gen_data->stat_dots[2])), ch);
+								send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 								d->connected = CON_ASSIGN_MENT;
 								/*	    desc_gen( ch );
 								 */            break;
 							}
 						}
 
-						if (!parse_gen_social(ch,argument))
+						parse_gen_social(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(4, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							if(ch->race == race_lookup("werewolf"))
-							{
-								write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
-							}
-							for(i = 3; i < 6; i++)
-							{
-								send_to_char(Format("%s : %d\n\r",capitalize(stat_table[i].name), ch->perm_stat[i]),ch);
-							}
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d,"=== SOCIAL ATTRIBUTES ===\n\r\n\r", 0 );
+						for(i = 3; i < 6; i++)
+						{
+							send_to_char(format_stat_line(d, capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].desc), ch);
+						}
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->stat_dots[1] != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->stat_dots[1]), ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->stat_dots[1], dot_plural(ch->gen_data->stat_dots[1])), ch);
 						}
 						else
 						{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
 						}
-						send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 						break;
 
 					case CON_ASSIGN_MENT:
@@ -2735,48 +2773,50 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 							else
 							{
-								if(ch->race == race_lookup("werewolf")) 
+								send_to_char(creation_progress(6, 12), ch);
+								if(ch->race == race_lookup("werewolf"))
 								{
 									write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 								}
-								write_to_buffer(d, "Ability dots time.\n\r", 0 );
+								write_to_buffer(d, "=== TALENTS ===\n\r", 0 );
+								write_to_buffer(d, "Ability dots time.\n\r\n\r", 0 );
 								for (iClass = 0; iClass < 13; iClass++)
 									if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
 									{
-										if((iClass)%5 == 0) 
-											send_to_char("\n\r", ch);
-										send_to_char(Format("%15s", ability_table[iClass].name), ch);
+										send_to_char(format_ability_line(d, ability_table[iClass].name, ch->ability[iClass].value), ch);
 									}
-								write_to_buffer(d, "\n\r", 2);
-								send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
-								write_to_buffer( d, "\n\r", 2 );
+								send_to_char("\n\r", ch);
 								for (iClass = 0; iClass < MAX_ABIL; iClass++)
 									ch->ability[iClass].value = 0;
-								send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->skill_dots[0]), ch);
+								send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->skill_dots[0], dot_plural(ch->gen_data->skill_dots[0])), ch);
+								send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 								d->connected = CON_ASSIGN_TAL;
 								break;
 							}
 						}
 
-						if (!parse_gen_mental(ch,argument))
+						parse_gen_mental(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(5, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							if(ch->race == race_lookup("werewolf")) {
-								write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
-							}
-							for(i = 6; i < 9; i++)
-							{
-								send_to_char(Format("%s : %d ",stat_table[i].name, ch->perm_stat[i]),ch);
-							}
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d,"=== MENTAL ATTRIBUTES ===\n\r\n\r", 0 );
+						for(i = 6; i < 9; i++)
+						{
+							send_to_char(format_stat_line(d, capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].desc), ch);
+						}
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->stat_dots[2] != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->stat_dots[2]), ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->stat_dots[2], dot_plural(ch->gen_data->stat_dots[2])), ch);
 						}
 						else
 						{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
 						}
 
 						for(i = 0; i < 9; i++)
@@ -2784,7 +2824,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							ch->mod_stat[i] = ch->perm_stat[i];
 						}
 
-						send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 						break;
 
 					case CON_ASSIGN_TAL:
@@ -2803,44 +2843,52 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 							else
 							{
-								write_to_buffer( d, "More dots to go.\n\r", 0 );
+								send_to_char(creation_progress(7, 12), ch);
+								if(ch->race == race_lookup("werewolf"))
+								{
+									write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
+								}
+								write_to_buffer( d, "=== SKILLS ===\n\r", 0 );
+								write_to_buffer( d, "More dots to go.\n\r\n\r", 0 );
 								for (iClass = 13; iClass < 24; iClass++)
 									if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
 									{
-										if((iClass-13)%5 == 0) send_to_char("\n\r", ch);
-										send_to_char(Format("%15s", ability_table[iClass].name), ch);
+										send_to_char(format_ability_line(d, ability_table[iClass].name, ch->ability[iClass].value), ch);
 									}
 								send_to_char("\n\r", ch);
-								send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
-								write_to_buffer( d, "\n\r", 2 );
-								send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->skill_dots[1]), ch);
+								send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->skill_dots[1], dot_plural(ch->gen_data->skill_dots[1])), ch);
+								send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 								d->connected = CON_ASSIGN_SKILL;
 								break;
 							}
 						}
 
-						if (!parse_gen_talents(ch,argument))
+						parse_gen_talents(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(6, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							for (iClass = 0; iClass < 13; iClass++)
-								if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
-								{
-									if((iClass)%5 == 0) send_to_char("\n\r", ch);
-									send_to_char(Format("%15s", ability_table[iClass].name), ch);
-								}
-							write_to_buffer(d, "\n\r", 2);
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d, "=== TALENTS ===\n\r\n\r", 0 );
+						for (iClass = 0; iClass < 13; iClass++)
+							if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
+							{
+								send_to_char(format_ability_line(d, ability_table[iClass].name, ch->ability[iClass].value), ch);
+							}
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->skill_dots[0] != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->skill_dots[0]), ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->skill_dots[0], dot_plural(ch->gen_data->skill_dots[0])), ch);
 						}
 						else
 						{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
 						}
 
-						send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 						break;
 
 					case CON_ASSIGN_SKILL:
@@ -2856,44 +2904,52 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 							else
 							{
-								write_to_buffer( d,"More dots to go.\n\r", 0 );
+								send_to_char(creation_progress(8, 12), ch);
+								if(ch->race == race_lookup("werewolf"))
+								{
+									write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
+								}
+								write_to_buffer( d,"=== KNOWLEDGES ===\n\r", 0 );
+								write_to_buffer( d,"More dots to go.\n\r\n\r", 0 );
 								for (iClass = 24; ability_table[iClass].name != NULL; iClass++)
 									if ( IS_ATTRIB_AVAILABLE(ch->race, iClass) )
 									{
-										if((iClass-24)%5 == 0) send_to_char("\n\r", ch);
-										send_to_char(Format("%15s", ability_table[iClass].name), ch);
+										send_to_char(format_ability_line(d, ability_table[iClass].name, ch->ability[iClass].value), ch);
 									}
-								write_to_buffer(d, "\n\r", 2);
-								send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
-								write_to_buffer( d, "\n\r", 2 );
-								send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->skill_dots[2]), ch);
+								send_to_char("\n\r", ch);
+								send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->skill_dots[2], dot_plural(ch->gen_data->skill_dots[2])), ch);
+								send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 								d->connected = CON_ASSIGN_KNOWLEDGES;
 								break;
 							}
 						}
 
-						if (!parse_gen_skills(ch,argument))
+						parse_gen_skills(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(7, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							for (iClass = 13; iClass < 24; iClass++)
-								if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
-								{
-									if((iClass-13)%5 == 0) send_to_char("\n\r", ch);
-									send_to_char(Format("%15s", ability_table[iClass].name), ch);
-								}
-							write_to_buffer(d, "\n\r", 2);
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d, "=== SKILLS ===\n\r\n\r", 0 );
+						for (iClass = 13; iClass < 24; iClass++)
+							if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
+							{
+								send_to_char(format_ability_line(d, ability_table[iClass].name, ch->ability[iClass].value), ch);
+							}
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->skill_dots[1] != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->skill_dots[1]), ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->skill_dots[1], dot_plural(ch->gen_data->skill_dots[1])), ch);
 						}
 						else
 						{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
 						}
 
-						send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 						break;
 
 					case CON_ASSIGN_KNOWLEDGES:
@@ -2912,41 +2968,52 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 							else
 							{
-								write_to_buffer( d, "More dots to go.\n\r", 0 );
-								write_to_buffer(d, "Conscience Self-Control Courage\n\r", 0);
-								write_to_buffer(d, "\n\r", 2);
-								send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
-								write_to_buffer( d, "\n\r", 2 );
+								send_to_char(creation_progress(9, 12), ch);
+								if(ch->race == race_lookup("werewolf"))
+								{
+									write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
+								}
+								write_to_buffer( d, "=== VIRTUES ===\n\r", 0 );
+								write_to_buffer( d, "More dots to go.\n\r\n\r", 0 );
 								ch->gen_data->virtue_dots = 7;
 								ch->virtues[0] = 1; ch->virtues[1] = 1; ch->virtues[2] = 1;
-								send_to_char(Format("You have %d dots to spend.\n\r", ch->gen_data->virtue_dots), ch);
+								send_to_char(format_stat_line(d, "Conscience", ch->virtues[0], "Sense of right and wrong"), ch);
+								send_to_char(format_stat_line(d, "Self-control", ch->virtues[1], "Emotional restraint"), ch);
+								send_to_char(format_stat_line(d, "Courage", ch->virtues[2], "Bravery and conviction"), ch);
+								send_to_char("\n\r", ch);
+								send_to_char(Format("You have %d %s to spend.\n\r", ch->gen_data->virtue_dots, dot_plural(ch->gen_data->virtue_dots)), ch);
+								send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 								d->connected = CON_ASSIGN_VIRTUES;
 								return;
 							}
 						}
 
-						if (!parse_gen_knowledges(ch,argument))
+						parse_gen_knowledges(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(8, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							for (iClass = 24; ability_table[iClass].name != NULL; iClass++)
-								if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
-								{
-									if((iClass-24)%5 == 0) send_to_char("\n\r", ch);
-									send_to_char(Format("%15s", ability_table[iClass].name), ch);
-								}
-							write_to_buffer(d, "\n\r", 2);
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d, "=== KNOWLEDGES ===\n\r\n\r", 0 );
+						for (iClass = 24; ability_table[iClass].name != NULL; iClass++)
+							if (IS_ATTRIB_AVAILABLE(ch->race, iClass))
+							{
+								send_to_char(format_ability_line(d, ability_table[iClass].name, ch->ability[iClass].value), ch);
+							}
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->skill_dots[2] != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->skill_dots[2]), ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->skill_dots[2], dot_plural(ch->gen_data->skill_dots[2])), ch);
 						}
 						else
 						{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
 						}
 
-						send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 						break;
 
 					case CON_ASSIGN_VIRTUES:
@@ -2972,22 +3039,30 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							}
 						}
 
-						if (!parse_gen_virtues(ch,argument))
+						parse_gen_virtues(ch,argument);
+
+						/* Auto-relist after every command */
+						send_to_char(creation_progress(9, 12), ch);
+						if(ch->race == race_lookup("werewolf"))
 						{
-							write_to_buffer(d, "Conscience Self-Control Courage\n\r", 0);
-							write_to_buffer(d, "\n\r", 2);
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							write_to_buffer( d, Format("Auspice: %10s Breed: %10s\n\r", auspice_table[ch->auspice].name, breed_table[ch->breed].name), 0 );
 						}
+						write_to_buffer(d, "=== VIRTUES ===\n\r\n\r", 0 );
+						send_to_char(format_stat_line(d, "Conscience", ch->virtues[0], "Sense of right and wrong"), ch);
+						send_to_char(format_stat_line(d, "Self-control", ch->virtues[1], "Emotional restraint"), ch);
+						send_to_char(format_stat_line(d, "Courage", ch->virtues[2], "Bravery and conviction"), ch);
+						send_to_char("\n\r", ch);
 
 						if(ch->gen_data->virtue_dots != 0)
 						{
-							send_to_char(Format("You have %d dots remaining.\n\r", ch->gen_data->virtue_dots), ch);
-							send_to_char("\n\rChoices are: list,premise,add,minus,help and done.\n\r", ch);
+							send_to_char(Format("You have %d %s remaining.\n\r", ch->gen_data->virtue_dots, dot_plural(ch->gen_data->virtue_dots)), ch);
 						}
 						else
 						{
-								send_to_char(Format("You have no dots left. (Type \t<send href='done'>done\t</send> to continue.)\n\r"), ch);
+							send_to_char(Format("You have no %s left. (Type \t<send href='done'>done\t</send> to continue.)\n\r", dot_plural(0)), ch);
 						}
+
+						send_to_char("\n\rCommands: \t<send href='add'>add\t</send>, \t<send href='minus'>minus\t</send>, \t<send href='list'>list\t</send>, \t<send href='premise'>premise\t</send>, \t<send href='help'>help\t</send>, \t<send href='done'>done\t</send>\n\r", ch);
 
 						break;
 
@@ -4254,7 +4329,7 @@ void logfmt (char * fmt, ...)
 bool parse_gen_physical(CHAR_DATA *ch,char *argument)
 {
 	char arg[MIL]={'\0'};
-	int sn = 0,i = 0;
+	int sn = 0;
 
 	if (IS_NULLSTR(argument))
 		return FALSE;
@@ -4300,8 +4375,6 @@ bool parse_gen_physical(CHAR_DATA *ch,char *argument)
 
 			ch->gen_data->stat_dots[0] -= 1;
 			ch->perm_stat[sn] += 1;
-			// send_to_char(Format("%s : %d\n\r",stat_table[sn].name, ch->perm_stat[sn]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn], stat_table[sn].name, stat_table[sn].name),ch );	
 			return TRUE;
 		}
 
@@ -4323,8 +4396,6 @@ bool parse_gen_physical(CHAR_DATA *ch,char *argument)
 		{
 			ch->gen_data->stat_dots[0]++;
 			ch->perm_stat[sn]--;
-			// send_to_char(Format("%s : %d\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn], stat_table[sn].name, stat_table[sn].name),ch );
 			return TRUE;
 		}
 
@@ -4340,12 +4411,7 @@ bool parse_gen_physical(CHAR_DATA *ch,char *argument)
 
 	if (!str_prefix(arg,"list"))
 	{
-		for(i = 0; i < 3; i++)
-		{
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].name, stat_table[i].name),ch );
-			// send_to_char(Format("%s : %d\n\r",capitalize(stat_table[i].name), ch->perm_stat[i]),ch);
-		}
-		send_to_char("\n\r", ch);
+		/* List will be shown automatically after this returns */
 		return TRUE;
 	}
 
@@ -4356,7 +4422,7 @@ bool parse_gen_physical(CHAR_DATA *ch,char *argument)
 bool parse_gen_social(CHAR_DATA *ch,char *argument)
 {
 	char arg[MIL]={'\0'};
-	int sn = 0,i = 0;
+	int sn = 0;
 
 	if (IS_NULLSTR(argument))
 		return FALSE;
@@ -4408,8 +4474,6 @@ bool parse_gen_social(CHAR_DATA *ch,char *argument)
 
 			ch->gen_data->stat_dots[1] -= 1;
 			ch->perm_stat[sn] += 1;
-			// send_to_char(Format("%s : %d\n\r",stat_table[sn].name, ch->perm_stat[sn]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn], stat_table[sn].name, stat_table[sn].name),ch );
 			return TRUE;
 		}
 
@@ -4431,8 +4495,6 @@ bool parse_gen_social(CHAR_DATA *ch,char *argument)
 		{
 			ch->gen_data->stat_dots[1] += 1;
 			ch->perm_stat[sn] -= 1;
-			// send_to_char(Format("%s : %d\n\r",stat_table[sn].name, ch->perm_stat[sn]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn], stat_table[sn].name, stat_table[sn].name),ch );
 			return TRUE;
 		}
 
@@ -4448,12 +4510,7 @@ bool parse_gen_social(CHAR_DATA *ch,char *argument)
 
 	if (!str_prefix(arg,"list"))
 	{
-		for(i = 3; i < 6; i++)
-		{
-			// send_to_char(Format("%s : %d ",stat_table[i].name, ch->perm_stat[i]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].name, stat_table[i].name),ch );
-		}
-		send_to_char("\n\r", ch);
+		/* List will be shown automatically after this returns */
 		return TRUE;
 	}
 
@@ -4464,7 +4521,7 @@ bool parse_gen_social(CHAR_DATA *ch,char *argument)
 bool parse_gen_mental(CHAR_DATA *ch,char *argument)
 {
 	char arg[MIL]={'\0'};
-	int sn = 0,i = 0;
+	int sn = 0;
 
 	if (IS_NULLSTR(argument))
 		return FALSE;
@@ -4509,8 +4566,6 @@ bool parse_gen_mental(CHAR_DATA *ch,char *argument)
 
 			ch->gen_data->stat_dots[2] -= 1;
 			ch->perm_stat[sn] += 1;
-			// send_to_char(Format("%s : %d\n\r",stat_table[sn].name, ch->perm_stat[sn]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn], stat_table[sn].name, stat_table[sn].name),ch );
 			return TRUE;
 		}
 
@@ -4532,8 +4587,6 @@ bool parse_gen_mental(CHAR_DATA *ch,char *argument)
 		{
 			ch->gen_data->stat_dots[2] += 1;
 			ch->perm_stat[sn] -= 1;
-			// send_to_char(Format("%s : %d\n\r",stat_table[sn].name, ch->perm_stat[sn]),ch);
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[sn].name), ch->perm_stat[sn], stat_table[sn].name, stat_table[sn].name),ch );
 			return TRUE;
 		}
 
@@ -4549,11 +4602,7 @@ bool parse_gen_mental(CHAR_DATA *ch,char *argument)
 
 	if (!str_prefix(arg,"list"))
 	{
-		for(i = 6; i < 9; i++)
-		{
-			send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(stat_table[i].name), ch->perm_stat[i], stat_table[i].name, stat_table[i].name),ch );
-		}
-		send_to_char("\n\r", ch);
+		/* List will be shown automatically after this returns */
 		return TRUE;
 	}
 
@@ -4564,7 +4613,7 @@ bool parse_gen_mental(CHAR_DATA *ch,char *argument)
 bool parse_gen_talents(CHAR_DATA *ch,char *argument)
 {
 	char arg[MIL]={'\0'};
-	int sn = 0,i = 0;
+	int sn = 0;
 
 	if (IS_NULLSTR(argument))
 		return FALSE;
@@ -4648,16 +4697,7 @@ bool parse_gen_talents(CHAR_DATA *ch,char *argument)
 
 	if (!str_prefix(arg,"list"))
 	{
-		for(i = 0; i < 13; i++)
-		{
-			if(IS_ATTRIB_AVAILABLE(ch->race, i))
-			{
-				if(i%3 == 0) 
-					send_to_char("\n\r", ch);
-				send_to_char(Format("%-10s: %1d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",capitalize(ability_table[i].name), ch->ability[i].value, ability_table[i].name, ability_table[i].name),ch );
-			}
-		}
-		send_to_char("\n\r", ch);
+		/* List will be shown automatically after this returns */
 		return TRUE;
 	}
 
@@ -4668,7 +4708,7 @@ bool parse_gen_talents(CHAR_DATA *ch,char *argument)
 bool parse_gen_skills(CHAR_DATA *ch,char *argument)
 {
 	char arg[MIL]={'\0'};
-	int sn = 0,i = 0;
+	int sn = 0;
 
 	if (IS_NULLSTR(argument))
 		return FALSE;
@@ -4753,15 +4793,7 @@ bool parse_gen_skills(CHAR_DATA *ch,char *argument)
 
 	if (!str_prefix(arg,"list"))
 	{
-		for(i = 13; i < 24; i++)
-		{
-			if(IS_ATTRIB_AVAILABLE(ch->race,i))
-			{
-				if((i-13)%3 == 0) send_to_char("\n\r", ch);
-				send_to_char(Format("%s : %d ",ability_table[i].name, ch->ability[i].value),ch);
-			}
-		}
-		send_to_char("\n\r", ch);
+		/* List will be shown automatically after this returns */
 		return TRUE;
 	}
 
@@ -4772,7 +4804,7 @@ bool parse_gen_skills(CHAR_DATA *ch,char *argument)
 bool parse_gen_knowledges(CHAR_DATA *ch,char *argument)
 {
 	char arg[MIL]={'\0'};
-	int sn = 0,i = 0;
+	int sn = 0;
 
 	if (IS_NULLSTR(argument))
 		return FALSE;
@@ -4856,15 +4888,7 @@ bool parse_gen_knowledges(CHAR_DATA *ch,char *argument)
 
 	if (!str_prefix(arg,"list"))
 	{
-		for(i = 24; ability_table[i].name != NULL; i++)
-		{
-			if(IS_ATTRIB_AVAILABLE(ch->race, i))
-			{
-				if((i-24)%3 == 0) send_to_char("\n\r", ch);
-				send_to_char(Format("%s : %d ",ability_table[i].name, ch->ability[i].value),ch);
-			}
-		}
-		send_to_char("\n\r", ch);
+		/* List will be shown automatically after this returns */
 		return TRUE;
 	}
 

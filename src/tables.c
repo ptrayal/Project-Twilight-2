@@ -522,16 +522,16 @@ const struct flag_type plot_races	[] =
 
 const struct attrib_type stat_table [MAX_STATS] = {
 
- { "strength"		},
- { "dexterity"		},
- { "stamina"		},
- { "charisma"		},
- { "manipulation"	},
- { "appearance"		},
- { "perception"		},
- { "intelligence"	},
- { "wits"			},
- { NULL				}
+ { "strength",		"Physical power and damage"			},
+ { "dexterity",		"Agility and dodging attacks"		},
+ { "stamina",		"Health and endurance"				},
+ { "charisma",		"Personal magnetism and charm"		},
+ { "manipulation",	"Influence and persuasion"			},
+ { "appearance",	"Physical attractiveness"			},
+ { "perception",	"Awareness and insight"				},
+ { "intelligence",	"Reasoning and memory"				},
+ { "wits",			"Quick thinking and reflexes"		},
+ { NULL,			NULL								}
 
 };
 

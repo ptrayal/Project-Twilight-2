@@ -145,7 +145,7 @@ DECLARE_DO_FUN( do_compact	);
 DECLARE_DO_FUN(	do_compare	);
 DECLARE_DO_FUN(	do_conceal	);
 DECLARE_DO_FUN(	do_consider	);
-/* DECLARE_DO_FUN( do_copyover	); */
+DECLARE_DO_FUN( do_copyover	); 
 DECLARE_DO_FUN( do_count	);
 DECLARE_DO_FUN(	do_credits	);
 DECLARE_DO_FUN( do_deaf		);

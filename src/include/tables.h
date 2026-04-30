@@ -65,6 +65,7 @@ struct health_type
 struct attrib_type
 {
     char *name;
+    char *desc;  /* Short description for character creation */
 };
 
 /*

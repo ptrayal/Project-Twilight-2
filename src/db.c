@@ -5593,6 +5593,63 @@ const char *Format(const char *fmt, ...)
     return textString;
 }
 
+/* Character creation helper functions for protocol-aware output */
+
+/* Returns "dot" or "dots" based on count - fixes grammar */
+const char *dot_plural(int count)
+{
+    return (count == 1) ? "dot" : "dots";
+}
+
+/* Formats a stat line with clickable links for MXP clients, instructions for telnet */
+const char *format_stat_line(DESCRIPTOR_DATA *d, const char *stat_name, int value, const char *desc)
+{
+    static char buf[MSL];
+
+    if (d && d->pProtocol && d->pProtocol->bMXP)
+    {
+        // MXP client - clickable links
+        snprintf(buf, sizeof(buf), "%-12s: %d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]  - %s\n\r",
+                stat_name, value, stat_name, stat_name, desc);
+    }
+    else
+    {
+        // Basic telnet - show commands to type
+        snprintf(buf, sizeof(buf), "%-12s: %d  - %s\n\r",
+                stat_name, value, desc);
+    }
+
+    return buf;
+}
+
+/* Formats ability/skill line with protocol awareness */
+const char *format_ability_line(DESCRIPTOR_DATA *d, const char *ability_name, int value)
+{
+    static char buf[MSL];
+
+    if (d && d->pProtocol && d->pProtocol->bMXP)
+    {
+        // MXP client - clickable
+        snprintf(buf, sizeof(buf), "%-14s: %d  [\t<send href='add %s'>add\t</send> | \t<send href='minus %s'>minus\t</send>]\n\r",
+                ability_name, value, ability_name, ability_name);
+    }
+    else
+    {
+        // Basic telnet
+        snprintf(buf, sizeof(buf), "%-14s: %d\n\r", ability_name, value);
+    }
+
+    return buf;
+}
+
+/* Returns a progress indicator string */
+const char *creation_progress(int current_step, int total_steps)
+{
+    static char buf[MSL];
+    snprintf(buf, sizeof(buf), "\n\r\t<send href='help creation'>Step %d of %d\t</send>\n\r", current_step, total_steps);
+    return buf;
+}
+
 // CapitalSentence by David Simmerson
 char *CapitalSentence(const char *str)
 {

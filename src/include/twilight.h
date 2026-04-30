@@ -3250,6 +3250,12 @@ char* strmove(char* s1,const char* s2);
 const char *Format args( (const char *fmt, ...) );
 char *CapitalSentence args( (const char *str) );
 
+/* Character creation helper functions */
+const char *dot_plural args( (int count) );
+const char *format_stat_line args( (DESCRIPTOR_DATA *d, const char *stat_name, int value, const char *desc) );
+const char *format_ability_line args( (DESCRIPTOR_DATA *d, const char *ability_name, int value) );
+const char *creation_progress args( (int current_step, int total_steps) );
+
 
 /* effect.c */
 void	acid_effect	args( (void *vo, int level, int dam, int target) );
