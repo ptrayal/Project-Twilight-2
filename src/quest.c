@@ -47,8 +47,8 @@ CHAR_DATA * evil_twin (CHAR_DATA *ch)
     CHAR_DATA *twin = create_mobile(get_mob_index(MOB_VNUM_BLANKY));
     int i = 0;
 
-    twin->name		= ch->name;
-    twin->short_descr	= ch->name;
+    twin->name		= str_dup(ch->name);
+    twin->short_descr	= str_dup(ch->name);
     twin->act		= ACT_TWIN | ch->act;
     twin->act2		= ch->act2;
     for(i = 0; i < MAX_STATS; i++)
@@ -109,6 +109,8 @@ CHAR_DATA * get_random_mob(CHAR_DATA *ch)
     CHAR_DATA *mob = NULL;
     /* 3000 is simply an arbitrarily chosen integer */
     int i = number_range(1, 3000);
+    int safety = 0;
+    int max_iterations = 10000;
 
     while(i > 0)
     {
@@ -125,20 +127,47 @@ CHAR_DATA * get_random_mob(CHAR_DATA *ch)
         }
     }
 
-    while(!IS_NPC(mob) || mob == ch)
+    /* Find an NPC that isn't the character, with safety limit */
+    safety = 0;
+    while(mob != NULL && (!IS_NPC(mob) || mob == ch))
     {
         mob = mob->next;
         if(mob == NULL)
         {
             mob = char_list;
         }
+        if(++safety > max_iterations)
+            return NULL;
     }
 
-    /* Mob should be on the same plane. */
-    if(!SAME_PLANE(ch, mob) || IS_ANIMAL(mob))
+    if(mob == NULL)
+        return NULL;
+
+    /* Mob should be on the same plane - iterative check to avoid recursion */
+    safety = 0;
+    while((!SAME_PLANE(ch, mob) || IS_ANIMAL(mob)) && safety < 100)
     {
-        mob = get_random_mob(ch);
+        mob = mob->next;
+        if(mob == NULL)
+            mob = char_list;
+
+        /* Skip non-NPCs and self */
+        while(mob != NULL && (!IS_NPC(mob) || mob == ch))
+        {
+            mob = mob->next;
+            if(mob == NULL)
+                mob = char_list;
+        }
+
+        if(mob == NULL)
+            return NULL;
+
+        safety++;
     }
+
+    /* If we couldn't find a valid mob after 100 tries, return NULL */
+    if(safety >= 100 || mob == NULL)
+        return NULL;
 
     return mob;
 }
@@ -160,8 +189,10 @@ OBJ_DATA * get_random_obj()
 		}
 	}
 
-	pobj = obj->pIndexData;
+	if(obj == NULL || obj->pIndexData == NULL)
+		return NULL;
 
+	pobj = obj->pIndexData;
 	obj = create_object(pobj);
 
 	return obj;
@@ -247,11 +278,23 @@ long gen_quest_flags()
 CHAR_DATA * gen_quest_victim(QUEST_DATA *pq)
 {
 	CHAR_DATA *mob;
+	int safety = 0;
 
 	mob = get_random_mob(pq->questor);
-	while(IS_SET(mob->act2, ACT2_NOQUEST)
-			|| IS_SET(mob->act2, ACT2_NOQUESTVICT))
+	if(mob == NULL)
+		return NULL;
+
+	while((IS_SET(mob->act2, ACT2_NOQUEST) || IS_SET(mob->act2, ACT2_NOQUESTVICT))
+			&& safety < 100)
+	{
 		mob = get_random_mob(pq->questor);
+		if(mob == NULL)
+			return NULL;
+		safety++;
+	}
+
+	if(safety >= 100)
+		return NULL;
 
 	return mob;
 }
@@ -259,11 +302,23 @@ CHAR_DATA * gen_quest_victim(QUEST_DATA *pq)
 CHAR_DATA * gen_quest_aggressor(QUEST_DATA *pq)
 {
 	CHAR_DATA *mob;
+	int safety = 0;
 
 	mob = get_random_mob(pq->questor);
-	while(IS_SET(mob->act2, ACT2_NOQUEST)
-			|| IS_SET(mob->act2, ACT2_NOQUESTAGGR))
+	if(mob == NULL)
+		return NULL;
+
+	while((IS_SET(mob->act2, ACT2_NOQUEST) || IS_SET(mob->act2, ACT2_NOQUESTAGGR))
+			&& safety < 100)
+	{
 		mob = get_random_mob(pq->questor);
+		if(mob == NULL)
+			return NULL;
+		safety++;
+	}
+
+	if(safety >= 100)
+		return NULL;
 
 	return mob;
 }
@@ -322,7 +377,7 @@ void gen_quest (bool forced, CHAR_DATA *vch)
 	}
 
 	pquest->quest_type = number_range(0, MAX_QUESTS);
-	if(!str_cmp(pquest->questor->name, "Dsarky")) pquest->quest_type = 2;
+	/* Debug code: if(!str_cmp(pquest->questor->name, "Dsarky")) pquest->quest_type = 2; */
 
 	pquest->quest_flags = gen_quest_flags();
 
@@ -395,7 +450,7 @@ void quest_courier (CHAR_DATA *ch, int flag)
         if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
             SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
         if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
-                > can_carry_w(ch))
+                > can_carry_w(ch->quest->victim))
             ch->quest->obj = 0;
         /*aggressor makes offer;*/
         if(ch->quest->aggressor != NULL)
@@ -531,7 +586,7 @@ void quest_thief (CHAR_DATA *ch, int flag)
         if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
             SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
         if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
-                > can_carry_w(ch))
+                > can_carry_w(ch->quest->victim))
             ch->quest->obj = 0;
         /*aggressor makes offer;*/
         if(ch->quest->aggressor != NULL)
@@ -547,7 +602,9 @@ void quest_thief (CHAR_DATA *ch, int flag)
             send_to_char("You accept the theft job.\n\r", ch);
             if(ch->quest->victim != NULL)
             {
-                act(Format("$N says, \"I need you to steal %s from $t.\"", format_obj_to_char( ch->quest->obj, ch, TRUE )), ch, PERS( ch->quest->victim, ch ), ch->quest->aggressor, TO_CHAR, 1);
+                char buf[MSL]={'\0'};
+                snprintf(buf, sizeof(buf), "$N says, \"I need you to steal %s from $t.\"", format_obj_to_char( ch->quest->obj, ch, TRUE ));
+                act(buf, ch, PERS( ch->quest->victim, ch ), ch->quest->aggressor, TO_CHAR, 1);
                 act("$N gives you $p.\n\r", ch->quest->victim, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
                 obj_to_char(ch->quest->obj, ch->quest->victim);
             }
@@ -705,14 +762,16 @@ void goal_obtain_item(CHAR_DATA *ch, int flag)
 void do_random_at(CHAR_DATA *ch, char *argument)
 {
 	char arg2[MAX_INPUT_LENGTH]={'\0'};
+	char buf[MSL]={'\0'};
 	CHAR_DATA *mob = get_random_mob(ch);
 
-	if(!IS_NULLSTR(argument))
+	if(IS_NULLSTR(argument))
 	{
 		/*gen_quest(TRUE, ch);*/
 		return;
 	}
 
 	one_argument(mob->name, arg2);
-	do_at(ch, (char *)Format("%s %s", arg2, argument));
+	snprintf(buf, sizeof(buf), "%s %s", arg2, argument);
+	do_at(ch, buf);
 }
