@@ -337,7 +337,7 @@ void close_combat (CHAR_DATA *ch, CHAR_DATA *victim, int combo)
         dt1 = TYPE_HIT + ch->dam_type + 1;
     }
 
-    if((combo != 4 || combo != 5)
+    if((combo != 4 && combo != 5)
             && (combo < 8 || combo > 10)
             && (combo < 15 || combo > 35))
         return;
@@ -885,7 +885,7 @@ void add_to_combo(CHAR_DATA *ch, CHAR_DATA *vch, int move)
     {
         while(last->next != NULL)
             last = last->next;
-        ch->combo->next = pmove;
+        last->next = pmove;
     }
     else
     {
@@ -925,6 +925,7 @@ void do_move_stop (CHAR_DATA *ch, char *string)
         act_new("$n stops in $m tracks.",
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_NONE);
+        ch->act_points -= 1;
         ch->combat_flag = -1;
     }
 
@@ -970,6 +971,7 @@ void do_move_stand (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_STAND].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_STAND);
+        ch->act_points -= 1;
         if(ch->position > P_STUN)
             ch->position = P_STAND;
         ch->balance = 1;
@@ -1026,6 +1028,7 @@ void do_move_flip (CHAR_DATA *ch, char *string)
         if(ch->position > P_STUN)
             ch->position = P_STAND;
         add_to_combo(ch, NULL, MOVE_FLIP);
+        ch->act_points -= 3;
     }
 }
 
@@ -1074,6 +1077,7 @@ void do_move_roll (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_ROLL].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_ROLL);
+        ch->act_points -= 3;
     }
 }
 
@@ -1124,6 +1128,7 @@ void do_move_jump (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_JUMP].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_JUMP);
+        ch->act_points -= 2;
     }
 }
 
@@ -1212,6 +1217,7 @@ void do_move_lblow (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_LBLOW].to_vict, ch, NULL, victim, TO_VICT, P_REST, 1);
         act_new(combo_table[MOVE_LBLOW].to_room, ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_LBLOW);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -1294,6 +1300,7 @@ void do_move_rblow (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_RBLOW].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_RBLOW);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -1377,6 +1384,7 @@ void do_move_lgrab (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_LGRAB].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_LGRAB);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -1463,6 +1471,7 @@ void do_move_rgrab (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_RGRAB].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_RGRAB);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -1554,6 +1563,7 @@ void do_move_kick (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_KICK].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_KICK);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -1645,6 +1655,7 @@ void do_move_skick (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_SKICK].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_SKICK);
+        ch->act_points -= 2;
     }
     ch->combo_success = fail;
 }
@@ -1727,6 +1738,7 @@ void do_move_bite (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_BITE].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_BITE);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -1768,6 +1780,7 @@ void do_move_lblock (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_LBLOCK].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_LBLOCK);
+        ch->act_points -= 1;
         SET_BIT(ch->combat_flag, A);
     }
 }
@@ -1809,6 +1822,7 @@ void do_move_rblock (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_RBLOCK].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_RBLOCK);
+        ch->act_points -= 1;
         SET_BIT(ch->combat_flag, B);
     }
 }
@@ -1857,6 +1871,7 @@ void do_move_fblock (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_FBLOCK].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_FBLOCK);
+        ch->act_points -= 1;
         SET_BIT(ch->combat_flag, C);
     }
 }
@@ -1905,6 +1920,7 @@ void do_move_spin (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_SPIN].to_room,
                 ch, NULL, NULL, TO_ROOM, P_REST, 0);
         add_to_combo(ch, NULL, MOVE_SPIN);
+        ch->act_points -= 3;
     }
 }
 
@@ -2001,6 +2017,7 @@ void do_move_sweep (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_SWEEP].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_SWEEP);
+        ch->act_points -= 2;
         victim->balance -= 4;
     }
     ch->combo_success = fail;
@@ -2057,6 +2074,7 @@ void do_move_dodge (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_DODGE].to_vict, ch, NULL, victim, TO_VICT, P_REST, 1);
         act_new(combo_table[MOVE_DODGE].to_room, ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_DODGE);
+        ch->act_points -= 1;
         victim->balance -= 4;
     }
 }
@@ -2149,6 +2167,7 @@ void do_move_touch (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_TOUCH].to_room,
                 ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_TOUCH);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }
@@ -2243,6 +2262,7 @@ void do_move_tongue (CHAR_DATA *ch, char *string)
         act_new(combo_table[MOVE_TONGUE].to_vict, ch, NULL, victim, TO_VICT, P_REST, 1);
         act_new(combo_table[MOVE_TONGUE].to_room, ch, NULL, victim, TO_NOTVICT, P_REST, 0);
         add_to_combo(ch, victim, MOVE_TONGUE);
+        ch->act_points -= 1;
     }
     ch->combo_success = fail;
 }

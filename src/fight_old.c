@@ -250,7 +250,6 @@ void violence_update( void )
 			{
 				stop_fighting( ch, TRUE )
 				;}
-				ch->combat_flag = 0;
 			}
 			else
 				stop_fighting( ch, FALSE );
@@ -270,6 +269,13 @@ void violence_update( void )
 				if ( HAS_TRIGGER( ch, TRIG_HPCNT ) )
 					mp_hprct_trigger( ch, victim );
 			}
+		}
+
+		/* Reset combat flags after all attacks have been processed */
+		for ( ch = char_list; ch != NULL; ch = ch->next )
+		{
+			if ( ch->fighting != NULL )
+				ch->combat_flag = 0;
 		}
 
 		return;

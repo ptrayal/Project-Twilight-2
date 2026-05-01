@@ -433,7 +433,7 @@ const	struct	cmd_type	cmd_table	[] =
 	{	"silverclaws",		do_falcon3,			P_STAND,	0,	L_NRM,	1,	B|C|D|H,	WW },
 	{	"fangs",			do_fangs,			P_REST,		0,	L_NRM,	1,	B|D|H,	VA|WW },
 	{	"ghoul",			do_ghoul,			P_STAND,	0,	L_NRM,	1,	B|C|D|H,	VA },
-	{	"regenerate",		do_heal,			P_TORPOR,	0,	L_NRM,	1,	B|E,	VA },
+	{	"regenerate",		do_heal,			P_STAND,	0,	L_NRM,	1,	B|E,	VA },
 	{	"heal",				do_heal,			P_SIT,		0,	L_NRM,	1,	B|E,	HU|WW },
 	{	"instruct",			do_instruct,		P_DEAD,		0,	L_NRM,	1,	A|B|G|H,	WW },
 	{	"learn",			do_learn,			P_DEAD,		0,	L_NRM,	1,	A|B|H,	WW },

@@ -3166,7 +3166,7 @@ void do_heal (CHAR_DATA *ch, char *argument)
 
     argument = one_argument(argument, arg1);
 
-    if(!IS_NULLSTR(arg1))
+    if(IS_NULLSTR(arg1))
     {
         send_to_char("Heal who?\n\r", ch);
         return;
