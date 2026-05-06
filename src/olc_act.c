@@ -4566,17 +4566,6 @@ MEDIT( medit_shop )
     if ( !str_cmp( command, "delete" ) )
     {
 	SHOP_DATA *pShop;
-	SHOP_DATA *pShop_next;
-	int value;
-	int cnt = 0;
-
-	if ( IS_NULLSTR(arg1) || !is_number( arg1 ) )
-	{
-	    send_to_char( "Syntax:  shop delete [#x0-4]\n\r", ch );
-	    return FALSE;
-	}
-
-	value = atoi( argument );
 
 	if ( !pMob->pShop )
 	{
@@ -4584,23 +4573,11 @@ MEDIT( medit_shop )
 	    return FALSE;
 	}
 
-	if ( value == 0 )
-	{
-	    pShop = pMob->pShop;
-	    pMob->pShop = pMob->pShop->next;
-	    free_shop( pShop );
-	}
-	else
-	for ( pShop = pMob->pShop, cnt = 0; pShop; pShop = pShop_next, cnt++ )
-	{
-	    pShop_next = pShop->next;
-	    if ( cnt+1 == value )
-	    {
-		pShop->next = pShop_next->next;
-		free_shop( pShop_next );
-		break;
-	    }
-	}
+	/* Each mob has only one shop. The shop's 'next' pointer is for
+	 * the global shop_list, not a per-mob list. */
+	pShop = pMob->pShop;
+	pMob->pShop = NULL;  /* Clear mob's shop pointer */
+	free_shop( pShop );  /* This will unlink from shop_list and free it */
 
 	send_to_char( "Shop deleted.\n\r", ch);
 	return TRUE;
