@@ -2294,6 +2294,13 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
                 break;
             }
 
+            /* Check if we should skip based on last 'O' reset result */
+            if (!last)
+            {
+                /* Previous 'O' reset failed/skipped, so container might not exist - skip silently */
+                break;
+            }
+
             LastObj = get_obj_type(pObjToIndex);
             if (LastObj == NULL)
             {
