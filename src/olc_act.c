@@ -6895,8 +6895,8 @@ HEDIT( hedit_races )
             help->races = string_unpad(help->races);
         }
 
-        // Ensure there is enough space to add the race
-        if (strlen(help->races) + strlen(name) + 2 >= MSL)
+        // Ensure there is enough space to add the race (account for space + null terminator)
+        if (strlen(help->races) + strlen(name) + 2 > MSL - 1)
         {
             send_to_char("Race list too long to add another race.\n\r", ch);
             return FALSE;

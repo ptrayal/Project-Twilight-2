@@ -204,7 +204,8 @@ void say_spell( CHAR_DATA *ch, int sn )
 		{
 			if ( !str_prefix( syl_table[iSyl].old, pName ) )
 			{
-				strncat( buf, syl_table[iSyl].bnew, sizeof(buf) - strlen(buf) - 1 );
+				/* Reserve 30 bytes for wrapper text "$n utters the words, '%s'." to prevent truncation */
+			strncat( buf, syl_table[iSyl].bnew, sizeof(buf) - strlen(buf) - 31 );
 				break;
 			}
 		}

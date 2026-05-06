@@ -779,9 +779,8 @@ char *desc_pretty( char *string, int start, int lines, bool no_free )
 	/* and swap in the new editted description */
 	if(no_free)
 	{
-		int string_size = 0;
-		string_size = sizeof(string);
-		snprintf(string, string_size, "%s", buf);
+		/* Caller must provide a buffer of at least MSL bytes when no_free is true */
+		snprintf(string, MSL, "%s", buf);
 		return string;
 	}
 	PURGE_DATA( string );
@@ -831,6 +830,8 @@ char *numlines(char *string)   // Renamed function for clarity
     while (*string)
     {
         string = get_line(string, tmpb);
+        /* Limit tmpb to prevent truncation when adding line number prefix */
+        tmpb[MSL - 10] = '\0';  /* Reserve 10 bytes for "%2d. " and "\n\r" */
         snprintf(buf2, sizeof(buf2), "%2d. %s\n\r", cnt++, tmpb);
         strncat(buf, buf2, sizeof(buf) - strlen(buf) - 1);
     }

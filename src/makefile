@@ -27,10 +27,10 @@ COMPILER		= gcc
 PROFILER		= -O -g -ggdb  -Wall  -funroll-loops -fcaller-saves
 NOCRYPT			=
 # C_FLAGS			=  -Wall -g $(PROFILER) -I$(INCLUDE) -Wformat-truncation=0 #$(NOCRYPT)
-# C_FLAGS 		= -std=gnu99 -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
+# C_FLAGS 		= -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
 
 # New C_Flags for consolidation
-C_FLAGS = -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
+C_FLAGS = -std=gnu99 -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
 
 
 LIBRARY_FLAGS	=  $(PROFILER)

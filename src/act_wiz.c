@@ -5053,7 +5053,8 @@ const char * name_expand (CHAR_DATA *ch)
 		if (is_name (name, rch->name))
 			count++;
 
-
+	/* Reserve 12 bytes for count prefix (max 10 digits + '.' + null) */
+	name[MIL - 12] = '\0';
 	snprintf (outbuf, sizeof(outbuf), "%d.%s", count, name);
 	return outbuf;
 }

@@ -5423,6 +5423,9 @@ void log_string(int type, const char *fmt, ... )
     vsprintf (bufew, fmt, args);
     va_end (args);
 
+    /* Truncate bufew to leave room for log prefixes (longest is "Critical: " = 11 chars) */
+    bufew[(2 * MSL) - 12] = '\0';
+
     if (type & LOG_CRIT)
     {
         snprintf( buf, sizeof(buf), "../log/%s.ritical", get_curdate() );

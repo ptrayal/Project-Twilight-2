@@ -175,6 +175,7 @@ void translate( CHAR_DATA *ch, char * oldwords, char * newwords )
 			length = 1;
 	}
 
+	/* Intentionally truncate to MSL if translation expanded beyond that */
 	snprintf( newwords, MSL, "%s", buf );
 
 	/* Removed to try to fix name changes.
