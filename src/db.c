@@ -2283,7 +2283,7 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
             LastObj = get_obj_type(pObjToIndex);
             if (LastObj == NULL)
             {
-                log_string(LOG_BUG, "reset_room: get_obj_type returned NULL for 'P' case.");
+                log_string(LOG_BUG, Format("reset_room: 'P' case - container vnum %d not found in world. Cannot place vnum %d inside it. Check area file reset ordering.", pReset->arg3, pReset->arg1));
                 last = FALSE;
                 break;
             }

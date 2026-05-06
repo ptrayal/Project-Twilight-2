@@ -3064,10 +3064,10 @@ OBJ_DATA *get_obj_type(OBJ_INDEX_DATA *pObjIndex)
     // Start iterating through the object list
     for (obj = object_list; obj != NULL; obj = obj->next)
     {
-        // Check if pIndexData is NULL or obj->next is an invalid pointer
-        if (obj->pIndexData == NULL || !is_valid_pointer(obj->next))
+        // Check if pIndexData is NULL (obj->next can legitimately be NULL for last item)
+        if (obj->pIndexData == NULL)
         {
-            log_string(LOG_BUG, Format("Warning: obj->pIndexData or obj->next is NULL in get_obj_type, obj=%p, obj->next=%p", (void *)obj, (void *)obj->next));
+            log_string(LOG_BUG, Format("Warning: obj->pIndexData is NULL in get_obj_type, obj=%p", (void *)obj));
             continue;  // Skip this object to avoid accessing invalid memory
         }
 
