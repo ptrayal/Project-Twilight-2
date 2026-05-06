@@ -24,7 +24,7 @@ COMPILER		= gcc
 # PROFILER      	= -ggdb3 #-Werror -pedantic -DASSERT
 # New Profiler
 # for GCC 10, we added -fcommon.
-PROFILER		= -O -g -ggdb  -Wall  -funroll-loops -fcaller-saves
+PROFILER		= -O -g -ggdb  -Wall
 NOCRYPT			=
 # C_FLAGS			=  -Wall -g $(PROFILER) -I$(INCLUDE) -Wformat-truncation=0 #$(NOCRYPT)
 # C_FLAGS 		= -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
