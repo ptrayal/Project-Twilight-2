@@ -1292,7 +1292,7 @@ void load_resets( FILE *fp )
             break;
 
         case 'D':
-            log_string(LOG_ERR, "load_resets: old-style door reset found! (D)");
+            /* Old ROM 2.4 door reset format - silently ignore */
             free_reset_data(pReset);
             break;
 
@@ -1545,7 +1545,8 @@ void load_shops( FILE *fp )
         pShop->keeper       = fread_number( fp );
         if ( pShop->keeper == 0 )
         {
-            free_shop(pShop);
+            /* Shop was never linked to shop_list, so just free memory directly */
+            PURGE_DATA(pShop);
             break;
         }
         for ( iTrade = 0; iTrade < MAX_TRADE; iTrade++ )

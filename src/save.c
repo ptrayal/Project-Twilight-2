@@ -32,7 +32,11 @@ static char *strip_trailing_whitespace(const char *str)
 	char *result = NULL;
 
 	if (str == NULL || str[0] == '\0')
-		return str_dup("");
+	{
+		result = malloc(1);
+		if (result) result[0] = '\0';
+		return result;
+	}
 
 	len = strlen(str);
 
