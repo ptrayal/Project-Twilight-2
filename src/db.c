@@ -2248,7 +2248,13 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
                 continue;
             }
 
-            if (pRoom->area->nplayer > 0 || count_obj_list(pObjIndex, pRoom->contents) > 0)
+            if (pRoom->area->nplayer > 0)
+            {
+                last = FALSE;
+                break;
+            }
+
+            if (count_obj_list(pObjIndex, pRoomIndex->contents) > 0)
             {
                 last = FALSE;
                 break;
@@ -2256,7 +2262,8 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
 
             pObj = create_object(pObjIndex);
             pObj->cost = 0;
-            obj_to_room(pObj, pRoom);
+            obj_to_room(pObj, pRoomIndex);
+            LastObj = pObj;  /* Save reference for dependent P resets */
             last = TRUE;
             break;
 
@@ -2280,6 +2287,13 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
             else
                 limit = pReset->arg2;
 
+            /* Skip reset if players are in area - container may not have been created */
+            if (pRoom->area->nplayer > 0)
+            {
+                last = FALSE;
+                break;
+            }
+
             LastObj = get_obj_type(pObjToIndex);
             if (LastObj == NULL)
             {
@@ -2288,7 +2302,7 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
                 break;
             }
 
-            if (pRoom->area->nplayer > 0 || (LastObj->in_room == NULL && !last) ||
+            if ((LastObj->in_room == NULL && !last) ||
                     (pObjIndex->count >= limit) || (count = count_obj_list(pObjIndex, LastObj->contains)) > pReset->arg4)
             {
                 last = FALSE;
