@@ -24,10 +24,10 @@ COMPILER		= gcc
 # PROFILER      	= -ggdb3 #-Werror -pedantic -DASSERT
 # New Profiler
 # for GCC 10, we added -fcommon.
-PROFILER		= -O -g -ggdb  -Wall  -funroll-loops -fcaller-saves -ffast-math
+PROFILER		= -O -g -ggdb  -Wall  -funroll-loops -fcaller-saves
 NOCRYPT			=
 # C_FLAGS			=  -Wall -g $(PROFILER) -I$(INCLUDE) -Wformat-truncation=0 #$(NOCRYPT)
-# C_FLAGS 		= -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
+# C_FLAGS 		= -std=gnu99 -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
 
 # New C_Flags for consolidation
 C_FLAGS = -Wall -g $(PROFILER) -I$(INCLUDE) -Iinclude -Wformat-truncation=0
@@ -65,7 +65,7 @@ pt: $(O_FILES)
 ptdev: $(O_TESTFILES)
 	rm -f projectdev
 	rm -f projectdev.exe
-	$(COMPILER) $(C_FLAGS) -o projectdev $(O_TESTFILES) #-lm
+	$(COMPILER) $(C_FLAGS) -o projectdev $(O_TESTFILES) -lm
 	@if ! test -f $(BVERSION_FILE); then echo 0 > $(BVERSION_FILE); fi
 	@echo $$(($$(cat $(BVERSION_FILE)) + 1)) > $(BVERSION_FILE)
 	@echo "#ifndef __Version_H" > ./include/version.h
