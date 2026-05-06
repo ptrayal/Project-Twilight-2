@@ -195,7 +195,7 @@ void free_help(HELP_DATA *help)
     // Free the HELP_DATA structure itself
     PURGE_DATA(help);
 
-    // log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
+    log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
 }
 
 
@@ -303,7 +303,7 @@ void free_note(NOTE_DATA *note)
         return;
     }
 
-    // log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
+    log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
 
     // Clear dynamically allocated fields
     PURGE_DATA(note->date);
@@ -408,7 +408,7 @@ DESCRIPTOR_DATA *new_descriptor(void)
         return NULL;
     }
 
-    // log_string(LOG_GAME, "Created new descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
+    log_string(LOG_GAME, "Created new descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
     return d;
 }
 
@@ -421,7 +421,7 @@ void free_descriptor(DESCRIPTOR_DATA *d)
         return;
     }
 
-    // log_string(LOG_GAME, "Freeing descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
+    log_string(LOG_GAME, "Freeing descriptor at address %p in function %s at line %d", (void *)d, __FUNCTION__, __LINE__);
 
     // Clear dynamically allocated fields
     PURGE_DATA(d->host);
@@ -446,7 +446,7 @@ void free_descriptor(DESCRIPTOR_DATA *d)
     // Finally, free the descriptor structure itself
     PURGE_DATA(d);
 
-    // log_string(LOG_GAME, "Descriptor successfully freed in function %s at line %d", __FUNCTION__, __LINE__);
+    log_string(LOG_GAME, "Descriptor successfully freed in function %s at line %d", __FUNCTION__, __LINE__);
 }
 
 
@@ -480,7 +480,7 @@ GEN_DATA *new_gen_data(void)
 
     gen->next = NULL; // Clear any links to other GEN_DATA structures
 
-    // log_string(LOG_GAME, "new_gen_data: Successfully created a new GEN_DATA instance at %p.", (void *)gen);
+    log_string(LOG_GAME, "new_gen_data: Successfully created a new GEN_DATA instance at %p.", (void *)gen);
     return gen;
 }
 
@@ -494,7 +494,7 @@ void free_gen_data(GEN_DATA *gen)
     }
 
     // Log the operation
-    // log_string(LOG_GAME, "free_gen_data: Freeing GEN_DATA at memory location %p.", (void *)gen);
+    log_string(LOG_GAME, "free_gen_data: Freeing GEN_DATA at memory location %p.", (void *)gen);
 
     // Reset all fields to safe defaults
     gen->freebies = 0;
@@ -517,7 +517,7 @@ void free_gen_data(GEN_DATA *gen)
     // Free the GEN_DATA structure itself
     PURGE_DATA(gen);
 
-    // log_string(LOG_GAME, "free_gen_data: Successfully freed GEN_DATA.");
+    log_string(LOG_GAME, "free_gen_data: Successfully freed GEN_DATA.");
 }
 
 
@@ -590,6 +590,12 @@ REACT_DATA *new_react_data()
 
 	ALLOC_DATA(script, REACT_DATA, 1);
 
+	if (!script)
+	{
+		log_string(LOG_ERR, "new_react_data: Memory allocation failed for REACT_DATA.");
+		return NULL;
+	}
+
 	script->priority	= 0;
 	script->reaction	= NULL;
 
@@ -609,6 +615,12 @@ REACT *new_react()
 {
 	REACT *react;
 	ALLOC_DATA(react, REACT, 1);
+
+	if (!react)
+	{
+		log_string(LOG_ERR, "new_react: Memory allocation failed for REACT.");
+		return NULL;
+	}
 
 	react->trig		= NULL;
 	react->attitude	= 0;
@@ -656,6 +668,12 @@ PERSONA *new_persona()
 	PERSONA *persona;
 
 	ALLOC_DATA(persona, PERSONA, 1);
+
+	if (!persona)
+	{
+		log_string(LOG_ERR, "new_persona: Memory allocation failed for PERSONA.");
+		return NULL;
+	}
 
 	persona->name	= NULL;
 	persona->vnum	= 0;
@@ -705,6 +723,12 @@ SCRIPT_DATA *new_script()
 
 	ALLOC_DATA(script, SCRIPT_DATA, 1);
 
+	if (!script)
+	{
+		log_string(LOG_ERR, "new_script: Memory allocation failed for SCRIPT_DATA.");
+		return NULL;
+	}
+
 	script->author		= NULL;
 	script->trigger		= NULL;
 	script->reaction	= NULL;
@@ -738,6 +762,12 @@ EVENT_DATA *new_event()
 	EVENT_DATA *event;
 
 	ALLOC_DATA(event, EVENT_DATA, 1);
+
+	if (!event)
+	{
+		log_string(LOG_ERR, "new_event: Memory allocation failed for EVENT_DATA.");
+		return NULL;
+	}
 
 	event->author	= NULL;
 	event->title	= NULL;
@@ -800,6 +830,12 @@ PLOT_DATA *new_plot()
 	PLOT_DATA *plot;
 
 	ALLOC_DATA(plot, PLOT_DATA, 1);
+
+	if (!plot)
+	{
+		log_string(LOG_ERR, "new_plot: Memory allocation failed for PLOT_DATA.");
+		return NULL;
+	}
 
 	plot->author	= NULL;
 	plot->title		= NULL;
@@ -867,7 +903,7 @@ EXTRA_DESCR_DATA *new_extra_descr(void)
     ed->successes = 0;
     ed->next = NULL;
 
-    // log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
+    log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
     return ed;
 }
 
@@ -880,18 +916,18 @@ void free_extra_descr(EXTRA_DESCR_DATA *ed)
         return;
     }
 
-    // log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
+    log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
 
     // Clear dynamically allocated strings
     if (ed->keyword)
     {
         PURGE_DATA(ed->keyword);
-        // log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
+        log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
     }
     if (ed->description)
     {
         PURGE_DATA(ed->description);
-        // log_string(LOG_GAME, "free_extra_descr: Cleared description.");
+        log_string(LOG_GAME, "free_extra_descr: Cleared description.");
     }
 
     // Reset all fields to avoid dangling references
@@ -907,7 +943,7 @@ void free_extra_descr(EXTRA_DESCR_DATA *ed)
     // Free the structure
     PURGE_DATA(ed);
 
-    // log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
+    log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
 }
 
 COMBAT_DATA *new_combat_move(void)
@@ -915,6 +951,12 @@ COMBAT_DATA *new_combat_move(void)
 	COMBAT_DATA *move;
 
 	ALLOC_DATA(move, COMBAT_DATA, 1);
+
+	if (!move)
+	{
+		log_string(LOG_ERR, "new_combat_move: Memory allocation failed for COMBAT_DATA.");
+		return NULL;
+	}
 
 	return move;
 }
@@ -932,6 +974,12 @@ AFFECT_DATA *new_affect(void)
 	AFFECT_DATA *af;
 
 	ALLOC_DATA(af, AFFECT_DATA, 1);
+
+	if (!af)
+	{
+		log_string(LOG_ERR, "new_affect: Memory allocation failed for AFFECT_DATA.");
+		return NULL;
+	}
 
 	af->bitvector	= 0;
 	af->duration	= 0;
@@ -1007,7 +1055,7 @@ OBJ_DATA *new_obj(void)
     obj->pIndexData     = NULL;
     obj->in_room        = NULL;
 
-    // log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
+    log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
     return obj;
 }
 
@@ -1015,7 +1063,7 @@ void free_obj(OBJ_DATA *obj)
 {
     Escape(obj);
 
-    // log_string(LOG_GAME, "Freeing OBJ_DATA.");
+    log_string(LOG_GAME, "Freeing OBJ_DATA.");
 
     // Clear and free affect data
     AFFECT_DATA *paf, *paf_next;
@@ -1063,7 +1111,7 @@ void free_obj(OBJ_DATA *obj)
     // Final cleanup
     PURGE_DATA(obj);
 
-    // log_string(LOG_GAME, "OBJ_DATA successfully freed.");
+    log_string(LOG_GAME, "OBJ_DATA successfully freed.");
 }
 
 
@@ -1080,7 +1128,7 @@ CHAR_DATA *new_char (void)
         return NULL;
     }
 
-    // log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
+    log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
 
 
 	ch->hunted			= FALSE;
@@ -1098,6 +1146,12 @@ CHAR_DATA *new_char (void)
 	ch->long_descr		= NULL;
 	ch->married			= NULL;
 	ch->material		= str_dup("flesh");
+	if (!ch->material)
+	{
+		log_string(LOG_ERR, "new_char: Failed to allocate memory for material.");
+		PURGE_DATA(ch);
+		return NULL;
+	}
 	ch->name			= NULL;
 	ch->nature			= NULL;
 	ch->next_in_room	= NULL;
@@ -1106,6 +1160,13 @@ CHAR_DATA *new_char (void)
 	ch->pet             = NULL;
 	ch->prefix			= NULL;
 	ch->profession		= str_dup("None");
+	if (!ch->profession)
+	{
+		log_string(LOG_ERR, "new_char: Failed to allocate memory for profession.");
+		PURGE_DATA(ch->material);
+		PURGE_DATA(ch);
+		return NULL;
+	}
 	ch->prompt			= NULL;
 	ch->reply 			= NULL;
 	ch->short_descr		= NULL;
@@ -1238,7 +1299,7 @@ void free_char (CHAR_DATA *ch)
         return;
     }
 
-    // log_string(LOG_GAME, "Freeing CHAR_DATA structure.");
+    log_string(LOG_GAME, "Freeing CHAR_DATA structure.");
 
 
 	OBJ_DATA *obj;
@@ -1258,7 +1319,7 @@ void free_char (CHAR_DATA *ch)
     {
         obj_next = obj->next_content;
         extract_obj(obj);
-        // log_string(LOG_GAME, "Freed carried object.");
+        log_string(LOG_GAME, "Freed carried object.");
     }
 
     // Remove all effects
@@ -1266,14 +1327,14 @@ void free_char (CHAR_DATA *ch)
     {
         paf_next = paf->next;
         affect_remove(ch, paf);
-        // log_string(LOG_GAME, "Removed affect.");
+        log_string(LOG_GAME, "Removed affect.");
     }
 
     // Free the script if present
     if (ch->script)
     {
         free_script(ch->script);
-        // log_string(LOG_GAME, "Freed script data.");
+        log_string(LOG_GAME, "Freed script data.");
     }
 	PURGE_DATA(ch->aifile);
 	PURGE_DATA(ch->alt_description);
@@ -1304,7 +1365,7 @@ void free_char (CHAR_DATA *ch)
     if (ch->pcdata)
     {
         free_pcdata(ch->pcdata);
-        // log_string(LOG_GAME, "Freed PC-specific data.");
+        log_string(LOG_GAME, "Freed PC-specific data.");
     }
 
 	ch->ghouled_by = NULL;
@@ -1313,9 +1374,6 @@ void free_char (CHAR_DATA *ch)
 	ch->reply = NULL;
 	ch->sire = NULL;
 	ch->laston = time(NULL); // This sets laston to the current time in seconds since the epoch
-
-    // Reset and free the main structure
-    memset(ch, 0, sizeof(*ch));
 
 	PURGE_DATA(ch);
 	return;
@@ -1329,6 +1387,12 @@ PC_DATA *new_pcdata(void)
 	PC_DATA *pcdata;
 
 	ALLOC_DATA(pcdata, PC_DATA, 1);
+
+	if (!pcdata)
+	{
+		log_string(LOG_ERR, "new_pcdata: Memory allocation failed for PC_DATA.");
+		return NULL;
+	}
 
 	pcdata->confirm_delete		= FALSE;
 	pcdata->full_reset			= FALSE;
@@ -1353,6 +1417,12 @@ PC_DATA *new_pcdata(void)
 	}
 
 	pcdata->buffer = new_buf();
+	if (!pcdata->buffer)
+	{
+		log_string(LOG_ERR, "new_pcdata: Failed to allocate buffer.");
+		PURGE_DATA(pcdata);
+		return NULL;
+	}
 
 	return pcdata;
 }
@@ -1391,6 +1461,12 @@ MEMORY *new_memory(void)
 
 	ALLOC_DATA(memory, MEMORY, 1);
 
+	if (!memory)
+	{
+		log_string(LOG_ERR, "new_memory: Memory allocation failed for MEMORY.");
+		return NULL;
+	}
+
 	memory->attitude	= 0;
 	memory->name		= NULL;
 	memory->reaction	= 0;
@@ -1415,16 +1491,43 @@ BUFFER *__new_buf(const char *file, const char *function, int line)
 
 	ALLOC_DATA(buffer, BUFFER, 1);
 
+	if (!buffer)
+	{
+		log_string(LOG_ERR, "__new_buf: Memory allocation failed for BUFFER.");
+		return NULL;
+	}
+
 	buffer->next	= NULL;
 	buffer->state	= BUFFER_SAFE;
 	buffer->size	= get_size(BASE_BUF);
 
 	/*For debugging purposes*/
 	buffer->file = str_dup(file);
+	if (!buffer->file)
+	{
+		log_string(LOG_ERR, "__new_buf: Failed to allocate memory for file.");
+		PURGE_DATA(buffer);
+		return NULL;
+	}
 	buffer->function= str_dup(function);
+	if (!buffer->function)
+	{
+		log_string(LOG_ERR, "__new_buf: Failed to allocate memory for function.");
+		PURGE_DATA(buffer->file);
+		PURGE_DATA(buffer);
+		return NULL;
+	}
 	buffer->line = line;
 
 	ALLOC_DATA(buffer->string, char, buffer->size);
+	if (!buffer->string)
+	{
+		log_string(LOG_ERR, "__new_buf: Failed to allocate memory for buffer string.");
+		PURGE_DATA(buffer->file);
+		PURGE_DATA(buffer->function);
+		PURGE_DATA(buffer);
+		return NULL;
+	}
 
 	buffer->string[0]	= '\0';
 	top_buffer++;
@@ -1441,6 +1544,12 @@ BUFFER *new_buf_size(int size)
 
     ALLOC_DATA(buffer, BUFFER, 1);
 
+    if (!buffer)
+    {
+        log_string(LOG_ERR, "new_buf_size: Memory allocation failed for BUFFER.");
+        return NULL;
+    }
+
     buffer->next        = NULL;
     buffer->state       = BUFFER_SAFE;
     buffer->size        = get_size(size);
@@ -1449,11 +1558,19 @@ BUFFER *new_buf_size(int size)
 
     if (buffer->size == -1)
     {
-        log_string(LOG_BUG, Format("new_buf: buffer size %d too large.",size));
-        exit(1);
+        log_string(LOG_BUG, Format("new_buf_size: buffer size %d too large.", size));
+        PURGE_DATA(buffer);
+        return NULL;
     }
 
     ALLOC_DATA(buffer->string, char, buffer->size);
+    if (!buffer->string)
+    {
+        log_string(LOG_ERR, "new_buf_size: Memory allocation failed for buffer string.");
+        PURGE_DATA(buffer);
+        return NULL;
+    }
+
     buffer->string[0]   = '\0';
     VALIDATE(buffer);
 
@@ -1466,17 +1583,15 @@ void free_buf(BUFFER *buffer)
 
 	Escape(buffer);
 
-	free(buffer->file);
-	buffer->file = NULL;
-	free(buffer->function);
-	buffer->function = NULL;
+	PURGE_DATA(buffer->file);
+	PURGE_DATA(buffer->function);
+	PURGE_DATA(buffer->string);
 
 	top_buffer--;
 	UNLINK_SINGLE(buffer, next, BUFFER, buffer_list);
 
-	PURGE_DATA(buffer->file);
-	PURGE_DATA(buffer->function);
-	PURGE_DATA(buffer->string);
+	buffer->file = NULL;
+	buffer->function = NULL;
 	buffer->string = NULL;
 	buffer->size   = 0;
 	buffer->state  = BUFFER_FREED;
@@ -1490,6 +1605,13 @@ bool add_buf(BUFFER *buffer, char *string)
 	int len = 0;
 	char *oldstr;
 	int oldsize = buffer->size;
+
+	// Validate input parameters
+	if (!buffer || !string)
+	{
+		log_string(LOG_ERR, "add_buf: NULL parameter passed.");
+		return FALSE;
+	}
 
 	oldstr = buffer->string;
 
@@ -1558,6 +1680,12 @@ MPROG_LIST *new_mprog(void)
 
    ALLOC_DATA(mp, MPROG_LIST, 1);
 
+   if (!mp)
+   {
+       log_string(LOG_ERR, "new_mprog: Memory allocation failed for MPROG_LIST.");
+       return NULL;
+   }
+
    mp->vnum             = 0;
    mp->trig_type        = 0;
    mp->code             = NULL;
@@ -1580,6 +1708,12 @@ RESET_DATA *new_reset_data( void )
     RESET_DATA *pReset;
 
     ALLOC_DATA(pReset, RESET_DATA, 1);
+
+    if (!pReset)
+    {
+        log_string(LOG_ERR, "new_reset_data: Memory allocation failed for RESET_DATA.");
+        return NULL;
+    }
 
     pReset->next        =   NULL;
     pReset->command     =   'X';
@@ -1621,7 +1755,22 @@ AREA_DATA *new_area(void)
     }
 
     pArea->builders = str_dup("None");
+    if (!pArea->builders)
+    {
+        log_string(LOG_ERR, "new_area: Failed to allocate memory for 'builders'.");
+        PURGE_DATA(pArea->name);
+        PURGE_DATA(pArea);
+        return NULL;
+    }
     pArea->credits = str_dup("None");
+    if (!pArea->credits)
+    {
+        log_string(LOG_ERR, "new_area: Failed to allocate memory for 'credits'.");
+        PURGE_DATA(pArea->name);
+        PURGE_DATA(pArea->builders);
+        PURGE_DATA(pArea);
+        return NULL;
+    }
     pArea->security = 1;  // Default to lowest allowed security
     pArea->pricemod = 1;
     pArea->min_vnum = 0;
@@ -1638,7 +1787,10 @@ AREA_DATA *new_area(void)
     if (!pArea->file_name)
     {
         log_string(LOG_ERR, "new_area: Failed to allocate memory for 'file_name'.");
-        free_area(pArea); // Free all allocated data before returning
+        PURGE_DATA(pArea->name);
+        PURGE_DATA(pArea->builders);
+        PURGE_DATA(pArea->credits);
+        PURGE_DATA(pArea);
         return NULL;
     }
 
@@ -1679,6 +1831,12 @@ EXIT_DATA *new_exit( void )
 
     ALLOC_DATA(pExit, EXIT_DATA, 1);
 
+    if (!pExit)
+    {
+        log_string(LOG_ERR, "new_exit: Memory allocation failed for EXIT_DATA.");
+        return NULL;
+    }
+
     pExit->u1.to_room   =   NULL;                  /* ROM OLC */
     pExit->jumpto.to_room   =   NULL;              /* PT OLC */
     pExit->next         =   NULL;
@@ -1710,6 +1868,12 @@ ROOM_INDEX_DATA *new_room_index( void )
 
 	ALLOC_DATA(pRoom, ROOM_INDEX_DATA, 1);
 
+	if (!pRoom)
+	{
+		log_string(LOG_ERR, "new_room_index: Memory allocation failed for ROOM_INDEX_DATA.");
+		return NULL;
+	}
+
 	pRoom->next             =   NULL;
 	pRoom->people           =   NULL;
 	pRoom->contents         =   NULL;
@@ -1722,9 +1886,39 @@ ROOM_INDEX_DATA *new_room_index( void )
 		}
 
 	pRoom->name             =   str_dup( "Unnamed Room");
+	if (!pRoom->name)
+	{
+		log_string(LOG_ERR, "new_room_index: Failed to allocate memory for name.");
+		PURGE_DATA(pRoom);
+		return NULL;
+	}
 	pRoom->description      =   str_dup( "None");
+	if (!pRoom->description)
+	{
+		log_string(LOG_ERR, "new_room_index: Failed to allocate memory for description.");
+		PURGE_DATA(pRoom->name);
+		PURGE_DATA(pRoom);
+		return NULL;
+	}
 	pRoom->uname            =   str_dup( "Unnamed Room");
+	if (!pRoom->uname)
+	{
+		log_string(LOG_ERR, "new_room_index: Failed to allocate memory for uname.");
+		PURGE_DATA(pRoom->name);
+		PURGE_DATA(pRoom->description);
+		PURGE_DATA(pRoom);
+		return NULL;
+	}
 	pRoom->udescription	    =   str_dup( "None");
+	if (!pRoom->udescription)
+	{
+		log_string(LOG_ERR, "new_room_index: Failed to allocate memory for udescription.");
+		PURGE_DATA(pRoom->name);
+		PURGE_DATA(pRoom->description);
+		PURGE_DATA(pRoom->uname);
+		PURGE_DATA(pRoom);
+		return NULL;
+	}
 	pRoom->owner	    =   NULL;
 	pRoom->vnum             =   0;
 	pRoom->room_flags       =   0;
@@ -1852,6 +2046,12 @@ SHOP_DATA *new_shop( void )
 
 	ALLOC_DATA(pShop, SHOP_DATA, 1);
 
+	if (!pShop)
+	{
+		log_string(LOG_ERR, "new_shop: Memory allocation failed for SHOP_DATA.");
+		return NULL;
+	}
+
 	pShop->next         =   NULL;
 
 	for ( buy=0; buy<MAX_TRADE; buy++ )
@@ -1887,11 +2087,57 @@ OBJ_INDEX_DATA *new_obj_index( void )
 
 	ALLOC_DATA(pObj, OBJ_INDEX_DATA, 1);
 
+	if (!pObj)
+	{
+		log_string(LOG_ERR, "new_obj_index: Memory allocation failed for OBJ_INDEX_DATA.");
+		return NULL;
+	}
+
 	pObj->description 	= str_dup("(no description)");
+	if (!pObj->description)
+	{
+		log_string(LOG_ERR, "new_obj_index: Failed to allocate memory for description.");
+		PURGE_DATA(pObj);
+		return NULL;
+	}
 	pObj->full_desc 	= str_dup("(no full description)");
+	if (!pObj->full_desc)
+	{
+		log_string(LOG_ERR, "new_obj_index: Failed to allocate memory for full_desc.");
+		PURGE_DATA(pObj->description);
+		PURGE_DATA(pObj);
+		return NULL;
+	}
 	pObj->material 		= str_dup("unknown");
+	if (!pObj->material)
+	{
+		log_string(LOG_ERR, "new_obj_index: Failed to allocate memory for material.");
+		PURGE_DATA(pObj->description);
+		PURGE_DATA(pObj->full_desc);
+		PURGE_DATA(pObj);
+		return NULL;
+	}
 	pObj->name 			= str_dup("no name");
+	if (!pObj->name)
+	{
+		log_string(LOG_ERR, "new_obj_index: Failed to allocate memory for name.");
+		PURGE_DATA(pObj->description);
+		PURGE_DATA(pObj->full_desc);
+		PURGE_DATA(pObj->material);
+		PURGE_DATA(pObj);
+		return NULL;
+	}
 	pObj->short_descr 	= str_dup("(no short description)");
+	if (!pObj->short_descr)
+	{
+		log_string(LOG_ERR, "new_obj_index: Failed to allocate memory for short_descr.");
+		PURGE_DATA(pObj->description);
+		PURGE_DATA(pObj->full_desc);
+		PURGE_DATA(pObj->material);
+		PURGE_DATA(pObj->name);
+		PURGE_DATA(pObj);
+		return NULL;
+	}
 	pObj->affected      =   NULL;
 	pObj->area          =   NULL;
 	pObj->company		=   NULL;
@@ -1976,15 +2222,61 @@ MOB_INDEX_DATA *new_mob_index( void )
 
 	ALLOC_DATA(pMob, MOB_INDEX_DATA, 1);
 
+	if (!pMob)
+	{
+		log_string(LOG_ERR, "new_mob_index: Memory allocation failed for MOB_INDEX_DATA.");
+		return NULL;
+	}
+
 	pMob->next          =   NULL;
 	pMob->spec_fun      =   NULL;
 	pMob->pShop         =   NULL;
 	pMob->area          =   NULL;
 	pMob->player_name = str_dup("No Name");
+	if (!pMob->player_name)
+	{
+		log_string(LOG_ERR, "new_mob_index: Failed to allocate memory for player_name.");
+		PURGE_DATA(pMob);
+		return NULL;
+	}
 	pMob->short_descr = str_dup("(no short description)");
+	if (!pMob->short_descr)
+	{
+		log_string(LOG_ERR, "new_mob_index: Failed to allocate memory for short_descr.");
+		PURGE_DATA(pMob->player_name);
+		PURGE_DATA(pMob);
+		return NULL;
+	}
 	pMob->long_descr = str_dup("(no long description)");
+	if (!pMob->long_descr)
+	{
+		log_string(LOG_ERR, "new_mob_index: Failed to allocate memory for long_descr.");
+		PURGE_DATA(pMob->player_name);
+		PURGE_DATA(pMob->short_descr);
+		PURGE_DATA(pMob);
+		return NULL;
+	}
 	pMob->material = str_dup("unknown");
+	if (!pMob->material)
+	{
+		log_string(LOG_ERR, "new_mob_index: Failed to allocate memory for material.");
+		PURGE_DATA(pMob->player_name);
+		PURGE_DATA(pMob->short_descr);
+		PURGE_DATA(pMob->long_descr);
+		PURGE_DATA(pMob);
+		return NULL;
+	}
 	pMob->description = str_dup("(no description)");
+	if (!pMob->description)
+	{
+		log_string(LOG_ERR, "new_mob_index: Failed to allocate memory for description.");
+		PURGE_DATA(pMob->player_name);
+		PURGE_DATA(pMob->short_descr);
+		PURGE_DATA(pMob->long_descr);
+		PURGE_DATA(pMob->material);
+		PURGE_DATA(pMob);
+		return NULL;
+	}
 
 	pMob->GHB				= 0;
 	pMob->RBPG				= 0;
@@ -2090,6 +2382,12 @@ MPROG_CODE *new_mpcode(void)
 
      ALLOC_DATA(NewCode, MPROG_CODE, 1);
 
+     if (!NewCode)
+     {
+         log_string(LOG_ERR, "new_mpcode: Memory allocation failed for MPROG_CODE.");
+         return NULL;
+     }
+
      NewCode->vnum    = 0;
      NewCode->code    = NULL;
      NewCode->next    = NULL;
@@ -2140,23 +2438,40 @@ void load_bans(void)
 {
 	FILE *fp;
 	BAN_DATA *ban_last;
-	
+
 	if ( ( fp = fopen( BAN_FILE, "r" ) ) == NULL )
 		return;
-	
+
 	ban_last = NULL;
 	for ( ; ; )
 	{
 		BAN_DATA *pban;
-		if ( feof(fp) )
+		if ( feof(fp) || ferror(fp) )
 		{
+			if (ferror(fp))
+			{
+				log_string(LOG_ERR, "load_bans: Error reading ban file.");
+			}
 			fclose( fp );
 			return;
 		}
-		
+
 		pban = new_ban();
-		
+		if (!pban)
+		{
+			log_string(LOG_ERR, "load_bans: Failed to allocate ban entry.");
+			fclose(fp);
+			return;
+		}
+
 		pban->name = str_dup(fread_word(fp));
+		if (!pban->name)
+		{
+			log_string(LOG_ERR, "load_bans: Failed to allocate ban name.");
+			free_ban(pban);
+			fclose(fp);
+			return;
+		}
 		pban->level = fread_number(fp);
 		pban->ban_flags = fread_flag(fp);
 		fread_to_eol(fp);
@@ -2174,8 +2489,16 @@ bool check_ban(char *site, int type)
     BAN_DATA *pban;
     char host[MSL] = {'\0'};
 
+    // Validate input parameter
+    if (!site)
+    {
+        log_string(LOG_ERR, "check_ban: NULL site parameter passed.");
+        return FALSE;
+    }
+
     // Use capitalize function as is, assuming it is defined elsewhere
-    strncpy(host, capitalize(site), sizeof(host));
+    strncpy(host, capitalize(site), sizeof(host) - 1);
+    host[sizeof(host) - 1] = '\0';  // Ensure null-termination
 
     // Replace LOWER macro with tolower
     host[0] = tolower((unsigned char)host[0]);
@@ -2278,7 +2601,7 @@ void ban_site(CHAR_DATA *ch, char *argument, bool fPerm)
 		name++;
 	}
 
-	if (name[strlen(name) - 1] == '*')
+	if (strlen(name) > 0 && name[strlen(name) - 1] == '*')
 	{
 		suffix = TRUE;
 		name[strlen(name) - 1] = '\0';
@@ -2312,7 +2635,6 @@ void ban_site(CHAR_DATA *ch, char *argument, bool fPerm)
 	}
 
 	pban = new_ban();
-	PURGE_DATA( pban->name );
 	pban->name = str_dup(name);
 	pban->level = get_trust(ch);
 
@@ -2401,6 +2723,12 @@ STOCKS *new_stock()
 
 	ALLOC_DATA(stock, STOCKS, 1);
 
+	if (!stock)
+	{
+		log_string(LOG_ERR, "new_stock: Memory allocation failed for STOCKS.");
+		return NULL;
+	}
+
 	stock->name = NULL;
 	stock->ticker = NULL;
 	stock->last_change = current_time;
@@ -2427,6 +2755,12 @@ PACK_DATA *new_pack()
 
 	ALLOC_DATA(pack, PACK_DATA, 1);
 
+	if (!pack)
+	{
+		log_string(LOG_ERR, "new_pack: Memory allocation failed for PACK_DATA.");
+		return NULL;
+	}
+
 	pack->name	= NULL;
 	pack->totem	= 0;
 
@@ -2450,8 +2784,27 @@ ORG_DATA *new_org()
 
 	ALLOC_DATA(org, ORG_DATA, 1);
 
+	if (!org)
+	{
+		log_string(LOG_ERR, "new_org: Memory allocation failed for ORG_DATA.");
+		return NULL;
+	}
+
 	org->applicants = str_dup("None");
+	if (!org->applicants)
+	{
+		log_string(LOG_ERR, "new_org: Failed to allocate memory for applicants.");
+		PURGE_DATA(org);
+		return NULL;
+	}
 	org->races = str_dup("None");
+	if (!org->races)
+	{
+		log_string(LOG_ERR, "new_org: Failed to allocate memory for races.");
+		PURGE_DATA(org->applicants);
+		PURGE_DATA(org);
+		return NULL;
+	}
 	org->name		= NULL;
 	org->who_name	= NULL;
 	org->file_name	= NULL;
@@ -2482,7 +2835,7 @@ void free_org(ORG_DATA *org)
 
 	Escape(org);
 
-	org->applicants = NULL;
+	PURGE_DATA( org->applicants );
 	PURGE_DATA( org->file_name);
 	org->leader = NULL;
 	PURGE_DATA( org->name     );
@@ -2520,6 +2873,12 @@ ORGMEM_DATA *new_orgmem()
 
 	ALLOC_DATA(om, ORGMEM_DATA, 1);
 
+	if (!om)
+	{
+		log_string(LOG_ERR, "new_orgmem: Memory allocation failed for ORGMEM_DATA.");
+		return NULL;
+	}
+
 	om->name		= NULL;
 	om->status		= 0;
 	om->auth_flags	= 0;
@@ -2541,6 +2900,12 @@ TRAIT_DATA *new_trait()
 	TRAIT_DATA *trait;
 
 	ALLOC_DATA(trait, TRAIT_DATA, 1);
+
+	if (!trait)
+	{
+		log_string(LOG_ERR, "new_trait: Memory allocation failed for TRAIT_DATA.");
+		return NULL;
+	}
 
 	trait->qualifier = NULL;
 	trait->detail = NULL;
@@ -2566,6 +2931,12 @@ LIQUID_DATA *new_liqdata()
 	LIQUID_DATA *liquid;
 
 	ALLOC_DATA(liquid, LIQUID_DATA, 1);
+
+	if (!liquid)
+	{
+		log_string(LOG_ERR, "new_liqdata: Memory allocation failed for LIQUID_DATA.");
+		return NULL;
+	}
 
 	liquid->liquid = -1;
 	liquid->quantity = 0;

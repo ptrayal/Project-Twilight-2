@@ -16,6 +16,7 @@
 #include "recycle.h"
 #include "tables.h"
 #include "lookup.h"
+#include "olc.h"
 
 #if !defined(Macintosh)
 extern  int     _filbuf         args( (FILE *) );
@@ -24,13 +25,41 @@ extern  int     _filbuf         args( (FILE *) );
 
 int rename(const char *oldfname, const char *newfname);
 
-char *print_flags(int flag)
+/* Strip trailing newlines and spaces from a string - returns new allocated string */
+static char *strip_trailing_whitespace(const char *str)
 {
-    static char buf[52]={'\0'};
+	size_t len = 0;
+	char *result = NULL;
+
+	if (str == NULL || str[0] == '\0')
+		return str_dup("");
+
+	len = strlen(str);
+
+	/* Find last non-whitespace character */
+	while (len > 0 && (str[len-1] == '\n' || str[len-1] == '\r' || str[len-1] == ' ' || str[len-1] == '\t'))
+		len--;
+
+	/* Allocate and copy */
+	result = malloc(len + 1);
+	if (result == NULL)
+		return str_dup(str); /* Fallback to original on malloc failure */
+
+	strncpy(result, str, len);
+	result[len] = '\0';
+	return result;
+}
+
+/* Safe version: writes flags to provided buffer */
+void print_flags_buf(int flag, char *buf, size_t buflen)
+{
     int count = 0;
     int pos = 0;
 
-    for (count = 0; count < 32;  count++)
+    if (buf == NULL || buflen < 2)
+        return;
+
+    for (count = 0; count < 32 && pos < (int)(buflen - 1); count++)
     {
         if (IS_SET(flag,1<<count))
         {
@@ -49,7 +78,13 @@ char *print_flags(int flag)
     }
 
     buf[pos] = '\0';
+}
 
+/* DEPRECATED: Unsafe static buffer version - kept for compatibility, do not use in new code */
+char *print_flags(int flag)
+{
+    static char buf[52]={'\0'};
+    print_flags_buf(flag, buf, sizeof(buf));
     return buf;
 }
 
@@ -102,38 +137,38 @@ void save_char_obj( CHAR_DATA *ch )
 	{
 		log_string(LOG_BUG, "Save_char_obj: fopen");
 		perror( strsave );
+		openReserve();
+		return;
 	}
-	else
+
+	fwrite_char( ch, fp );
+	if ( ch->carrying != NULL )
 	{
-		fwrite_char( ch, fp );
-		if ( ch->carrying != NULL )
+		if(!IS_NPC(ch))
 		{
-			if(!IS_NPC(ch))
-			{
-				fwrite_obj( ch, ch->carrying, fp, 0 );
-			}
-			else
-			{
-				add_to_resets( ch );
-			}
+			fwrite_obj( ch, ch->carrying, fp, 0 );
 		}
-		if ( ch->home > 0 )
+		else
 		{
-			for(i = ch->home; ch->rooms[i]; i--)
-			{
-				if(ch->rooms[i] != NULL && ch->rooms[i]->contents != NULL)
-				{
-					fwrite_obj( ch, ch->rooms[i]->contents, fp, 0 );
-				}
-			}
+			add_to_resets( ch );
 		}
-		/* save the pets */
-		if (ch->pet != NULL && ch->pet->in_room == ch->in_room)
-		{
-			fwrite_pet(ch->pet,fp);
-		}
-		fprintf( fp, "#END\n" );
 	}
+	if ( ch->home > 0 )
+	{
+		for(i = 0; i < ch->home; i++)
+		{
+			if(ch->rooms[i] != NULL && ch->rooms[i]->contents != NULL)
+			{
+				fwrite_obj( ch, ch->rooms[i]->contents, fp, 0 );
+			}
+		}
+	}
+	/* save the pets */
+	if (ch->pet != NULL && ch->pet->in_room == ch->in_room)
+	{
+		fwrite_pet(ch->pet,fp);
+	}
+	fprintf( fp, "#END\n" );
 	fclose( fp );
 	rename(TEMP_FILE,strsave);
 	openReserve();
@@ -158,6 +193,13 @@ void add_to_resets( CHAR_DATA *ch )
 			}
 			else
 			{
+				if(ch->in_room == NULL || ch->in_room->area == NULL || ch->in_room->area->reset_last == NULL)
+				{
+					people = people->next;
+					continue;
+				}
+
+				reset = new_reset_data();
 				ch->in_room->area->reset_last->next = reset;
 				reset->next = NULL;
 				reset->command = 'M';
@@ -168,9 +210,10 @@ void add_to_resets( CHAR_DATA *ch )
 				if(people->carrying != NULL)
 				{
 					for(contents = people->carrying;
-						((contents == NULL) || (contents->carried_by != people));
+						((contents != NULL) && (contents->carried_by == people));
 						contents = contents->next)
 					{
+						reset = new_reset_data();
 						ch->in_room->area->reset_last->next = reset;
 						reset->next = NULL;
 						reset->command = 'G';
@@ -181,10 +224,10 @@ void add_to_resets( CHAR_DATA *ch )
 						if(contents->contains != NULL)
 						{
 							tmp = contents->contains;
-							while( (tmp->in_obj == contents)
-								&& (tmp != NULL) )
+							while( (tmp != NULL) && (tmp->in_obj == contents) )
 							{
-								ch->in_room->area->reset_last = reset;
+								reset = new_reset_data();
+								ch->in_room->area->reset_last->next = reset;
 								reset->next = NULL;
 								reset->command = 'P';
 								reset->arg1 = tmp->pIndexData->vnum;
@@ -197,37 +240,6 @@ void add_to_resets( CHAR_DATA *ch )
 					}
 				}
 				people = people->next;
-			}
-		}
-	}
-
-	if(people->carrying != NULL)
-	{
-		for(contents = ch->in_room->contents;
-			contents == NULL;
-			contents = contents->next)
-		{
-			ch->in_room->area->reset_last->next = reset;
-			reset->next = NULL;
-			reset->command = 'G';
-			reset->arg1 = contents->pIndexData->vnum;
-			reset->arg2 = ch->in_room->vnum;
-			reset->arg3 = 1;
-			reset->arg4 = 0;
-			if(contents->contains != NULL)
-			{
-				tmp = contents->contains;
-				while( (tmp->in_obj == contents) && (tmp != NULL) )
-				{
-					ch->in_room->area->reset_last = reset;
-					reset->next = NULL;
-					reset->command = 'P';
-					reset->arg1 = tmp->pIndexData->vnum;
-					reset->arg2 = tmp->in_obj->pIndexData->vnum;
-					reset->arg3 = 1;
-					reset->arg4 = 0;
-					tmp = tmp->next_content;
-				}
 			}
 		}
 	}
@@ -249,7 +261,6 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     AFFECT_DATA *paf;
     TRAIT_DATA *trait;
     STOCKS *stock;
-	char buf[MSL]={'\0'};
     int sn = 0, pos = 0;
     int i = 0;
 	time_t current_time = time(NULL); // Get the current epoch time
@@ -262,9 +273,21 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	WriteToFile(fp, false, "#", IS_NPC(ch) ? "MOB" : "PLAYER");
 
 	WriteNumber(fp, "Ver", ch->version);
-	WriteToFile(fp, true, "Name", ch->name);
-	WriteToFile(fp, true, "SName", ch->surname);
-	WriteToFile(fp, true, "AName", ch->alt_name);
+	{
+		char *tmp = strip_trailing_whitespace(ch->name);
+		WriteToFile(fp, true, "Name", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->surname);
+		WriteToFile(fp, true, "SName", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->alt_name);
+		WriteToFile(fp, true, "AName", tmp);
+		free(tmp);
+	}
 
 	WriteLong(fp, "Id", ch->id);
 	WriteLong(fp, "LogO", current_time); // Save the current logon time as epoch time
@@ -272,10 +295,26 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     WriteLong(fp, "LastV", ch->pcdata->last_vote);
 
 
-    WriteToFile(fp, true, "ShD", ch->short_descr);
-    WriteToFile(fp, true, "LnD", ch->long_descr);
-    WriteToFile(fp, true, "Desc", ch->description);
-    WriteToFile(fp, true, "SDesc", ch->switch_desc);
+	{
+		char *tmp = strip_trailing_whitespace(ch->short_descr);
+		WriteToFile(fp, true, "ShD", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->long_descr);
+		WriteToFile(fp, true, "LnD", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->description);
+		WriteToFile(fp, true, "Desc", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->switch_desc);
+		WriteToFile(fp, true, "SDesc", tmp);
+		free(tmp);
+	}
 
 	WriteNumber(fp, "Race", ch->race);
 
@@ -287,8 +326,16 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 
 	fprintf( fp, "Hunted %d\n",  ch->hunter_vis	);
 
-	WriteToFile(fp, true, "Cln", clan_table[ch->clan].name);
-	WriteToFile(fp, true, "Material", ch->material);
+	{
+		char *tmp = strip_trailing_whitespace(clan_table[ch->clan].name);
+		WriteToFile(fp, true, "Cln", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->material);
+		WriteToFile(fp, true, "Material", tmp);
+		free(tmp);
+	}
 	/* WriteToFile(fp, true, "Sire", sire_table[ch->sire].name ); */
 
 	fprintf( fp, "CPow ");
@@ -310,7 +357,11 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
              : ch->in_room == NULL ? 10000 : ch->in_room->vnum );
     WriteNumber(fp, "Listen",  ch->listening == NULL ? 0 : ch->listening->vnum );
 
-	WriteToFile(fp, true, "Prompt", ch->prompt);
+	{
+		char *tmp = strip_trailing_whitespace(ch->prompt);
+		WriteToFile(fp, true, "Prompt", tmp);
+		free(tmp);
+	}
     fprintf( fp, "HMV  %d %d\n", ch->health, ch->agghealth );
     fprintf( fp, "Virt  %d %d %d\n", ch->virtues[0], ch->virtues[1], ch->virtues[2] );
     fprintf( fp, "RGW %d %d %d %d %d %d\n", ch->RBPG, ch->max_RBPG, ch->GHB, ch->max_GHB, ch->willpower, ch->max_willpower );
@@ -322,7 +373,11 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 
     fprintf( fp, "Pow " );
     for(i = 0; i < MAX_POWERS; i++)
-	fprintf( fp, "%s ", print_flags(ch->powers[i]) );
+    {
+	char flagbuf[52]={'\0'};
+	print_flags_buf(ch->powers[i], flagbuf, sizeof(flagbuf));
+	fprintf( fp, "%s ", flagbuf);
+    }
     fprintf( fp, "\n" );
 
     fprintf( fp, "Status " );
@@ -340,8 +395,16 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	fprintf( fp, "%d ", ch->backgrounds[i] );
     fprintf( fp, "\n" );
 
-	WriteToFile(fp, true, "Marry", ch->married);
-	WriteToFile(fp, true, "Ghld", ch->ghouled_by);
+	{
+		char *tmp = strip_trailing_whitespace(ch->married);
+		WriteToFile(fp, true, "Marry", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->ghouled_by);
+		WriteToFile(fp, true, "Ghld", tmp);
+		free(tmp);
+	}
 
     WriteNumber( fp, "BgTime",	ch->bg_timer );
     WriteNumber( fp, "BgCount",ch->bg_count );
@@ -352,8 +415,16 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 
     fprintf( fp, "Oocxp %d %d\n",	ch->ooc_xp_time, ch->ooc_xp_count );
 
-	WriteToFile(fp, true, "Reject", ch->pcdata->ignore_reject);
-	WriteToFile(fp, true, "Block", ch->pcdata->block_join);
+	{
+		char *tmp = strip_trailing_whitespace(ch->pcdata->ignore_reject);
+		WriteToFile(fp, true, "Reject", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->pcdata->block_join);
+		WriteToFile(fp, true, "Block", tmp);
+		free(tmp);
+	}
 
     if (ch->dollars > 0)
     {
@@ -382,24 +453,60 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     WriteNumber( fp, "OocExp", ch->oocxp );
 
     if (ch->act != 0)
-    	WriteToFile( fp, true, "Act", print_flags(ch->act) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->act, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Act", flagbuf );
+    }
     if (ch->act2 != 0)
-    	WriteToFile( fp, true, "Act2", print_flags(ch->act2) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->act2, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Act2", flagbuf );
+    }
     if (ch->plr_flags != 0)
-    	WriteToFile( fp, true, "Pflgs", print_flags(ch->plr_flags) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->plr_flags, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Pflgs", flagbuf );
+    }
     if (ch->affected_by != 0)
-    	WriteToFile( fp, true, "AfBy", print_flags(ch->affected_by) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->affected_by, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "AfBy", flagbuf );
+    }
     if (ch->affected_by2 != 0)
-    	WriteToFile( fp, true, "AfBy2", print_flags(ch->affected_by2) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->affected_by2, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "AfBy2", flagbuf );
+    }
     if (ch->parts != race_table[ch->race].parts)
-    	WriteToFile( fp, true, "Part", print_flags(ch->parts) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->parts, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Part", flagbuf );
+    }
     if (ch->form != race_table[ch->race].form)
-    	WriteToFile( fp, true, "Form", print_flags(ch->form) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->form, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Form", flagbuf );
+    }
 
-    WriteToFile( fp, true, "Comm", print_flags(ch->comm) );
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->comm, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Comm", flagbuf );
+    }
 
     if (ch->wiznet)
-    	WriteToFile( fp, true, "Wizn", print_flags(ch->wiznet));
+    {
+    	char flagbuf[52]={'\0'};
+    	print_flags_buf(ch->wiznet, flagbuf, sizeof(flagbuf));
+    	WriteToFile( fp, true, "Wizn", flagbuf);
+    }
     if (ch->invis_level)
     	WriteNumber( fp, "Invi", ch->invis_level	);
     if (ch->incog_level)
@@ -432,15 +539,31 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	ch->mod_stat[STAT_INT],
 	ch->mod_stat[STAT_WIT] );
 
-	WriteToFile(fp, true, "Email", ch->email_addr);
+	{
+		char *tmp = strip_trailing_whitespace(ch->email_addr);
+		WriteToFile(fp, true, "Email", tmp);
+		free(tmp);
+	}
     WriteLong (fp, "Econfnum", ch->email_lock );
 
     fprintf (fp, "Prof %s %ld %d %d\n",
 	ch->profession != NULL ? ch->profession : "None", ch->employer, ch->pospts, ch->markup );
 
-    WriteToFile(fp, true, "Nature", ch->nature);
-    WriteToFile(fp, true, "Demnor", ch->demeanor);
-    WriteToFile(fp, true, "Pack", ch->pack);
+	{
+		char *tmp = strip_trailing_whitespace(ch->nature);
+		WriteToFile(fp, true, "Nature", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->demeanor);
+		WriteToFile(fp, true, "Demnor", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(ch->pack);
+		WriteToFile(fp, true, "Pack", tmp);
+		free(tmp);
+	}
 
     fprintf( fp, "Totem %d %d\n", ch->totem_attitudes[0], ch->totem_attitudes[1] );
 
@@ -454,7 +577,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 
     for(stock = ch->stocks; stock != NULL; stock = stock->next)
     {
-    	if(stock != NULL && stock->cost > 0)
+    	if(stock->cost > 0)
     	{
     		fprintf( fp, "STOCK %s~ %d\n", stock->ticker, stock->cost );
     	}
@@ -462,26 +585,47 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 
     for(trait = ch->traits; trait != NULL; trait = trait->next)
     {
-    	if(trait != NULL)
-    	{
-    		fprintf( fp, "Trait %d %d %s~ %s~\n", trait->type, trait->value, trait->qualifier, trait->detail );
-    	}
+    	fprintf( fp, "Trait %d %d %s~ %s~\n", trait->type, trait->value,
+    		trait->qualifier != NULL ? trait->qualifier : "",
+    		trait->detail != NULL ? trait->detail : "" );
     }
 
     if ( IS_NPC(ch) )
     {
     	WriteNumber( fp, "Vnum",	ch->pIndexData->vnum	);
     	if(IS_INTELLIGENT(ch))
-    		fprintf( fp, "Aifile %s.ai", ch->name );
+    		fprintf( fp, "Aifile %s.ai\n", ch->name );
     }
     else
     {
-    	WriteToFile(fp, true, "Pass", ch->pcdata->pwd);
-		WriteToFile(fp, true, "Bin", ch->pcdata->bamfin);
-		WriteToFile(fp, true, "Bout", ch->pcdata->bamfout);
-		WriteToFile(fp, true, "Titl", ch->pcdata->title);
-		WriteToFile(fp, true, "RPTitle", ch->pcdata->rpok_string);
-    	fprintf( fp, "Colours %s~ %s~\n", ch->colours[0], ch->colours[1] );
+		{
+			char *tmp = strip_trailing_whitespace(ch->pcdata->pwd);
+			WriteToFile(fp, true, "Pass", tmp);
+			free(tmp);
+		}
+		{
+			char *tmp = strip_trailing_whitespace(ch->pcdata->bamfin);
+			WriteToFile(fp, true, "Bin", tmp);
+			free(tmp);
+		}
+		{
+			char *tmp = strip_trailing_whitespace(ch->pcdata->bamfout);
+			WriteToFile(fp, true, "Bout", tmp);
+			free(tmp);
+		}
+		{
+			char *tmp = strip_trailing_whitespace(ch->pcdata->title);
+			WriteToFile(fp, true, "Titl", tmp);
+			free(tmp);
+		}
+		{
+			char *tmp = strip_trailing_whitespace(ch->pcdata->rpok_string);
+			WriteToFile(fp, true, "RPTitle", tmp);
+			free(tmp);
+		}
+    	fprintf( fp, "Colours %s~ %s~\n",
+    		ch->colours[0] != NULL ? ch->colours[0] : "",
+    		ch->colours[1] != NULL ? ch->colours[1] : "" );
     	WriteNumber( fp, "Pnts", ch->pcdata->points );
     	if(ch->xpgift)
     		WriteNumber( fp, "Gift", ch->xpgift );
@@ -550,7 +694,11 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     	);
     }
 
-    WriteToFile(fp, true, "Ign", ch->ignore);
+	{
+		char *tmp = strip_trailing_whitespace(ch->ignore);
+		WriteToFile(fp, true, "Ign", tmp);
+		free(tmp);
+	}
     fprintf( fp, "End\n\n" );
     return;
 }
@@ -560,21 +708,44 @@ void fwrite_pet( CHAR_DATA *pet, FILE *fp)
 {
 	AFFECT_DATA *paf;
 	int i = 0;
+	time_t current_time = time(NULL);
 
 	fprintf(fp,"#PET\n");
 
 	WriteNumber(fp,"Vnum",pet->pIndexData->vnum);
 
-	WriteToFile(fp, true, "Name", pet->name);
+	{
+		char *tmp = strip_trailing_whitespace(pet->name);
+		WriteToFile(fp, true, "Name", tmp);
+		free(tmp);
+	}
 	WriteLong(fp,"LogO", current_time);
-	WriteToFile(fp, true, "ShD", pet->short_descr);
-	WriteToFile(fp, true, "LnD", pet->long_descr);
-	WriteToFile(fp, true, "Desc", pet->description);
-	WriteToFile(fp, true, "Race", race_table[pet->race].name);
+	{
+		char *tmp = strip_trailing_whitespace(pet->short_descr);
+		WriteToFile(fp, true, "ShD", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(pet->long_descr);
+		WriteToFile(fp, true, "LnD", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(pet->description);
+		WriteToFile(fp, true, "Desc", tmp);
+		free(tmp);
+	}
+	{
+		char *tmp = strip_trailing_whitespace(race_table[pet->race].name);
+		WriteToFile(fp, true, "Race", tmp);
+		free(tmp);
+	}
 
 	if (pet->clan)
 	{
-		WriteToFile(fp, true, "Cln", clan_table[pet->clan].name);
+		char *tmp = strip_trailing_whitespace(clan_table[pet->clan].name);
+		WriteToFile(fp, true, "Cln", tmp);
+		free(tmp);
 		fprintf( fp, "CPow ");
 		for(i = 0; i < 3; i++)
 			fprintf( fp, "%d ", pet->clan_powers[i] );
@@ -592,16 +763,36 @@ void fwrite_pet( CHAR_DATA *pet, FILE *fp)
 	if (pet->oocxp > 0)
 		WriteNumber( fp, "OocExp",	pet->oocxp	);
 	if (pet->act != pet->pIndexData->act)
-		WriteToFile(fp, true, "Act", print_flags(pet->act));
+	{
+		char flagbuf[52]={'\0'};
+		print_flags_buf(pet->act, flagbuf, sizeof(flagbuf));
+		WriteToFile(fp, true, "Act", flagbuf);
+	}
 	if (pet->act2 != 0)
-		WriteToFile(fp, true, "Act2", print_flags(pet->act2));
+	{
+		char flagbuf[52]={'\0'};
+		print_flags_buf(pet->act2, flagbuf, sizeof(flagbuf));
+		WriteToFile(fp, true, "Act2", flagbuf);
+	}
 	if (pet->affected_by != pet->pIndexData->affected_by)
-		WriteToFile(fp, true, "AfBy", print_flags(pet->affected_by));
+	{
+		char flagbuf[52]={'\0'};
+		print_flags_buf(pet->affected_by, flagbuf, sizeof(flagbuf));
+		WriteToFile(fp, true, "AfBy", flagbuf);
+	}
 	if (pet->affected_by2 != pet->pIndexData->affected_by2)
-		WriteToFile(fp, true, "AfBy2", print_flags(pet->affected_by2));
+	{
+		char flagbuf[52]={'\0'};
+		print_flags_buf(pet->affected_by2, flagbuf, sizeof(flagbuf));
+		WriteToFile(fp, true, "AfBy2", flagbuf);
+	}
 	if (pet->comm != 0)
-		WriteToFile(fp, true, "Comm", print_flags(pet->comm));
-	WriteNumber(fp, "Pos", pet->position = P_FIGHT ? P_STAND : pet->position);
+	{
+		char flagbuf[52]={'\0'};
+		print_flags_buf(pet->comm, flagbuf, sizeof(flagbuf));
+		WriteToFile(fp, true, "Comm", flagbuf);
+	}
+	WriteNumber(fp, "Pos", pet->position == P_FIGHT ? P_STAND : pet->position);
 	if (pet->saving_throw != 0)
 		WriteNumber(fp, "Save", pet->saving_throw);
 	fprintf(fp, "Attr %d %d %d %d %d %d %d %d %d\n",
@@ -611,11 +802,11 @@ void fwrite_pet( CHAR_DATA *pet, FILE *fp)
 			pet->perm_stat[STAT_PER], pet->perm_stat[STAT_INT],
 			pet->perm_stat[STAT_WIT]);
 	fprintf(fp, "AMod %d %d %d %d %d %d %d %d %d\n",
-			pet->perm_stat[STAT_STR], pet->perm_stat[STAT_DEX],
-			pet->perm_stat[STAT_STA], pet->perm_stat[STAT_CHA],
-			pet->perm_stat[STAT_MAN], pet->perm_stat[STAT_APP],
-			pet->perm_stat[STAT_PER], pet->perm_stat[STAT_INT],
-			pet->perm_stat[STAT_WIT]);
+			pet->mod_stat[STAT_STR], pet->mod_stat[STAT_DEX],
+			pet->mod_stat[STAT_STA], pet->mod_stat[STAT_CHA],
+			pet->mod_stat[STAT_MAN], pet->mod_stat[STAT_APP],
+			pet->mod_stat[STAT_PER], pet->mod_stat[STAT_INT],
+			pet->mod_stat[STAT_WIT]);
 
 	for ( paf = pet->affected; paf != NULL; paf = paf->next )
 	{
@@ -655,7 +846,8 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest )
 		return;
 	}
 
-	if(obj->name[0] == '\0' && obj->short_descr[0] == '\0'
+	if((obj->name == NULL || obj->name[0] == '\0')
+		&& (obj->short_descr == NULL || obj->short_descr[0] == '\0')
 		&& obj->description == NULL )
 	{
 		return;
@@ -670,13 +862,29 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest )
 	/* these data are only used if they do not match the defaults */
 
 	if ( obj->name != obj->pIndexData->name)
-		WriteToFile( fp, true, "Name", obj->name );
+	{
+		char *tmp = strip_trailing_whitespace(obj->name);
+		WriteToFile( fp, true, "Name", tmp );
+		free(tmp);
+	}
 	if ( obj->short_descr != obj->pIndexData->short_descr)
-		WriteToFile( fp, true, "ShD", obj->short_descr );
+	{
+		char *tmp = strip_trailing_whitespace(obj->short_descr);
+		WriteToFile( fp, true, "ShD", tmp );
+		free(tmp);
+	}
 	if ( obj->description != obj->pIndexData->description)
-		WriteToFile( fp, true, "Desc", obj->description );
+	{
+		char *tmp = strip_trailing_whitespace(obj->description);
+		WriteToFile( fp, true, "Desc", tmp );
+		free(tmp);
+	}
 	if ( obj->full_desc != obj->pIndexData->full_desc)
-		fprintf( fp, "FDesc %s~\n",	obj->full_desc		     );
+	{
+		char *tmp = strip_trailing_whitespace(obj->full_desc);
+		fprintf( fp, "FDesc %s~\n",	tmp );
+		free(tmp);
+	}
 	if ( obj->extra_flags != obj->pIndexData->extra_flags)
 		WriteNumber( fp, "ExtF", obj->extra_flags );
 	if ( obj->wear_flags != obj->pIndexData->wear_flags)
@@ -747,7 +955,9 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest )
 
 	for ( ed = obj->extra_descr; ed != NULL; ed = ed->next )
 	{
-		fprintf( fp, "ExDe %s~ %s~\n", ed->keyword, ed->description );
+		fprintf( fp, "ExDe %s~ %s~\n",
+			ed->keyword != NULL ? ed->keyword : "",
+			ed->description != NULL ? ed->description : "" );
 	}
 
 	fprintf( fp, "End\n\n" );
@@ -911,21 +1121,24 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 
 	/* decompress if .gz file exists */
 	char strsave[MAX_INPUT_LENGTH]={'\0'};
+	char cmd[MSL]={'\0'};
 
 	snprintf( strsave, sizeof(strsave), "%s%s%s", directory, capitalize(name),".gz");
 	if ( ( fp = fopen( strsave, "r" ) ) != NULL )
 	{
 		fclose(fp);
-		int systemRet = system( (char *)Format("gzip -dfq %s",strsave));
+		snprintf(cmd, sizeof(cmd), "gzip -dfq %s", strsave);
+		int systemRet = system(cmd);
 		if (systemRet == -1)
 		{
 			log_string(LOG_BUG, "Error in decompressing mud.  Custom Error 801.");
 		}
-		// system( (char *)Format("gzip -dfq %s",strsave));
 	}
 #endif
 
-	if ( ( fp = fopen( (char *)Format("%s%s", directory, capitalize( name )), "r" ) ) != NULL )
+	char filepath[MIL]={'\0'};
+	snprintf(filepath, sizeof(filepath), "%s%s", directory, capitalize(name));
+	if ( ( fp = fopen( filepath, "r" ) ) != NULL )
 	{
 		int iNest;
 
@@ -959,7 +1172,9 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 			else if ( !str_cmp( word, "END"    ) ) break;
 			else
 			{
-                                log_string(LOG_BUG, Format("Load_char_obj: bad section: %s", word));
+				char logmsg[MSL]={'\0'};
+				snprintf(logmsg, sizeof(logmsg), "Load_char_obj: bad section: %s", word);
+				log_string(LOG_BUG, logmsg);
 				break;
 			}
 		}
@@ -1032,6 +1247,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 {
 	const char *word;
 	int count = 0;
+	time_t current_time = time(NULL);
 	int lastlogoff = current_time;
 	int percent = 0;
 	int i = 0;
@@ -1039,7 +1255,9 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 
 	if(log_load)
 	{
-		log_string(LOG_GAME, Format("Loading %s.",ch->name));
+		char logmsg[MSL]={'\0'};
+		snprintf(logmsg, sizeof(logmsg), "Loading %s.", ch->name);
+		log_string(LOG_GAME, logmsg);
 	}
 
 	for ( ; ; )
@@ -1052,6 +1270,11 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 		case '*':
 			fMatch = TRUE;
 			fread_to_eol( fp );
+			break;
+
+		case '~':
+			/* Orphaned tilde from old string formatting - skip it */
+			fMatch = TRUE;
 			break;
 
 		case 'A':
@@ -1617,7 +1840,12 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 
 		if ( !fMatch )
 		{
-			log_string(LOG_BUG, Format("fread_char: no match for key '%s'", word));
+			char logmsg[MSL]={'\0'};
+			long file_pos = ftell(fp);
+			snprintf(logmsg, sizeof(logmsg),
+				"fread_char: no match for key '%s' (player: %s, file offset: %ld bytes)",
+				word, ch->name ? ch->name : "UNKNOWN", file_pos);
+			log_string(LOG_BUG, logmsg);
 			fread_to_eol( fp );
 		}
 	}
@@ -1628,6 +1856,7 @@ void fread_pet( CHAR_DATA *ch, FILE *fp )
 {
 	CHAR_DATA *pet = NULL;
 	const char *word;
+	time_t current_time = time(NULL);
 	int lastlogoff = current_time;
 	int percent = 0;
 	bool fMatch = FALSE;
@@ -1641,7 +1870,9 @@ void fread_pet( CHAR_DATA *ch, FILE *fp )
 		vnum = fread_number(fp);
 		if (get_mob_index(vnum) == NULL)
 		{
-			log_string(LOG_BUG, Format("Fread_pet: bad vnum %d.",vnum));
+			char logmsg[MSL]={'\0'};
+			snprintf(logmsg, sizeof(logmsg), "Fread_pet: bad vnum %d.", vnum);
+			log_string(LOG_BUG, logmsg);
 		}
 		else
 			pet = create_mobile(get_mob_index(vnum));
@@ -1661,6 +1892,11 @@ void fread_pet( CHAR_DATA *ch, FILE *fp )
 		case '*':
 			fMatch = TRUE;
 			fread_to_eol(fp);
+			break;
+
+		case '~':
+			/* Orphaned tilde from old string formatting - skip it */
+			fMatch = TRUE;
 			break;
 
 		case 'A':
@@ -1756,7 +1992,7 @@ void fread_pet( CHAR_DATA *ch, FILE *fp )
 
 		case 'D':
 			KEYS( "Desc",	pet->description,	fread_string(fp));
-			KEY( "Dollars",     ch->dollars,            fread_number( fp ) );
+			KEY( "Dollars",     pet->dollars,            fread_number( fp ) );
 			break;
 
 		case 'E':
@@ -1817,13 +2053,17 @@ void fread_pet( CHAR_DATA *ch, FILE *fp )
 			KEY( "Cent",        pet->cents,             fread_number( fp ) );
 			break;
 
-			if ( !fMatch )
-			{
-				log_string(LOG_BUG, "Fread_pet: no match.");
-				fread_to_eol(fp);
-			}
-			break;
+		}
 
+		if ( !fMatch )
+		{
+			char logmsg[MSL]={'\0'};
+			long file_pos = ftell(fp);
+			snprintf(logmsg, sizeof(logmsg),
+				"Fread_pet: no match for key '%s' (owner: %s, file offset: %ld bytes)",
+				word, ch->name ? ch->name : "UNKNOWN", file_pos);
+			log_string(LOG_BUG, logmsg);
+			fread_to_eol(fp);
 		}
 	}
 }
@@ -1849,7 +2089,9 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 		vnum = fread_number( fp );
 		if (  get_obj_index( vnum )  == NULL )
 		{
-			log_string(LOG_BUG, Format("Fread_obj: bad vnum %d.", vnum ));
+			char logmsg[MSL]={'\0'};
+			snprintf(logmsg, sizeof(logmsg), "Fread_obj: bad vnum %d.", vnum);
+			log_string(LOG_BUG, logmsg);
 		}
 		else
 		{
@@ -1888,6 +2130,11 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 			case '*':
 			fMatch = TRUE;
 			fread_to_eol( fp );
+			break;
+
+			case '~':
+			/* Orphaned tilde from old string formatting - skip it */
+			fMatch = TRUE;
 			break;
 
 			case 'A':
@@ -1976,7 +2223,8 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 
 			if ( !str_cmp( word, "End" ) )
 			{
-				if((obj->name[0] == '\0' && obj->short_descr[0] == '\0'
+				if(((obj->name == NULL || obj->name[0] == '\0')
+					&& (obj->short_descr == NULL || obj->short_descr[0] == '\0')
 					&& obj->description == NULL )
 					|| !fNest || (fVnum && obj->pIndexData == NULL))
 				{
@@ -2018,7 +2266,9 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 				iNest = fread_number( fp );
 				if ( iNest < 0 || iNest >= MAX_NEST )
 				{
-					log_string(LOG_BUG, Format("Fread_obj: bad nest %d.", iNest ));
+					char logmsg[MSL]={'\0'};
+					snprintf(logmsg, sizeof(logmsg), "Fread_obj: bad nest %d.", iNest);
+					log_string(LOG_BUG, logmsg);
 				}
 				else
 				{
@@ -2048,7 +2298,9 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 				sn     = skill_lookup( fread_word( fp ) );
 				if ( iValue < 0 || iValue > 3 )
 				{
-					log_string(LOG_BUG, Format("Fread_obj: bad iValue %d.", iValue ));
+					char logmsg[MSL]={'\0'};
+					snprintf(logmsg, sizeof(logmsg), "Fread_obj: bad iValue %d.", iValue);
+					log_string(LOG_BUG, logmsg);
 				}
 				else if ( sn < 0 )
 				{
@@ -2104,7 +2356,11 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 
 				vnum = fread_number( fp );
 				if ( ( obj->pIndexData = get_obj_index( vnum ) ) == NULL )
-					log_string(LOG_BUG, Format("Fread_obj: bad vnum %d.", vnum ));
+				{
+					char logmsg[MSL]={'\0'};
+					snprintf(logmsg, sizeof(logmsg), "Fread_obj: bad vnum %d.", vnum);
+					log_string(LOG_BUG, logmsg);
+				}
 				else
 					fVnum = TRUE;
 				fMatch = TRUE;
@@ -2125,7 +2381,15 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 
 		if ( !fMatch )
 		{
-			log_string(LOG_BUG, "Fread_obj: no match.");
+			char logmsg[MSL]={'\0'};
+			long file_pos = ftell(fp);
+			snprintf(logmsg, sizeof(logmsg),
+				"Fread_obj: no match for key '%s' (owner: %s, obj: %s, file offset: %ld bytes)",
+				word,
+				ch->name ? ch->name : "UNKNOWN",
+				obj && obj->short_descr ? obj->short_descr : "UNKNOWN",
+				file_pos);
+			log_string(LOG_BUG, logmsg);
 			fread_to_eol( fp );
 		}
 	}
@@ -2135,3 +2399,4 @@ void fread_obj( CHAR_DATA *ch, FILE *fp )
 		obj->timer = -1;
 
 }
+
