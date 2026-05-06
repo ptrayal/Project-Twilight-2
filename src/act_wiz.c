@@ -4668,15 +4668,24 @@ void copyover_recover ()
 
 	for (;;)
 	{
-		if (fscanf (fp, "%d %s %s\n", &desc, name, host) != 3)
+		/* Read descriptor number first */
+		if (fscanf (fp, "%d", &desc) != 1)
         {
-            log_string(LOG_ERR,"copyover_recover: fscanf error");
+            log_string(LOG_ERR,"copyover_recover: fscanf error reading descriptor");
             fclose(fp);
             return;
         }
 
 		if (desc == -1)
 			break;
+
+		/* Now read name and host for this descriptor */
+		if (fscanf (fp, "%s %s\n", name, host) != 2)
+        {
+            log_string(LOG_ERR,"copyover_recover: fscanf error reading name/host");
+            fclose(fp);
+            return;
+        }
 
 	//	 Write something, and check if it goes error-free
 		if (!write_to_descriptor (desc, "\n\rSystem loading...\n\r",0))
