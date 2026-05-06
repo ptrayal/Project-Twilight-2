@@ -2351,7 +2351,7 @@ struct	obj_data
     sh_int 		condition;
     char *		material;
     sh_int		timer;
-    int			value	[5];
+    int			value	[6];
     long		fetish_flags;
     int			fetish_level;
     int			fetish_target;

@@ -5278,22 +5278,22 @@ MEDIT( medit_stat )
     if(a >= 0)
 	output = stat_table[a].name;
     else if(b >= 0)
-	output = ability_table[a].name;
+	output = ability_table[b].name;
     else if(c >= 0)
     {
 	if(pMob->race == race_lookup("human"))
-	    output = disc_table[a].hname;
+	    output = disc_table[c].hname;
 	else if(pMob->race == race_lookup("werewolf"))
-	    output = disc_table[a].wname;
+	    output = disc_table[c].wname;
 	else if(pMob->race == race_lookup("vampire"))
-	    output = disc_table[a].vname;
+	    output = disc_table[c].vname;
     }
     else if(d >= 0)
-	output = virtue_table[a].name;
+	output = virtue_table[d].name;
     else if(e >= 0)
-	output = background_table[a].name;
+	output = background_table[e].name;
     else if(f >= 0)
-	output = influence_table[a].name;
+	output = influence_table[f].name;
     else
 	output = extra_names[g];
 
