@@ -1,0 +1,43 @@
+Read line: <?xml version="1.0" encoding="UTF-8"?>
+Read line: <changes>
+Read line: <change>
+Read line: <imm>Rayal</imm>
+Found tag: imm, value: Rayal
+Read line: <date>30-Apr-2026</date>
+Found tag: date, value: 30-Apr-2026
+Read line: <text>Fixed newspaper bug</text>
+Found tag: text, value: Fixed newspaper bug
+Read line: </change>
+Read line: <change>
+Read line: <imm>Rayal</imm>
+Found tag: imm, value: Rayal
+Read line: <date>30-Apr-2026</date>
+Found tag: date, value: 30-Apr-2026
+Read line: <text>Fixed all the compiler warnings.</text>
+Found tag: text, value: Fixed all the compiler warnings.
+Read line: </change>
+Read line: <change>
+Read line: <imm>Rayal</imm>
+Found tag: imm, value: Rayal
+Read line: <date>30-Apr-2026</date>
+Found tag: date, value: 30-Apr-2026
+Read line: <text>Fixed bug with deleting changes so now it properly works .</text>
+Found tag: text, value: Fixed bug with deleting changes so now it properly works .
+Read line: </change>
+Read line: <change>
+Read line: <imm>Rayal</imm>
+Found tag: imm, value: Rayal
+Read line: <date>30-Apr-2026</date>
+Found tag: date, value: 30-Apr-2026
+Read line: <text>Fixed copyover crashing so copyover works properly now.</text>
+Found tag: text, value: Fixed copyover crashing so copyover works properly now.
+Read line: </change>
+Read line: <change>
+Read line: <imm>Rayal</imm>
+Found tag: imm, value: Rayal
+Read line: <date>30-Apr-2026</date>
+Found tag: date, value: 30-Apr-2026
+Read line: <text>Added an index command for help files. </text>
+Found tag: text, value: Added an index command for help files. 
+Read line: </change>
+Read line: </changes>

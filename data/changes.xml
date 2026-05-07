@@ -3,6 +3,16 @@
   <change>
     <imm>Rayal</imm>
     <date>30-Apr-2026</date>
+    <text>Fixed newspaper bug</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>30-Apr-2026</date>
+    <text>Fixed all the compiler warnings.</text>
+  </change>
+  <change>
+    <imm>Rayal</imm>
+    <date>30-Apr-2026</date>
     <text>Fixed bug with deleting changes so now it properly works .</text>
   </change>
   <change>
@@ -14,10 +24,5 @@
     <imm>Rayal</imm>
     <date>30-Apr-2026</date>
     <text>Added an index command for help files. </text>
-  </change>
-  <change>
-    <imm>Rayal</imm>
-    <date>30-Apr-2026</date>
-    <text>à=FæeV</text>
   </change>
 </changes>

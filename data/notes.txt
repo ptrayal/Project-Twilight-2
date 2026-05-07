@@ -280,3 +280,12 @@ Success 1~
 Text
 Another test message.
 ~
+Sender  Rayal~
+Date    Mon 11/18/24 at 07:47P~
+Stamp   1731980877
+To      all~
+Subject Test~
+Success 1~
+Text
+This is a test message.
+~
