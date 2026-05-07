@@ -1242,6 +1242,7 @@ void init_descriptor( int control )
 		write_to_descriptor( desc,
 				"Your site has been banned from this mud.\n\r", 0 );
 		close( desc );
+		ProtocolDestroy( dnew->pProtocol ); /* Free protocol before descriptor */
 		free_descriptor(dnew);
 		return;
 	}
@@ -1570,8 +1571,8 @@ bool process_output( DESCRIPTOR_DATA *d, bool fPrompt )
 				if ((victim = ch->fighting) != NULL && can_see(ch,victim))
 				{
 					char buf[MSL]={'\0'};
-					const char *vhdisp;
-					const char *chdisp;
+					char *vhdisp;
+					char *chdisp;
 					int vhealth, chealth;
 					char buffer[MSL*2]={'\0'};
 
@@ -1595,6 +1596,10 @@ bool process_output( DESCRIPTOR_DATA *d, bool fPrompt )
 							IS_NPC(victim) ? victim->short_descr : victim->name, vhdisp, chdisp );
 					buf[0]	= UPPER( buf[0] );
 					write_to_buffer( d, buffer, 0);
+
+					//  Free allocated strings
+					PURGE_DATA(vhdisp);
+					PURGE_DATA(chdisp);
 				}
 
 				ch = d->original ? d->original : d->character;

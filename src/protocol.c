@@ -312,6 +312,12 @@ protocol_t *ProtocolCreate( void )
    pProtocol->pLastTTYPE = NULL;
    pProtocol->pVariables = malloc(sizeof(MSDP_t*)*eMSDP_MAX);
 
+    /* Initialize Negotiated array to prevent uninitialized value usage */
+   for ( i = 0; i < eNEGOTIATED_MAX; ++i )
+   {
+      pProtocol->Negotiated[i] = false;
+   }
+
    for ( i = eMSDP_NONE+1; i < eMSDP_MAX; ++i )
    {
       pProtocol->pVariables[i] = malloc(sizeof(MSDP_t));
