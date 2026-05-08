@@ -195,7 +195,7 @@ void free_help(HELP_DATA *help)
     // Free the HELP_DATA structure itself
     PURGE_DATA(help);
 
-    log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
+    // log_string(LOG_GAME, "free_help: Successfully freed HELP_DATA.");
 }
 
 
@@ -303,7 +303,7 @@ void free_note(NOTE_DATA *note)
         return;
     }
 
-    log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
+    // log_string(LOG_GAME, "Freeing note at address %p in function %s at line %d", (void *)note, __FUNCTION__, __LINE__);
 
     // Clear dynamically allocated fields
     PURGE_DATA(note->date);
@@ -903,7 +903,7 @@ EXTRA_DESCR_DATA *new_extra_descr(void)
     ed->successes = 0;
     ed->next = NULL;
 
-    log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
+    // log_string(LOG_GAME, "new_extra_descr: Successfully created EXTRA_DESCR_DATA instance at %p.", (void *)ed);
     return ed;
 }
 
@@ -916,18 +916,18 @@ void free_extra_descr(EXTRA_DESCR_DATA *ed)
         return;
     }
 
-    log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
+    // log_string(LOG_GAME, "free_extra_descr: Freeing EXTRA_DESCR_DATA at memory location %p.", (void *)ed);
 
     // Clear dynamically allocated strings
     if (ed->keyword)
     {
         PURGE_DATA(ed->keyword);
-        log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
+        // log_string(LOG_GAME, "free_extra_descr: Cleared keyword.");
     }
     if (ed->description)
     {
         PURGE_DATA(ed->description);
-        log_string(LOG_GAME, "free_extra_descr: Cleared description.");
+        // log_string(LOG_GAME, "free_extra_descr: Cleared description.");
     }
 
     // Reset all fields to avoid dangling references
@@ -943,7 +943,7 @@ void free_extra_descr(EXTRA_DESCR_DATA *ed)
     // Free the structure
     PURGE_DATA(ed);
 
-    log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
+    // log_string(LOG_GAME, "free_extra_descr: Successfully freed EXTRA_DESCR_DATA.");
 }
 
 COMBAT_DATA *new_combat_move(void)
@@ -1055,7 +1055,7 @@ OBJ_DATA *new_obj(void)
     obj->pIndexData     = NULL;
     obj->in_room        = NULL;
 
-    log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
+    // log_string(LOG_GAME, "Created new OBJ_DATA successfully.");
     return obj;
 }
 
@@ -1111,7 +1111,7 @@ void free_obj(OBJ_DATA *obj)
     // Final cleanup
     PURGE_DATA(obj);
 
-    log_string(LOG_GAME, "OBJ_DATA successfully freed.");
+    // log_string(LOG_GAME, "OBJ_DATA successfully freed.");
 }
 
 
@@ -1128,7 +1128,7 @@ CHAR_DATA *new_char (void)
         return NULL;
     }
 
-    log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
+    // log_string(LOG_GAME, "Allocated new CHAR_DATA structure.");
 
 
 	ch->hunted			= FALSE;
