@@ -439,7 +439,7 @@ int get_skill(CHAR_DATA *ch, int sn)
     else if (sn < -1 || sn > MAX_SKILL)
     {
         log_string(LOG_BUG, Format("Bad sn %d in get_skill.", sn));
-        skill = 0;
+        return 0;  /* Return immediately instead of continuing */
     }
 
     if ((skill_table[sn].spell_fun != spell_null)
@@ -482,7 +482,16 @@ int get_skill(CHAR_DATA *ch, int sn)
              ||  sn == gsn_blunt
              ||  sn == gsn_grapple
              ||  sn == gsn_whip)
-        skill = get_curr_stat(ch, STAT_DEX) + ch->ability[sn].value;
+    {
+        /* Bounds check before using sn as array index */
+        if (sn >= 0 && sn < MAX_ABIL)
+            skill = get_curr_stat(ch, STAT_DEX) + ch->ability[sn].value;
+        else
+        {
+            log_string(LOG_BUG, Format("get_skill: sn %d out of bounds for ability array.", sn));
+            skill = 0;
+        }
+    }
 
     else
         skill = 0;
@@ -559,8 +568,13 @@ int get_weapon_skill(CHAR_DATA *ch, int sn)
     {
 	if (sn == -1)
 	    skill = get_curr_stat(ch, STAT_DEX) + ch->ability[MELEE].value;
-	else
+	else if (sn >= 0 && sn < MAX_ABIL)
 	    skill = get_curr_stat(ch, STAT_DEX) + ch->ability[sn].value;
+	else
+	{
+	    log_string(LOG_BUG, Format("get_weapon_skill: sn %d out of bounds for ability array.", sn));
+	    skill = 0;
+	}
     }
 
     return skill;
@@ -641,7 +655,10 @@ void reset_char(CHAR_DATA *ch)
                         ch->diff_mod -= mod;
                         break;
                     case APPLY_SKILL:
-                        ch->ability[af->bitvector].value -= mod;
+                        if (af->bitvector >= 0 && af->bitvector < MAX_ABIL)
+                            ch->ability[af->bitvector].value -= mod;
+                        else
+                            log_string(LOG_BUG, Format("reset_char: af->bitvector %ld out of bounds.", af->bitvector));
                         break;
                     }
                 }
@@ -692,7 +709,10 @@ void reset_char(CHAR_DATA *ch)
                     ch->diff_mod -= mod;
                     break;
                 case APPLY_SKILL:
-                    ch->ability[af->bitvector].value -= mod;
+                    if (af->bitvector >= 0 && af->bitvector < MAX_ABIL)
+                        ch->ability[af->bitvector].value -= mod;
+                    else
+                        log_string(LOG_BUG, Format("affect_modify: af->bitvector %ld out of bounds.", af->bitvector));
                     break;
                 }
             }
@@ -808,7 +828,10 @@ void reset_char(CHAR_DATA *ch)
                     ch->diff_mod		+= mod;
                     break;
                 case APPLY_SKILL:
-                    ch->ability[af->bitvector].value += mod;
+                    if (af->bitvector >= 0 && af->bitvector < MAX_ABIL)
+                        ch->ability[af->bitvector].value += mod;
+                    else
+                        log_string(LOG_BUG, Format("affect_modify: af->bitvector %ld out of bounds.", af->bitvector));
                     break;
                 }
             }
@@ -969,7 +992,10 @@ void reset_char(CHAR_DATA *ch)
             ch->diff_mod		+= mod;
             break;
         case APPLY_SKILL:
-            ch->ability[af->bitvector].value += mod;
+            if (af->bitvector >= 0 && af->bitvector < MAX_ABIL)
+                ch->ability[af->bitvector].value += mod;
+            else
+                log_string(LOG_BUG, Format("affect_modify: af->bitvector %ld out of bounds.", af->bitvector));
             break;
         }
     }
@@ -1998,7 +2024,7 @@ void char_from_room( CHAR_DATA *ch )
 		return;
 	}
 
-	if ( !IS_NPC(ch) )
+	if ( !IS_NPC(ch) && ch->in_room->area != NULL )
 	{
 		--ch->in_room->area->nplayer;
 	}
@@ -2043,7 +2069,7 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
 	ch->in_room = pRoomIndex;
 	LINK_SINGLE(ch, next_in_room, pRoomIndex->people);
 
-	if ( !IS_NPC(ch) )
+	if ( !IS_NPC(ch) && ch->in_room->area != NULL )
 	{
 		if (ch->in_room->area->empty)
 		{
@@ -2223,6 +2249,7 @@ void obj_from_char( OBJ_DATA *obj )
 			if(IS_NULLSTR(ch->short_descr))
 			{
 				log_string(LOG_BUG,Format("Problem with mob named %s.  Has no short description", ch->name));
+				obj->owner = str_dup("unknown");  /* Set to safe default */
 			}
 			else
 			{
