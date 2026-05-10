@@ -168,7 +168,8 @@ void string_add( CHAR_DATA *ch, char *argument )
 		{
 			send_to_char( "String cleared.\n\r", ch );
 			PURGE_DATA(*ch->desc->pString);
-			*ch->desc->pString = '\0';
+			/* Issue #5 Fix: Set pointer to NULL, don't dereference freed pointer */
+			*ch->desc->pString = NULL;
 			return;
 		}
 
@@ -240,7 +241,8 @@ void string_add( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-	strcpy ( buf, *ch->desc->pString ? *ch->desc->pString : "" ); 
+	/* Issue #1 Fix: Use snprintf instead of strcpy for bounds safety */
+	snprintf( buf, sizeof(buf), "%s", *ch->desc->pString ? *ch->desc->pString : "" ); 
 		/*
 		 * Truncate strings to MAX_STRING_LENGTH.
 		 * --------------------------------------
@@ -289,6 +291,12 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 
 	for (rdesc = oldstring; *rdesc; rdesc++)
 	{
+		/* Issue #3 Fix: Add bounds checking to prevent buffer overflow */
+		if (i >= MAX_STRING_LENGTH - 10)
+		{
+			log_string(LOG_BUG, "format_string: String too long, truncating.");
+			break;
+		}
 
 		if (*rdesc != '`')
 		{
@@ -296,7 +304,8 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 			{
 				if (*rdesc == '\n')
 				{
-					if (*(rdesc + 1) == '\r' && *(rdesc + 2) == ' ' && *(rdesc + 3) == '\n' && xbuf[i - 1] != '\r')
+					/* Issue #4 Fix: Check bounds before accessing xbuf[i-1] */
+					if (*(rdesc + 1) == '\r' && *(rdesc + 2) == ' ' && *(rdesc + 3) == '\n' && i > 0 && xbuf[i - 1] != '\r')
 					{
 						xbuf[i] = '\n';
 						xbuf[i + 1] = '\r';
@@ -305,13 +314,13 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 						i += 4;
 						rdesc += 2;
 					}
-					else if (*(rdesc + 1) == '\r' && *(rdesc + 2) == ' ' && *(rdesc + 2) == '\n' && xbuf[i - 1] == '\r')
+					else if (*(rdesc + 1) == '\r' && *(rdesc + 2) == ' ' && *(rdesc + 2) == '\n' && i > 0 && xbuf[i - 1] == '\r')
 					{
 						xbuf[i] = '\n';
 						xbuf[i + 1] = '\r';
 						i += 2;
 					}
-					else if (*(rdesc + 1) == '\r' && *(rdesc + 2) == '\n' && xbuf[i - 1] != '\r')
+					else if (*(rdesc + 1) == '\r' && *(rdesc + 2) == '\n' && i > 0 && xbuf[i - 1] != '\r')
 					{
 						xbuf[i] = '\n';
 						xbuf[i + 1] = '\r';
@@ -320,13 +329,13 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 						i += 4;
 						rdesc += 1;
 					}
-					else if (*(rdesc + 1) == '\r' && *(rdesc + 2) == '\n' && xbuf[i - 1] == '\r')
+					else if (*(rdesc + 1) == '\r' && *(rdesc + 2) == '\n' && i > 0 && xbuf[i - 1] == '\r')
 					{
 						xbuf[i] = '\n';
 						xbuf[i + 1] = '\r';
 						i += 2;
 					}
-					else if (xbuf[i - 1] != ' ' && xbuf[i - 1] != '\r')
+					else if (i > 0 && xbuf[i - 1] != ' ' && xbuf[i - 1] != '\r')
 					{
 						xbuf[i] = ' ';
 						i++;
@@ -344,7 +353,8 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 				}
 				else if (*rdesc == ' ')
 				{
-					if (xbuf[i - 1] != ' ')
+					/* Issue #4 Fix: Check bounds before accessing xbuf[i-1] */
+					if (i > 0 && xbuf[i - 1] != ' ')
 					{
 						xbuf[i] = ' ';
 						i++;
@@ -352,7 +362,8 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 				}
 				else if (*rdesc == ')')
 				{
-					if (xbuf[i - 1] == ' ' && xbuf[i - 2] == ' '
+					/* Issue #4 Fix: Check bounds before accessing xbuf[i-1], xbuf[i-2], xbuf[i-3] */
+					if (i > 2 && xbuf[i - 1] == ' ' && xbuf[i - 2] == ' '
 						&& (xbuf[i - 3] == '.' || xbuf[i - 3] == '?' || xbuf[i - 3] == '!'))
 					{
 						xbuf[i - 2] = *rdesc;
@@ -360,7 +371,7 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 						xbuf[i] = ' ';
 						i++;
 					}
-					else if (xbuf[i - 1] == ' ' && (xbuf[i - 2] == ',' || xbuf[i - 2] == ';'))
+					else if (i > 1 && xbuf[i - 1] == ' ' && (xbuf[i - 2] == ',' || xbuf[i - 2] == ';'))
 					{
 						xbuf[i - 1] = *rdesc;
 						xbuf[i] = ' ';
@@ -374,7 +385,8 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 				}
 				else if (*rdesc == ',' || *rdesc == ';')
 				{
-					if (xbuf[i - 1] == ' ')
+					/* Issue #4 Fix: Check bounds before accessing xbuf[i-1] */
+					if (i > 0 && xbuf[i - 1] == ' ')
 					{
 						xbuf[i - 1] = *rdesc;
 						xbuf[i] = ' ';
@@ -400,7 +412,8 @@ char *format_string (char *oldstring /*, bool fSpace */ )
 				}
 				else if (*rdesc == '.' || *rdesc == '?' || *rdesc == '!')
 				{
-					if (xbuf[i - 1] == ' ' && xbuf[i - 2] == ' '
+					/* Issue #4 Fix: Check bounds before accessing xbuf[i-1], xbuf[i-2], xbuf[i-3] */
+					if (i > 2 && xbuf[i - 1] == ' ' && xbuf[i - 2] == ' '
 						&& (xbuf[i - 3] == '.' || xbuf[i - 3] == '?' || xbuf[i - 3] == '!'))
 					{
 						xbuf[i - 2] = *rdesc;
@@ -671,6 +684,7 @@ void pretty_proc( char *buf, char *word )
 	static char *pbuf;
 	static int index;
 	int i = 0;
+	size_t pbuf_len;
 
 	/* special cue to do inits */
 	if( word == NULL)
@@ -686,7 +700,9 @@ void pretty_proc( char *buf, char *word )
 		/* strip trailing spaces */
 		for( i = strlen(pbuf) - 1; i >= 0 && pbuf[i] == ' '; i--)
 			pbuf[i] = 0;
-		strncat( pbuf, word, sizeof(*pbuf)  );
+		/* Issue #2 Fix: Use MSL instead of sizeof(*pbuf) which is only 1 byte */
+		pbuf_len = strlen(pbuf);
+		strncat( pbuf, word, MSL - pbuf_len - 1 );
 		index = 0;
 		return;
 	}
@@ -706,12 +722,16 @@ void pretty_proc( char *buf, char *word )
 		/* strip trailing spaces */
 		for( i = strlen(pbuf) - 1; i >= 0 && pbuf[i] == ' '; i--)
 			pbuf[i] = 0;
-		strncat(pbuf,"\n\r", sizeof(*pbuf) );
+		/* Issue #2 Fix: Use MSL instead of sizeof(*pbuf) */
+		pbuf_len = strlen(pbuf);
+		strncat(pbuf,"\n\r", MSL - pbuf_len - 1 );
 		index = 0;
 		while(*word == ' ')
 			word++;
 	}
-	strncat( pbuf, word, sizeof(*pbuf)  );
+	/* Issue #2 Fix: Use MSL instead of sizeof(*pbuf) */
+	pbuf_len = strlen(pbuf);
+	strncat( pbuf, word, MSL - pbuf_len - 1 );
 	index += strlen(word);
 }
 
