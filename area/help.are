@@ -2501,7 +2501,7 @@ End
 Unformatted Topic: Colour Codes
  
 Syntax:
-{{R {{r - {RReds       {{B {{b - {BBlues      {{W {{w - {WWhites
+{{R {{r - {RReds       {{B {{b - {BBlues      { { - Whites
 {{G {{g - {GGreens     {{M {{m - {MMagentas   {{D {{d - {dBlack/Grey
 {{Y {{y - {YYellow     { { - Cyans
  
@@ -8231,34 +8231,34 @@ The research system allows you to investigate topics using your character's
 knowledge and abilities. Each research topic tests a specific combination of
 stat and ability, with successes revealing progressively more information.
 
-{WCOMMANDS:{x
-  {Wresearch list{x          - View all available research topics
-  {Wresearch <topic>{x       - Attempt to research a specific topic
+COMMANDS:
+  research list          - View all available research topics
+  research <topic>       - Attempt to research a specific topic
 
-{WHOW IT WORKS:{x
+HOW IT WORKS:
 Your dice pool is calculated as: Stat + Ability
 You roll against a difficulty rating (typically 6-8)
   - Successes of 10 count as 2 successes (critical success)
   - Rolls of 1 subtract from your successes
   - If your final successes are negative with 1s rolled, you botch
 
-{WTIERED INFORMATION:{x
+TIERED INFORMATION:
 Different research topics have multiple tiers of information. The more
 successes you roll, the deeper knowledge you uncover:
   - 1-2 successes: Basic information
   - 3-4 successes: Detailed knowledge
   - 5+ successes: Deep secrets and hidden lore
 
-{WCOOLDOWNS:{x
+COOLDOWNS:
 Each research topic has a 24-hour cooldown per character. After researching
 a topic, you must wait before attempting it again. This represents the time
 needed to gather new sources and approach the subject from different angles.
 
-{WMODIFIERS:{x
+MODIFIERS:
 Some topics may be easier or harder for certain clans, races, or packs,
 reflecting their unique knowledge or perspectives.
 
-{WFAILURE:{x
+FAILURE:
 If you botch your research attempt, you may uncover misleading or dangerous
 information. Choose your investigations carefully!
 
@@ -8272,39 +8272,39 @@ The research topic editor (RTEDIT) allows you to create and manage research
 topics for the research system. Topics define what players can investigate
 and what information they can uncover.
 
-{WBASIC COMMANDS:{x
-  {Wrtedit list{x                           - List all research topics
-  {Wrtedit create <keyword>{x               - Create new research topic
-  {Wrtedit delete <keyword>{x               - Delete a research topic
-  {Wrtedit show <keyword>{x                 - Show research topic details
-  {Wrtedit save{x                           - Save all topics to XML
+BASIC COMMANDS:
+  rtedit list                           - List all research topics
+  rtedit create <keyword>               - Create new research topic
+  rtedit delete <keyword>               - Delete a research topic
+  rtedit show <keyword>                 - Show research topic details
+  rtedit save                           - Save all topics to XML
 
-{WCONFIGURATION:{x
-  {Wrtedit title <keyword> <title>{x        - Set topic title
-  {Wrtedit keywords <kw> <keywords>{x       - Set topic keywords (space-separated)
-  {Wrtedit stat <keyword> [name]{x          - Set stat (shows list if no name)
-  {Wrtedit ability <keyword> [name]{x       - Set ability (shows list if no name)
-  {Wrtedit difficulty <keyword> <2-10>{x    - Set base difficulty
+CONFIGURATION:
+  rtedit title <keyword> <title>        - Set topic title
+  rtedit keywords <kw> <keywords>       - Set topic keywords (space-separated)
+  rtedit stat <keyword> [name]          - Set stat (shows list if no name)
+  rtedit ability <keyword> [name]       - Set ability (shows list if no name)
+  rtedit difficulty <keyword> <2-10>    - Set base difficulty
 
-{WFAILURE TEXT:{x
-  {Wrtedit failure <keyword> <text>{x       - Set failure text (short)
-  {Wrtedit editfail <keyword>{x             - Edit failure text (multi-line)
+FAILURE TEXT:
+  rtedit failure <keyword> <text>       - Set failure text (short)
+  rtedit editfail <keyword>             - Edit failure text (multi-line)
 
-{WTIERS (Information Levels):{x
-  {Wrtedit addtier <kw> <succ> <text>{x     - Add tier (short text)
-  {Wrtedit edittier <kw> <successes>{x      - Edit tier (multi-line editor)
-  {Wrtedit deltier <kw> <successes>{x       - Delete a tier
+TIERS (Information Levels):
+  rtedit addtier <kw> <succ> <text>     - Add tier (short text)
+  rtedit edittier <kw> <successes>      - Edit tier (multi-line editor)
+  rtedit deltier <kw> <successes>       - Delete a tier
 
-{WMODIFIERS (Difficulty Adjustments):{x
-  {Wrtedit addmod <kw> <type> <val> <adj>{x - Add modifier
-  {Wrtedit delmod <kw> <type> <val>{x       - Delete modifier
+MODIFIERS (Difficulty Adjustments):
+  rtedit addmod <kw> <type> <val> <adj> - Add modifier
+  rtedit delmod <kw> <type> <val>       - Delete modifier
 
   Types: clan, race, pack
   Adjustment: positive increases difficulty, negative decreases
   Example: rtedit addmod vampires clan Tremere -1
            (Tremere vampires get -1 difficulty on vampire research)
 
-{WEXAMPLE WORKFLOW:{x
+EXAMPLE WORKFLOW:
   rtedit create vampires
   rtedit title vampires Vampire Lore
   rtedit keywords vampires vampire lore kindred
@@ -8319,7 +8319,7 @@ and what information they can uncover.
   rtedit addmod vampires clan Tremere -1
   rtedit save
 
-{WBEST PRACTICES:{x
+BEST PRACTICES:
   - Use 3-5 tiers for most topics (max 10)
   - Lower tiers = basic/common knowledge
   - Higher tiers = secrets/deep lore
@@ -8327,11 +8327,11 @@ and what information they can uncover.
   - Use modifiers sparingly for clan/race expertise
   - Base difficulty 6 = average, 8 = hard, 10 = very hard
 
-{WDATA STORAGE:{x
+DATA STORAGE:
 Research topics are stored in ../data/research.xml and loaded at boot.
 Always use 'rtedit save' after making changes!
 
-{WTIMERCLEAR:{x
+TIMERCLEAR:
 The 'timerclear <player>' command now also clears research cooldowns,
 allowing admins to reset a player's research attempts for testing or
 plot purposes.
