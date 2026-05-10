@@ -1,0 +1,172 @@
+=================================================================================
+RESEARCH SYSTEM - HELP FILE ENTRIES
+=================================================================================
+
+These help entries should be added to your MUD's help system. You can either:
+1. Use the "hedit" command in-game (if available) to create them
+2. Add them manually to a .are file in a #HELPS section
+
+=================================================================================
+PLAYER HELP FILE
+=================================================================================
+
+0 RESEARCH~
+Research~
+research <topic>
+research list~
+The research system allows you to investigate topics using your character's
+knowledge and abilities. Each research topic tests a specific combination of
+stat and ability, with successes revealing progressively more information.
+
+{WCOMMANDS:{x
+  {Wresearch list{x          - View all available research topics
+  {Wresearch <topic>{x       - Attempt to research a specific topic
+
+{WHOW IT WORKS:{x
+Your dice pool is calculated as: Stat + Ability
+You roll against a difficulty rating (typically 6-8)
+  - Successes of 10 count as 2 successes (critical success)
+  - Rolls of 1 subtract from your successes
+  - If your final successes are negative with 1s rolled, you botch
+
+{WTIERED INFORMATION:{x
+Different research topics have multiple tiers of information. The more
+successes you roll, the deeper knowledge you uncover:
+  - 1-2 successes: Basic information
+  - 3-4 successes: Detailed knowledge
+  - 5+ successes: Deep secrets and hidden lore
+
+{WCOOLDOWNS:{x
+Each research topic has a 24-hour cooldown per character. After researching
+a topic, you must wait before attempting it again. This represents the time
+needed to gather new sources and approach the subject from different angles.
+
+{WMODIFIERS:{x
+Some topics may be easier or harder for certain clans, races, or packs,
+reflecting their unique knowledge or perspectives.
+
+{WFAILURE:{x
+If you botch your research attempt, you may uncover misleading or dangerous
+information. Choose your investigations carefully!
+
+See also: HELP ABILITIES, HELP STATS
+~
+
+=================================================================================
+ADMIN/BUILDER HELP FILE
+=================================================================================
+
+2 RTEDIT~
+Research Topic Editor~
+rtedit <command> [arguments]~
+The research topic editor (RTEDIT) allows you to create and manage research
+topics for the research system. Topics define what players can investigate
+and what information they can uncover.
+
+{WBASIC COMMANDS:{x
+  {Wrtedit list{x                           - List all research topics
+  {Wrtedit create <keyword>{x               - Create new research topic
+  {Wrtedit delete <keyword>{x               - Delete a research topic
+  {Wrtedit show <keyword>{x                 - Show research topic details
+  {Wrtedit save{x                           - Save all topics to XML
+
+{WCONFIGURATION:{x
+  {Wrtedit title <keyword> <title>{x        - Set topic title
+  {Wrtedit keywords <kw> <keywords>{x       - Set topic keywords (space-separated)
+  {Wrtedit stat <keyword> [name]{x          - Set stat (shows list if no name)
+  {Wrtedit ability <keyword> [name]{x       - Set ability (shows list if no name)
+  {Wrtedit difficulty <keyword> <2-10>{x    - Set base difficulty
+
+{WFAILURE TEXT:{x
+  {Wrtedit failure <keyword> <text>{x       - Set failure text (short)
+  {Wrtedit editfail <keyword>{x             - Edit failure text (multi-line)
+
+{WTIERS (Information Levels):{x
+  {Wrtedit addtier <kw> <succ> <text>{x     - Add tier (short text)
+  {Wrtedit edittier <kw> <successes>{x      - Edit tier (multi-line editor)
+  {Wrtedit deltier <kw> <successes>{x       - Delete a tier
+
+{WMODIFIERS (Difficulty Adjustments):{x
+  {Wrtedit addmod <kw> <type> <val> <adj>{x - Add modifier
+  {Wrtedit delmod <kw> <type> <val>{x       - Delete modifier
+
+  Types: clan, race, pack
+  Adjustment: positive increases difficulty, negative decreases
+  Example: rtedit addmod vampires clan Tremere -1
+           (Tremere vampires get -1 difficulty on vampire research)
+
+{WEXAMPLE WORKFLOW:{x
+  rtedit create vampires
+  rtedit title vampires Vampire Lore
+  rtedit keywords vampires vampire lore kindred
+  rtedit stat vampires intelligence
+  rtedit ability vampires occult
+  rtedit difficulty vampires 6
+  rtedit addtier vampires 1 Vampires are undead creatures...
+  rtedit edittier vampires 3
+    (Opens editor for detailed tier 3 information)
+  rtedit editfail vampires
+    (Opens editor for custom failure/botch text)
+  rtedit addmod vampires clan Tremere -1
+  rtedit save
+
+{WBEST PRACTICES:{x
+  - Use 3-5 tiers for most topics (max 10)
+  - Lower tiers = basic/common knowledge
+  - Higher tiers = secrets/deep lore
+  - Set custom failure text for interesting botches
+  - Use modifiers sparingly for clan/race expertise
+  - Base difficulty 6 = average, 8 = hard, 10 = very hard
+
+{WDATA STORAGE:{x
+Research topics are stored in ../data/research.xml and loaded at boot.
+Always use 'rtedit save' after making changes!
+
+{WTIMERCLEAR:{x
+The 'timerclear <player>' command now also clears research cooldowns,
+allowing admins to reset a player's research attempts for testing or
+plot purposes.
+
+See also: HELP RESEARCH, HELP TIMERCLEAR
+~
+
+=================================================================================
+INSTRUCTIONS FOR ADDING HELP FILES
+=================================================================================
+
+METHOD 1: Using HEDIT (In-Game OLC)
+------------------------------------
+1. Type: hedit create research
+2. Follow prompts to set:
+   - Level: 0 (for player help)
+   - Keywords: research
+   - Topic: Research
+   - Syntax: research <topic>\nresearch list
+   - Text: (paste the player help text above)
+
+3. Repeat for admin help:
+   - hedit create rtedit
+   - Level: 2 (for builders/admins)
+   - Keywords: rtedit
+   - etc.
+
+METHOD 2: Manual Addition to .are File
+---------------------------------------
+1. Open your main help area file (often twilight.are or help.are)
+2. Find the #HELPS section
+3. Add the entries using this format:
+
+#HELPS
+0 RESEARCH~
+(paste keyword, syntax, and text from above)
+~
+
+2 RTEDIT~
+(paste keyword, syntax, and text from above)
+~
+
+#0
+
+4. Reload the area or reboot the MUD
+
+=================================================================================

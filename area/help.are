@@ -3217,19 +3217,15 @@ Equipment lists all the items you are wearing and/or using.
 See WIELD; WEAR; HOLD; GET
 ~
 End
-0 investigate research~
+0 investigate~
 (null)~
 (null)~
-Topic Investigate and Research~
+Topic Investigate~
 Syntax investigate [topic]
-research [topic]
 ~
 Desc When using the investigate command, you are looking for information about
 an object, a person, a location, or an event.  You are "canvassing" the
-street, talking with people and trying to find out what you can.  When doing
-research on a topic, you are searching for information contained inside of
-books, magazines, the Internet, or other types of media.  This is generally
-considered a more academic type of research.  
+street, talking with people and trying to find out what you can.
 
 If you investigate a player, it will show their description.  
 ~
@@ -6215,8 +6211,7 @@ fact [create/keyword/list] [[keywords]]
 ~
 Desc This is only a really short help on these. I'll look to writing a better
 help soon. Essentially, backgrounds are the things which can be
-uncovered by the investigate command and knowledges (facts) are the
-things which can be uncovered by the research command.
+uncovered by the investigate command.
  
 The subcommands for both bg and fact are:
 Create [keywords] - create a new bg or know entry.
@@ -8226,6 +8221,122 @@ or react in some other way depending on the situation. Fighting may
 always be resumed by using a combat move.
 ~
 See COMBAT
+~
+End
+0 RESEARCH~
+Research~
+research <topic>
+research list~
+The research system allows you to investigate topics using your character's
+knowledge and abilities. Each research topic tests a specific combination of
+stat and ability, with successes revealing progressively more information.
+
+{WCOMMANDS:{x
+  {Wresearch list{x          - View all available research topics
+  {Wresearch <topic>{x       - Attempt to research a specific topic
+
+{WHOW IT WORKS:{x
+Your dice pool is calculated as: Stat + Ability
+You roll against a difficulty rating (typically 6-8)
+  - Successes of 10 count as 2 successes (critical success)
+  - Rolls of 1 subtract from your successes
+  - If your final successes are negative with 1s rolled, you botch
+
+{WTIERED INFORMATION:{x
+Different research topics have multiple tiers of information. The more
+successes you roll, the deeper knowledge you uncover:
+  - 1-2 successes: Basic information
+  - 3-4 successes: Detailed knowledge
+  - 5+ successes: Deep secrets and hidden lore
+
+{WCOOLDOWNS:{x
+Each research topic has a 24-hour cooldown per character. After researching
+a topic, you must wait before attempting it again. This represents the time
+needed to gather new sources and approach the subject from different angles.
+
+{WMODIFIERS:{x
+Some topics may be easier or harder for certain clans, races, or packs,
+reflecting their unique knowledge or perspectives.
+
+{WFAILURE:{x
+If you botch your research attempt, you may uncover misleading or dangerous
+information. Choose your investigations carefully!
+
+See also: HELP ABILITIES, HELP STATS
+~
+End
+2 RTEDIT~
+Research Topic Editor~
+rtedit <command> [arguments]~
+The research topic editor (RTEDIT) allows you to create and manage research
+topics for the research system. Topics define what players can investigate
+and what information they can uncover.
+
+{WBASIC COMMANDS:{x
+  {Wrtedit list{x                           - List all research topics
+  {Wrtedit create <keyword>{x               - Create new research topic
+  {Wrtedit delete <keyword>{x               - Delete a research topic
+  {Wrtedit show <keyword>{x                 - Show research topic details
+  {Wrtedit save{x                           - Save all topics to XML
+
+{WCONFIGURATION:{x
+  {Wrtedit title <keyword> <title>{x        - Set topic title
+  {Wrtedit keywords <kw> <keywords>{x       - Set topic keywords (space-separated)
+  {Wrtedit stat <keyword> [name]{x          - Set stat (shows list if no name)
+  {Wrtedit ability <keyword> [name]{x       - Set ability (shows list if no name)
+  {Wrtedit difficulty <keyword> <2-10>{x    - Set base difficulty
+
+{WFAILURE TEXT:{x
+  {Wrtedit failure <keyword> <text>{x       - Set failure text (short)
+  {Wrtedit editfail <keyword>{x             - Edit failure text (multi-line)
+
+{WTIERS (Information Levels):{x
+  {Wrtedit addtier <kw> <succ> <text>{x     - Add tier (short text)
+  {Wrtedit edittier <kw> <successes>{x      - Edit tier (multi-line editor)
+  {Wrtedit deltier <kw> <successes>{x       - Delete a tier
+
+{WMODIFIERS (Difficulty Adjustments):{x
+  {Wrtedit addmod <kw> <type> <val> <adj>{x - Add modifier
+  {Wrtedit delmod <kw> <type> <val>{x       - Delete modifier
+
+  Types: clan, race, pack
+  Adjustment: positive increases difficulty, negative decreases
+  Example: rtedit addmod vampires clan Tremere -1
+           (Tremere vampires get -1 difficulty on vampire research)
+
+{WEXAMPLE WORKFLOW:{x
+  rtedit create vampires
+  rtedit title vampires Vampire Lore
+  rtedit keywords vampires vampire lore kindred
+  rtedit stat vampires intelligence
+  rtedit ability vampires occult
+  rtedit difficulty vampires 6
+  rtedit addtier vampires 1 Vampires are undead creatures...
+  rtedit edittier vampires 3
+    (Opens editor for detailed tier 3 information)
+  rtedit editfail vampires
+    (Opens editor for custom failure/botch text)
+  rtedit addmod vampires clan Tremere -1
+  rtedit save
+
+{WBEST PRACTICES:{x
+  - Use 3-5 tiers for most topics (max 10)
+  - Lower tiers = basic/common knowledge
+  - Higher tiers = secrets/deep lore
+  - Set custom failure text for interesting botches
+  - Use modifiers sparingly for clan/race expertise
+  - Base difficulty 6 = average, 8 = hard, 10 = very hard
+
+{WDATA STORAGE:{x
+Research topics are stored in ../data/research.xml and loaded at boot.
+Always use 'rtedit save' after making changes!
+
+{WTIMERCLEAR:{x
+The 'timerclear <player>' command now also clears research cooldowns,
+allowing admins to reset a player's research attempts for testing or
+plot purposes.
+
+See also: HELP RESEARCH, HELP TIMERCLEAR
 ~
 End
 0 $~

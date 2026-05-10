@@ -349,12 +349,11 @@ void do_research( CHAR_DATA *ch, char *argument )
             return;
         }
 
-        send_to_char( "Available research topics:\n\r", ch );
-        send_to_char( "==========================\n\r", ch );
+        send_to_char( "\tB=== Available Research Topics ===\tn\n\r", ch );
 
         for ( research = research_list; research; research = research->next )
         {
-            sprintf( buf, "%-20s - %s\n\r", research->keywords, research->title );
+            sprintf( buf, "\tW%-20s\tn - %s\n\r", research->keywords, research->title );
             send_to_char( buf, ch );
 
             /* Check cooldown status */
@@ -466,23 +465,23 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
 
     if ( command[0] == '\0' )
     {
-        send_to_char( "Research Topic Editor Commands:\n\r", ch );
+        send_to_char( "\tB=== Research Topic Editor Commands ===\tn\n\r", ch );
         send_to_char( "  rtedit list                           - List all research topics\n\r", ch );
-        send_to_char( "  rtedit create <keyword>               - Create new research topic\n\r", ch );
-        send_to_char( "  rtedit delete <keyword>               - Delete a research topic\n\r", ch );
-        send_to_char( "  rtedit show <keyword>                 - Show research topic details\n\r", ch );
-        send_to_char( "  rtedit title <keyword> <title>        - Set topic title\n\r", ch );
-        send_to_char( "  rtedit keywords <keyword> <keywords>  - Set topic keywords\n\r", ch );
-        send_to_char( "  rtedit stat <keyword> [stat_name]     - Set stat (list shown if no name)\n\r", ch );
-        send_to_char( "  rtedit ability <keyword> [ability]    - Set ability (list shown if no name)\n\r", ch );
-        send_to_char( "  rtedit difficulty <keyword> <2-10>    - Set base difficulty\n\r", ch );
-        send_to_char( "  rtedit failure <keyword> <text>       - Set failure/botch text (short)\n\r", ch );
-        send_to_char( "  rtedit editfail <keyword>             - Edit failure text (multi-line editor)\n\r", ch );
-        send_to_char( "  rtedit addtier <keyword> <succ> <txt> - Add information tier (short text)\n\r", ch );
-        send_to_char( "  rtedit edittier <keyword> <successes> - Edit tier text (multi-line editor)\n\r", ch );
-        send_to_char( "  rtedit deltier <keyword> <successes>  - Delete a tier\n\r", ch );
-        send_to_char( "  rtedit addmod <kw> <type> <val> <adj> - Add modifier (type: clan/race/pack)\n\r", ch );
-        send_to_char( "  rtedit delmod <keyword> <type> <val>  - Delete modifier\n\r", ch );
+        send_to_char( "  rtedit create \tW<keyword>\tn               - Create new research topic\n\r", ch );
+        send_to_char( "  rtedit delete \tW<keyword>\tn               - Delete a research topic\n\r", ch );
+        send_to_char( "  rtedit show \tW<keyword>\tn                 - Show research topic details\n\r", ch );
+        send_to_char( "  rtedit title \tW<keyword>\tn \tW<title>\tn        - Set topic title\n\r", ch );
+        send_to_char( "  rtedit keywords \tW<keyword>\tn \tW<keywords>\tn  - Set topic keywords\n\r", ch );
+        send_to_char( "  rtedit stat \tW<keyword>\tn [stat_name]     - Set stat (list shown if no name)\n\r", ch );
+        send_to_char( "  rtedit ability \tW<keyword>\tn [ability]    - Set ability (list shown if no name)\n\r", ch );
+        send_to_char( "  rtedit difficulty \tW<keyword>\tn \tW<2-10>\tn    - Set base difficulty\n\r", ch );
+        send_to_char( "  rtedit failure \tW<keyword>\tn \tW<text>\tn       - Set failure/botch text (short)\n\r", ch );
+        send_to_char( "  rtedit editfail \tW<keyword>\tn             - Edit failure text (multi-line editor)\n\r", ch );
+        send_to_char( "  rtedit addtier \tW<keyword>\tn \tW<succ>\tn \tW<txt>\tn - Add information tier (short text)\n\r", ch );
+        send_to_char( "  rtedit edittier \tW<keyword>\tn \tW<successes>\tn - Edit tier text (multi-line editor)\n\r", ch );
+        send_to_char( "  rtedit deltier \tW<keyword>\tn \tW<successes>\tn  - Delete a tier\n\r", ch );
+        send_to_char( "  rtedit addmod \tW<kw>\tn \tW<type>\tn \tW<val>\tn \tW<adj>\tn - Add modifier (type: clan/race/pack)\n\r", ch );
+        send_to_char( "  rtedit delmod \tW<keyword>\tn \tW<type>\tn \tW<val>\tn  - Delete modifier\n\r", ch );
         send_to_char( "  rtedit save                           - Save all research topics\n\r", ch );
         return;
     }
@@ -496,11 +495,10 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
             return;
         }
 
-        send_to_char( "Research Topics:\n\r", ch );
-        send_to_char( "================\n\r", ch );
+        send_to_char( "\tB=== Research Topics ===\tn\n\r", ch );
         for ( research = research_list; research; research = research->next )
         {
-            send_to_char( Format( "%-20s - %s\n\r", research->keywords, research->title ), ch );
+            send_to_char( Format( "\tW%-20s\tn - %s\n\r", research->keywords, research->title ), ch );
             send_to_char( Format( "  Stat: %-12s  Ability: %-20s  Difficulty: %d  Tiers: %d\n\r",
                                   research->stat >= 0 && research->stat < 9 ? stat_table[research->stat].name : "invalid",
                                   research->ability >= 0 && research->ability < MAX_ABIL ? ability_table[research->ability].name : "invalid",
@@ -598,10 +596,9 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
             return;
         }
 
-        send_to_char( "Research Topic Details:\n\r", ch );
-        send_to_char( "=======================\n\r", ch );
+        send_to_char( "\tB=== Research Topic Details ===\tn\n\r", ch );
         send_to_char( Format( "Title:       %s\n\r", research->title ), ch );
-        send_to_char( Format( "Keywords:    %s\n\r", research->keywords ), ch );
+        send_to_char( Format( "Keywords:    \tW%s\tn\n\r", research->keywords ), ch );
         send_to_char( Format( "Stat:        %s\n\r",
                               research->stat >= 0 && research->stat < 9 ? stat_table[research->stat].name : "invalid" ), ch );
         send_to_char( Format( "Ability:     %s\n\r",
@@ -709,12 +706,12 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
         if ( arg2[0] == '\0' )
         {
             int i;
-            send_to_char( "Available stats:\n\r", ch );
+            send_to_char( "\tB=== Available Stats ===\tn\n\r", ch );
             for ( i = 0; i < 9; i++ )
             {
-                send_to_char( Format( "  %-15s (current: %s)\n\r",
+                send_to_char( Format( "  \tW%-15s\tn %s\n\r",
                                       stat_table[i].name,
-                                      research->stat == i ? "SELECTED" : "" ), ch );
+                                      research->stat == i ? "\tG(SELECTED)\tn" : "" ), ch );
             }
             return;
         }
@@ -753,27 +750,27 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
         if ( arg2[0] == '\0' )
         {
             int i;
-            send_to_char( "Available abilities:\n\r", ch );
-            send_to_char( "Talents:\n\r", ch );
+            send_to_char( "\tB=== Available Abilities ===\tn\n\r", ch );
+            send_to_char( "\tBTalents:\tn\n\r", ch );
             for ( i = 0; i <= 12; i++ )
             {
-                send_to_char( Format( "  %-20s%s\n\r",
+                send_to_char( Format( "  \tW%-20s\tn%s\n\r",
                                       ability_table[i].name,
-                                      research->ability == i ? " (SELECTED)" : "" ), ch );
+                                      research->ability == i ? " \tG(SELECTED)\tn" : "" ), ch );
             }
-            send_to_char( "\n\rSkills:\n\r", ch );
+            send_to_char( "\n\r\tBSkills:\tn\n\r", ch );
             for ( i = 13; i <= 23; i++ )
             {
-                send_to_char( Format( "  %-20s%s\n\r",
+                send_to_char( Format( "  \tW%-20s\tn%s\n\r",
                                       ability_table[i].name,
-                                      research->ability == i ? " (SELECTED)" : "" ), ch );
+                                      research->ability == i ? " \tG(SELECTED)\tn" : "" ), ch );
             }
-            send_to_char( "\n\rKnowledges:\n\r", ch );
+            send_to_char( "\n\r\tBKnowledges:\tn\n\r", ch );
             for ( i = 24; i < MAX_ABIL && ability_table[i].name != NULL; i++ )
             {
-                send_to_char( Format( "  %-20s%s\n\r",
+                send_to_char( Format( "  \tW%-20s\tn%s\n\r",
                                       ability_table[i].name,
-                                      research->ability == i ? " (SELECTED)" : "" ), ch );
+                                      research->ability == i ? " \tG(SELECTED)\tn" : "" ), ch );
             }
             return;
         }
