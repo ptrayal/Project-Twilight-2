@@ -2404,6 +2404,154 @@ void free_mpcode(MPROG_CODE *pMcode)
 	return;
 }
 
+/*
+ * Research system memory management - forward declarations
+ */
+void free_research_tier(RESEARCH_TIER *tier);
+void free_research_modifier(RESEARCH_MODIFIER *mod);
+
+/*
+ * Research system memory management
+ */
+RESEARCH_DATA *new_research(void)
+{
+	RESEARCH_DATA *research;
+
+	ALLOC_DATA(research, RESEARCH_DATA, 1);
+
+	if (!research)
+	{
+		log_string(LOG_ERR, "new_research: Memory allocation failed for RESEARCH_DATA.");
+		return NULL;
+	}
+
+	research->title = NULL;
+	research->keywords = NULL;
+	research->stat = 0;
+	research->ability = 0;
+	research->base_difficulty = 6;
+	research->tier_count = 0;
+	research->failure_text = NULL;
+	research->modifiers = NULL;
+	research->tiers = NULL;
+	research->next = NULL;
+
+	return research;
+}
+
+void free_research(RESEARCH_DATA *research)
+{
+	RESEARCH_TIER *tier, *tier_next;
+	RESEARCH_MODIFIER *mod, *mod_next;
+
+	Escape(research);
+
+	PURGE_DATA(research->title);
+	PURGE_DATA(research->keywords);
+	PURGE_DATA(research->failure_text);
+
+	for (tier = research->tiers; tier; tier = tier_next)
+	{
+		tier_next = tier->next;
+		free_research_tier(tier);
+	}
+
+	for (mod = research->modifiers; mod; mod = mod_next)
+	{
+		mod_next = mod->next;
+		free_research_modifier(mod);
+	}
+
+	PURGE_DATA(research);
+	return;
+}
+
+RESEARCH_TIER *new_research_tier(void)
+{
+	RESEARCH_TIER *tier;
+
+	ALLOC_DATA(tier, RESEARCH_TIER, 1);
+
+	if (!tier)
+	{
+		log_string(LOG_ERR, "new_research_tier: Memory allocation failed for RESEARCH_TIER.");
+		return NULL;
+	}
+
+	tier->successes_required = 0;
+	tier->info_text = NULL;
+	tier->next = NULL;
+
+	return tier;
+}
+
+void free_research_tier(RESEARCH_TIER *tier)
+{
+	Escape(tier);
+
+	PURGE_DATA(tier->info_text);
+	PURGE_DATA(tier);
+	return;
+}
+
+RESEARCH_MODIFIER *new_research_modifier(void)
+{
+	RESEARCH_MODIFIER *mod;
+
+	ALLOC_DATA(mod, RESEARCH_MODIFIER, 1);
+
+	if (!mod)
+	{
+		log_string(LOG_ERR, "new_research_modifier: Memory allocation failed for RESEARCH_MODIFIER.");
+		return NULL;
+	}
+
+	mod->type = NULL;
+	mod->value = NULL;
+	mod->adjustment = 0;
+	mod->next = NULL;
+
+	return mod;
+}
+
+void free_research_modifier(RESEARCH_MODIFIER *mod)
+{
+	Escape(mod);
+
+	PURGE_DATA(mod->type);
+	PURGE_DATA(mod->value);
+	PURGE_DATA(mod);
+	return;
+}
+
+RESEARCH_COOLDOWN *new_research_cooldown(void)
+{
+	RESEARCH_COOLDOWN *cooldown;
+
+	ALLOC_DATA(cooldown, RESEARCH_COOLDOWN, 1);
+
+	if (!cooldown)
+	{
+		log_string(LOG_ERR, "new_research_cooldown: Memory allocation failed for RESEARCH_COOLDOWN.");
+		return NULL;
+	}
+
+	cooldown->keyword = NULL;
+	cooldown->last_attempt = 0;
+	cooldown->next = NULL;
+
+	return cooldown;
+}
+
+void free_research_cooldown(RESEARCH_COOLDOWN *cooldown)
+{
+	Escape(cooldown);
+
+	PURGE_DATA(cooldown->keyword);
+	PURGE_DATA(cooldown);
+	return;
+}
+
 
 void save_bans(void)
 {

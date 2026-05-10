@@ -148,4 +148,22 @@ MPC	*new_mpcode args( (void) );
 void	free_mpcode args( (MPC *mpcode) );
 #undef MPC
 
+/* research system recycling */
+#define RD RESEARCH_DATA
+#define RT RESEARCH_TIER
+#define RM RESEARCH_MODIFIER
+#define RC RESEARCH_COOLDOWN
+RD	*new_research args( (void) );
+void	free_research args( (RD *research) );
+RT	*new_research_tier args( (void) );
+void	free_research_tier args( (RT *tier) );
+RM	*new_research_modifier args( (void) );
+void	free_research_modifier args( (RM *mod) );
+RC	*new_research_cooldown args( (void) );
+void	free_research_cooldown args( (RC *cooldown) );
+#undef RD
+#undef RT
+#undef RM
+#undef RC
+
 #endif

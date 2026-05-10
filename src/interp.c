@@ -612,6 +612,7 @@ const	struct	cmd_type	cmd_table	[] =
 	{	"return",			do_return,			P_DEAD,	ST,	L_NRM,	1,	A|B|E,	0 },
 	{	"ritemoves",		do_ritemoves,		P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"rsedit",			do_rsedit,			P_DEAD,	MA,	L_NRM,	1,	A|B|E,	0 },
+	{	"rtedit",			do_rtedit,			P_DEAD,	0,	L_NRM,	2,	A|B|E,	0 },
 	{	"rslist",			do_rslist,			P_DEAD,	ST,	L_NRM,	1,	A|B|E,	0 },
 	{	"rstat",			do_rstat,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"runevent",			do_run_event,		P_DEAD,	ST,	L_NRM,	1,	A|B,	0 },

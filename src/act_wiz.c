@@ -5635,6 +5635,18 @@ void do_clear_timers(CHAR_DATA *ch, char *argument)
 	act("$n has cleared all of your timers.", ch, NULL, victim, TO_VICT, 1);
 	victim->power_timer = 0;
 	victim->infl_timer = 0;
+
+	/* Clear research cooldowns */
+	if ( victim->pcdata && victim->pcdata->research_cooldowns )
+	{
+		RESEARCH_COOLDOWN *cooldown, *cooldown_next;
+		for ( cooldown = victim->pcdata->research_cooldowns; cooldown; cooldown = cooldown_next )
+		{
+			cooldown_next = cooldown->next;
+			free_research_cooldown( cooldown );
+		}
+		victim->pcdata->research_cooldowns = NULL;
+	}
 }
 
 void do_resetoocxp(CHAR_DATA *ch, char *argument)

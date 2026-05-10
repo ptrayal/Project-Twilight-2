@@ -3275,6 +3275,7 @@ void do_password(CHAR_DATA *ch, char *argument)
 }
 
 
+/* Old research system - replaced by new tiered research system in research.c
 void do_research(CHAR_DATA *ch, char *argument)
 {
     NOTE_DATA *pbg;
@@ -3333,6 +3334,7 @@ void do_research(CHAR_DATA *ch, char *argument)
         page_to_char(buf_string(output), ch);
     free_buf(output);
 }
+*/
 
 void do_investigate(CHAR_DATA *ch, char *argument)
 {

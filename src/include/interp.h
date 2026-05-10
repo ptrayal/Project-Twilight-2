@@ -420,6 +420,7 @@ DECLARE_DO_FUN(	do_reply	);
 DECLARE_DO_FUN(	do_report	);
 DECLARE_DO_FUN(	do_rescue	);
 DECLARE_DO_FUN(	do_research	);
+DECLARE_DO_FUN( do_rtedit   );
 DECLARE_DO_FUN(	do_resetoocxp	);
 DECLARE_DO_FUN(	do_resist	);
 DECLARE_DO_FUN(	do_rest		);

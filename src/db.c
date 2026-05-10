@@ -213,6 +213,7 @@ void    load_shops  args( ( FILE *fp ) );
 void    load_notes  args( ( void ) );
 void    load_papers args( ( void ) );
 void    load_bans   args( ( void ) );
+void    load_research_topics args( ( void ) );
 void    load_plots  args( ( FILE *fp ) );
 void    load_personas   args( ( FILE *fp ) );
 void    load_votes  args( ( void ) );
@@ -579,6 +580,7 @@ void boot_db()
         load_changes();
         //load_votes();
         load_stocks();
+        load_research_topics();
         load_social_table();
     }
 

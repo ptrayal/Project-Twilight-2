@@ -129,6 +129,10 @@ typedef struct  trait_data		TRAIT_DATA;
 typedef struct  liquid_data		LIQUID_DATA;
 typedef struct  mprog_list		MPROG_LIST;
 typedef struct  mprog_code		MPROG_CODE;
+typedef struct  research_data		RESEARCH_DATA;
+typedef struct  research_tier		RESEARCH_TIER;
+typedef struct  research_modifier	RESEARCH_MODIFIER;
+typedef struct  research_cooldown	RESEARCH_COOLDOWN;
 
 typedef struct  change_data     CHANGE_DATA;
 
@@ -202,6 +206,8 @@ typedef	int  BLD_FUN	args( ( CHAR_DATA *ch, char *argument, int type,
 #define MAX_RITE_STEPS			10
 #define MAX_RITE_ACTIONS		19
 #define WARRANT_THRESHOLD		50
+#define MAX_RESEARCH_TIERS		10
+#define RECOMMENDED_MAX_TIERS		5
 #define START_DOTS				84
 #define HOURS_PER_EXP			600
 #define CURRENT_PFILE_VERSION	3
@@ -2131,6 +2137,7 @@ struct	pc_data
     time_t		last_vote;
     char *		ignore_reject;
     char *		block_join;
+    RESEARCH_COOLDOWN *	research_cooldowns;
     /* @@@@@ insert character linked list here for accounts */
 };
 
@@ -2563,6 +2570,45 @@ struct mprog_code
     MPROG_CODE *       next;
 };
 
+/*
+ * Research system structures
+ */
+struct research_tier
+{
+    int                 successes_required;
+    char *              info_text;
+    RESEARCH_TIER *     next;
+};
+
+struct research_modifier
+{
+    char *              type;           /* "clan", "race", "tribe" */
+    char *              value;          /* specific clan/race/tribe name */
+    int                 adjustment;     /* difficulty modifier (+/-) */
+    RESEARCH_MODIFIER * next;
+};
+
+struct research_data
+{
+    char *              title;
+    char *              keywords;
+    int                 stat;           /* STAT_INT, STAT_WIT, etc. */
+    int                 ability;        /* ability index */
+    int                 base_difficulty;
+    int                 tier_count;
+    char *              failure_text;   /* Custom text for botches/failures */
+    RESEARCH_MODIFIER * modifiers;
+    RESEARCH_TIER *     tiers;
+    RESEARCH_DATA *     next;
+};
+
+struct research_cooldown
+{
+    char *              keyword;        /* research topic keyword */
+    time_t              last_attempt;   /* timestamp of last attempt */
+    RESEARCH_COOLDOWN * next;
+};
+
 
 /*
  * Power type declaration
@@ -2904,6 +2950,7 @@ extern		DESCRIPTOR_DATA   *	descriptor_list;
 extern		OBJ_DATA	  *	object_list;
 extern		QUEST_DATA	  *	quest_list;
 extern		MPROG_CODE	  *	mprog_list;
+extern		RESEARCH_DATA	  *	research_list;
 
 extern		char			bug_buf		[];
 extern		time_t			current_time;
@@ -3073,6 +3120,7 @@ char *	crypt		args( ( const char *key, const char *salt ) );
 #define PAPER_FILE		"../data/paper.txt"		/* For 'newspapers' */
 #define STOCK_FILE		"../data/stock.txt"		/* For 'stocks' */
 #define VOTES_FILE      "../data/votes.txt"     /* for 'votes' */
+#define RESEARCH_FILE	"../data/research.xml"	/* For 'research topics' */
 #define CHANGE_FILE     "../data/changes.xml"
 
 #define ILLEGAL_NAME_FILE "../data/llegal.txt" /* For not using same name */
