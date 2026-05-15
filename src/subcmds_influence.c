@@ -3,7 +3,7 @@
  * it over to Brandon Morrison who has adopted and improved the code.      *
  * Copyright (C) 2012 - 2024                                               *
  **************************************************************************/
- 
+
 #if defined(Macintosh)
 #include <types.h>
 #else
@@ -147,7 +147,6 @@ int influence_commands(CHAR_DATA *ch, char *argument)
             send_to_char("\n\r", ch);
     }
 
-    // Ensure output ends properly aligned
     if (col % COLUMN_WIDTH != 0)
         send_to_char("\n\r", ch);
 
@@ -269,6 +268,8 @@ int church_collection(CHAR_DATA *ch, char *argument)
 int church_research(CHAR_DATA *ch, char *argument)
 {
 	int fail = 0;
+	int roll = 0;
+	int max_success = 0;
 	NOTE_DATA *pbg;
 
 	/* 5 rolls making up an extended research attempt. */
@@ -288,16 +289,12 @@ int church_research(CHAR_DATA *ch, char *argument)
 		return TRUE;
 	}
 
-	fail = UMIN(dice_rolls(ch, get_curr_stat(ch, STAT_INT)
-			+ ch->ability[OCCULT].value, 7), 4 + ch->influences[INFL_CHURCH]);
-	fail = fail + UMIN(dice_rolls(ch, get_curr_stat(ch, STAT_INT)
-			+ ch->ability[OCCULT].value, 7), 4 + ch->influences[INFL_CHURCH]);
-	fail = fail + UMIN(dice_rolls(ch, get_curr_stat(ch, STAT_INT)
-			+ ch->ability[OCCULT].value, 7), 4 + ch->influences[INFL_CHURCH]);
-	fail = fail + UMIN(dice_rolls(ch, get_curr_stat(ch, STAT_INT)
-			+ ch->ability[OCCULT].value, 7), 4 + ch->influences[INFL_CHURCH]);
-	fail = fail + UMIN(dice_rolls(ch, get_curr_stat(ch, STAT_INT)
-			+ ch->ability[OCCULT].value, 7), 4 + ch->influences[INFL_CHURCH]);
+	max_success = 4 + ch->influences[INFL_CHURCH];
+	for(roll = 0; roll < 5; roll++)
+	{
+		fail += UMIN(dice_rolls(ch, get_curr_stat(ch, STAT_INT)
+				+ ch->ability[OCCULT].value, 7), max_success);
+	}
 
 	if(fail >= pbg->successes)
 	{
@@ -358,7 +355,6 @@ int church_findrelic(CHAR_DATA *ch, char *argument)
 	BUFFER              *buf1;
 	bool found;
 	int vnum = 0;
-	// long largest = 0;
 	int  lsize = 0;
 	int  col = 0;
 	int nMatch = 0;
@@ -390,7 +386,6 @@ int church_findrelic(CHAR_DATA *ch, char *argument)
 				if(pObjIndex->weight > lsize)
 				{
 					lsize = pObjIndex->weight;
-					// largest = pObjIndex->vnum;
 				}
 			}
 		}
@@ -479,9 +474,9 @@ int criminal_scout(CHAR_DATA *ch, char *argument)
 				{
 					send_to_char(Format("\tY%-20s %d\tn\n\r", vd->character->name, vd->character->influences[inf]), ch);
 				}
-				ch->infl_timer = 3;
 			}
 		}
+		ch->infl_timer = 3;
 	}
 	else if(fail == 0)
 	{
@@ -959,6 +954,8 @@ int media_suppress(CHAR_DATA *ch, char *argument)
 {
 	NOTE_DATA *pnote;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[EXPRESSION].value, 7);
+	int anum = 0;
+	int vnum = 0;
 
 	pnote = news_list;
 
@@ -970,8 +967,6 @@ int media_suppress(CHAR_DATA *ch, char *argument)
 
 	if(fail > 0)
 	{
-		int anum = 0;
-		int vnum = 0;
 		anum = atoi( argument );
 		for ( pnote = news_list; pnote != NULL; pnote = pnote->next )
 		{
@@ -1008,6 +1003,8 @@ int media_promote(CHAR_DATA *ch, char *argument)
 {
 	NOTE_DATA *pnote;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[EXPRESSION].value, 7);
+	int anum = 0;
+	int vnum = 0;
 
 	if(IS_NULLSTR(argument) || !is_number(argument))
 	{
@@ -1017,9 +1014,7 @@ int media_promote(CHAR_DATA *ch, char *argument)
 
 	if(fail > 0)
 	{
-		int anum = 0;
 		anum = atoi( argument );
-		int vnum = 0;
 		for ( pnote = news_list; pnote != NULL; pnote = pnote->next )
 		{
 			if ( is_note_to( ch, pnote ) && vnum++ == anum )
@@ -1215,6 +1210,7 @@ int scientific_materials(CHAR_DATA *ch, char *argument)
 	char arg[MIL]={'\0'};
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_CHA) + ch->ability[SCIENCE].value, 7);
 	int material = 0;
+	int size = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1232,7 +1228,6 @@ int scientific_materials(CHAR_DATA *ch, char *argument)
 
 	if(fail > 0)
 	{
-		int size = 0;
 		size = UMIN(fail/2, 7);
 		send_to_char("\tGSuccess\tn: You manage to acquire some of the material.\n\r", ch);
 
@@ -1320,13 +1315,13 @@ int scientific_tipoff(CHAR_DATA *ch, char *argument)
 	if(successes < 0)
 	{
 		send_to_char("Your story is openly ridiculed by your peers.\n\r", ch);
-		ch->influences[INFL_CHURCH] -= 2;
+		ch->influences[INFL_SCIENTIFIC] -= 2;
 		return FALSE;
 	}
 	else if(successes < 2)
 	{
 		send_to_char("Nobody believes your story.\n\r", ch);
-		ch->influences[INFL_CHURCH]--;
+		ch->influences[INFL_SCIENTIFIC]--;
 		return FALSE;
 	}
 
@@ -1384,7 +1379,7 @@ int background_commands(CHAR_DATA *ch, char *argument)
 	{
 		int i = 0;
 		i = bg_cmd_table[cmd].type;
-		if(ch->backgrounds[i] <= bg_cmd_table[cmd].level)
+		if(ch->backgrounds[i] >= bg_cmd_table[cmd].level)
 		{
 			send_to_char(Format("\t<send href='background %s'>%-11s\t</send> | ", bg_cmd_table[cmd].name, bg_cmd_table[cmd].name), ch);
 			if(++col % 4 == 0)
@@ -1394,7 +1389,7 @@ int background_commands(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	if(col %6 != 0)
+	if(col % 4 != 0)
 	{
 		send_to_char("\n\r", ch);
 	}
@@ -1545,7 +1540,7 @@ int newspaper_commands(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	if(col %4 != 0)
+	if(col % 4 != 0)
 	{
 		send_to_char("\n\r", ch);
 	}
@@ -1556,15 +1551,14 @@ int newspaper_new(CHAR_DATA *ch, char *argument)
 {
     NEWSPAPER *news;
     char arg[MIL] = {'\0'};
+    int cost = 0;
 
-    // Check if the argument is empty or null
     if (IS_NULLSTR(argument))
     {
         send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
         return FALSE;
     }
 
-    // Parse the cost argument
     argument = one_argument(argument, arg);
     if (!is_number(arg))
     {
@@ -1572,21 +1566,19 @@ int newspaper_new(CHAR_DATA *ch, char *argument)
         return FALSE;
     }
 
-    int cost = atoi(arg);
-    if (cost < 0)    // Validate cost
+    cost = atoi(arg);
+    if (cost < 0)
     {
         send_to_char("The cost of the newspaper must be a non-negative integer.\n\r", ch);
         return FALSE;
     }
 
-    // Ensure the name is provided
     if (IS_NULLSTR(argument))
     {
         send_to_char("You must specify a name for the newspaper.\n\r", ch);
         return FALSE;
     }
 
-    // Create and initialize the new newspaper
     news = new_newspaper();
     if (!news)
     {
@@ -1594,15 +1586,12 @@ int newspaper_new(CHAR_DATA *ch, char *argument)
         return FALSE;
     }
 
-    // Set the newspaper properties
     news->cost = cost;
-    news->name = str_dup(argument);  // Duplicate the name to ensure proper memory management
+    news->name = str_dup(argument);
 
-    // Link the new newspaper to the list
     news->next = paper_list;
     paper_list = news;
 
-    // Confirmation message
     send_to_char(Format("Paper '%s' created with a cost of %d cents.\n\r", news->name, news->cost), ch);
     return TRUE;
 }
@@ -1639,6 +1628,7 @@ int newspaper_clear (CHAR_DATA *ch, char *arg)
 {
 	NEWSPAPER *paper = NULL;
 	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -1654,8 +1644,9 @@ int newspaper_clear (CHAR_DATA *ch, char *arg)
 
 	if(paper == NULL)
 	{
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i==atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -1687,6 +1678,7 @@ int newspaper_show (CHAR_DATA *ch, char *arg)
 	NEWSPAPER *tmp;
 	NOTE_DATA *article = NULL;
 	int i = 0,j = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -1702,8 +1694,9 @@ int newspaper_show (CHAR_DATA *ch, char *arg)
 
 	if(paper == NULL)
 	{
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i<atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -1766,6 +1759,8 @@ int newspaper_delete (CHAR_DATA *ch, char *arg)
 {
 	NEWSPAPER *paper = NULL;
 	NEWSPAPER *tmp;
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -1781,9 +1776,9 @@ int newspaper_delete (CHAR_DATA *ch, char *arg)
 
 	if(paper == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i<atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -1807,10 +1802,10 @@ int newspaper_delete (CHAR_DATA *ch, char *arg)
 	}
 	else
 	{
-		for(tmp=paper_list;tmp->next==paper;tmp=tmp->next)
-		{
+		for(tmp=paper_list; tmp && tmp->next != paper; tmp=tmp->next)
+			;
+		if(tmp)
 			tmp->next = paper->next;
-		}
 	}
 	free_newspaper(paper);
 	send_to_char("Newspaper deleted.\n\r", ch);
@@ -1822,6 +1817,8 @@ int newspaper_rename(CHAR_DATA *ch, char *argument)
 {
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1839,9 +1836,9 @@ int newspaper_rename(CHAR_DATA *ch, char *argument)
 
 	if(paper == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i<atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -1871,6 +1868,8 @@ int newspaper_price(CHAR_DATA *ch, char *argument)
 {
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1888,9 +1887,9 @@ int newspaper_price(CHAR_DATA *ch, char *argument)
 
 	if(paper == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i<atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -1934,6 +1933,8 @@ int newspaper_place(CHAR_DATA *ch, char *argument)
 	char position[MIL]={'\0'};
 	char article[MIL]={'\0'};
 	int anum = 0, vnum = 0;
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1953,9 +1954,9 @@ int newspaper_place(CHAR_DATA *ch, char *argument)
 
 	if(paper == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i<atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -2015,6 +2016,8 @@ int newspaper_start_stop(CHAR_DATA *ch, char *argument, int on_stands)
 {
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2032,9 +2035,9 @@ int newspaper_start_stop(CHAR_DATA *ch, char *argument, int on_stands)
 
 	if(paper == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		paper = paper_list;
-		for(i=0;i<atoi(arg);i++)
+		for(i=0; i<index && paper; i++)
 		{
 			paper = paper->next;
 		}
@@ -2099,7 +2102,7 @@ int smarket_commands(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	if(col %6 != 0)
+	if(col % 4 != 0)
 		{
 			send_to_char("\n\r", ch);
 		}
@@ -2161,6 +2164,7 @@ int smarket_show (CHAR_DATA *ch, char *arg)
 	STOCKS *tmp;
 	int i = 0;
 	int count = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -2176,8 +2180,9 @@ int smarket_show (CHAR_DATA *ch, char *arg)
 
 	if(stock == NULL)
 	{
+		index = atoi(arg);
 		stock = stock_list;
-		for(i=0;i==atoi(arg);i++)
+		for(i=0; i<index && stock; i++)
 		{
 			stock = stock->next;
 		}
@@ -2211,6 +2216,8 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 {
 	STOCKS *stock = NULL;
 	STOCKS *tmp;
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -2226,9 +2233,9 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 
 	if(stock == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		stock = stock_list;
-		for(i=0;i==atoi(arg);i++)
+		for(i=0; i<index && stock; i++)
 		{
 			stock = stock->next;
 		}
@@ -2261,6 +2268,8 @@ int smarket_rename(CHAR_DATA *ch, char *argument)
 {
 	STOCKS *stock = NULL;
 	char arg[MIL]={'\0'};
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2278,9 +2287,9 @@ int smarket_rename(CHAR_DATA *ch, char *argument)
 
 	if(stock == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		stock = stock_list;
-		for(i=0;i==atoi(arg);i++)
+		for(i=0; i<index && stock; i++)
 		{
 			stock = stock->next;
 		}
@@ -2310,6 +2319,8 @@ int smarket_ticker(CHAR_DATA *ch, char *argument)
 {
 	STOCKS *stock = NULL;
 	char arg[MIL]={'\0'};
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2327,9 +2338,9 @@ int smarket_ticker(CHAR_DATA *ch, char *argument)
 
 	if(stock == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		stock = stock_list;
-		for(i=0;i==atoi(arg);i++)
+		for(i=0; i<index && stock; i++)
 		{
 			stock = stock->next;
 		}
@@ -2365,6 +2376,8 @@ int smarket_price(CHAR_DATA *ch, char *argument)
 {
 	STOCKS *stock = NULL;
 	char arg[MIL]={'\0'};
+	int i = 0;
+	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2382,9 +2395,9 @@ int smarket_price(CHAR_DATA *ch, char *argument)
 
 	if(stock == NULL)
 	{
-		int i = 0;
+		index = atoi(arg);
 		stock = stock_list;
-		for(i=0;i==atoi(arg);i++)
+		for(i=0; i<index && stock; i++)
 		{
 			stock = stock->next;
 		}
