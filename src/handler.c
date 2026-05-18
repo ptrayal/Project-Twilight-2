@@ -4112,22 +4112,30 @@ void trigger_test( const char *string, CHAR_DATA *ch, CHAR_DATA *vict )
         {
             if(!ch->in_room->event->stop)
             {
-                for(ps = ch->in_room->event->script_list; ps; ps = ps->next_in_event)
+                if(ch->script == NULL)
                 {
-                    if(strstr((char *)string, ps->trigger) && ps->actor == ch->pIndexData->vnum && ch->pIndexData != NULL)
+                    for(ps = ch->in_room->event->script_list; ps; ps = ps->next_in_event)
                     {
-                        ch->script = new_script();
-                        ch->script->delay = ps->delay;
-                        PURGE_DATA(ch->script->reaction);
-                        ch->script->reaction = str_dup(ps->reaction);
-                        PURGE_DATA(ch->script->trigger);
-                        ch->script->trigger = str_dup(ps->trigger);
-                        PURGE_DATA(ch->script->author);
-                        ch->script->author = str_dup(ps->author);
-                        ch->script->active = TRUE;
-                        ch->script->event = ps->event;
-                        ch->script->next = NULL;
-                        ch->script->next_in_event = NULL;
+                        if(ch->pIndexData != NULL && strstr((char *)string, ps->trigger) && ps->actor == ch->pIndexData->vnum)
+                        {
+                            ch->script = new_script();
+                            ch->script->delay = ps->delay;
+                            if(ch->script->delay <= 0)
+                            {
+                                ch->script->delay = 1;
+                            }
+                            PURGE_DATA(ch->script->reaction);
+                            ch->script->reaction = str_dup(ps->reaction);
+                            PURGE_DATA(ch->script->trigger);
+                            ch->script->trigger = str_dup(ps->trigger);
+                            PURGE_DATA(ch->script->author);
+                            ch->script->author = str_dup(ps->author);
+                            ch->script->active = TRUE;
+                            ch->script->event = ps->event;
+                            ch->script->next = NULL;
+                            ch->script->next_in_event = NULL;
+                            break;
+                        }
                     }
                 }
             }

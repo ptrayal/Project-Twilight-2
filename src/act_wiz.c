@@ -5259,7 +5259,7 @@ void run_script (SCRIPT_DATA *s)
 		{
 			if(actor->pIndexData->vnum == s->actor)
 			{
-				interpret(actor, s->reaction);
+				mob_interpret(actor, s->reaction);
 			}
 		}
 
