@@ -5222,9 +5222,11 @@ void get_actors (EVENT_DATA *event)
 {
 	ACTOR_DATA *pa;
 	CHAR_DATA *a;
+	bool found;
 
 	for(pa = event->actors; pa; pa = pa->next)
 	{
+		found = FALSE;
 		for(a = char_list; a; a = a->next)
 		{
 			if(a->pIndexData)
@@ -5232,15 +5234,24 @@ void get_actors (EVENT_DATA *event)
 				{
 					char_from_room(a);
 					char_to_room(a, get_room_index(event->loc));
+					found = TRUE;
 					break;
 				}
 		}
+		if ( !found )
+			log_string(LOG_BUG, "get_actors: mob vnum %d not found in world for event %d.", pa->mob, event->vnum);
 	}
 }
 
 void run_script (SCRIPT_DATA *s)
 {
 	CHAR_DATA *actor;
+
+	if ( s->event == NULL )
+	{
+		log_string(LOG_BUG, "run_script: script %d has no event.", s->vnum);
+		return;
+	}
 
 	for(actor = char_list; actor; actor = actor->next)
 	{

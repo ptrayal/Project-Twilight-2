@@ -1884,15 +1884,9 @@ void do_pedit( CHAR_DATA *ch, char *argument )
 	{
 	if ( !str_cmp( arg1, "create" ) )
 	{
-		if ( IS_NULLSTR(arg1) )
+		if ( ch->trust < 3 )
 		{
-		send_to_char( "Syntax:  edit plot create\n\r", ch );
-		return;
-		}
-
-		if ( !IS_STORYTELLER( ch, pPlot ) )
-		{
-		send_to_char( "Insuficiente seguridad para modificar plots.\n\r" , ch );
+			send_to_char( "Insufficient security to create plots.\n\r", ch );
 			return;
 		}
 
@@ -2008,16 +2002,9 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 	{
 	if ( !str_cmp( arg1, "create" ) )
 	{
-		value = atoi( argument );
-		if ( IS_NULLSTR(arg1) )
+		if ( ch->trust < 3 )
 		{
-		send_to_char( "Syntax:  edit script create\n\r", ch );
-		return;
-		}
-
-		if ( !IS_STORYTELLER( ch, pScript ) )
-		{
-		send_to_char( "Insuficiente seguridad para modificar scripts.\n\r" , ch );
+			send_to_char( "Insufficient security to create scripts.\n\r", ch );
 			return;
 		}
 
@@ -2913,10 +2900,6 @@ void do_slist( CHAR_DATA *ch, char *argument )
 
 	for ( pScript = script_first; pScript; pScript = pScript->next )
 	{
-		if(pScript->active)
-		{
-			continue;
-		}
 		if((mob = get_mob_index(pScript->actor)) != NULL)
 		{
 			send_to_char( Format("[%3d] %-29.29s (%-29.29s) [%d] [%-29.29s]\n\r",

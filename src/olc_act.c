@@ -5510,12 +5510,23 @@ PEDIT( pedit_remove )
 
 	EDIT_PLOT(ch, plot);
 
-	for(pp = plot_list; pp; pp = pp->next)
+	edit_done(ch);
+
+	if ( plot_list == plot )
 	{
-		if(pp->next == plot)
+		plot_list = plot->next;
+		free_plot(plot);
+		send_to_char("Plot deleted.\n\r", ch);
+		return TRUE;
+	}
+
+	for ( pp = plot_list; pp; pp = pp->next )
+	{
+		if ( pp->next == plot )
 		{
 			pp->next = plot->next;
 			free_plot(plot);
+			send_to_char("Plot deleted.\n\r", ch);
 			return TRUE;
 		}
 	}
@@ -5581,33 +5592,77 @@ PEDIT( pedit_addevent )
 
 PEDIT( pedit_delevent )
 {
+	PLOT_DATA *pPlot;
 	EVENT_DATA *event;
 	EVENT_DATA *pe;
 
-	EDIT_EVENT(ch, event);
+	EDIT_PLOT(ch, pPlot);
 
-	for(pe = event_list; pe; pe = pe->next)
+	if ( !is_number(argument) )
 	{
-		if(pe->next == event)
+		send_to_char("Syntax:  delevent <event vnum>\n\r", ch);
+		return FALSE;
+	}
+
+	if ( (event = get_event_index(atoi(argument))) == NULL )
+	{
+		send_to_char("No such event.\n\r", ch);
+		return FALSE;
+	}
+
+	if ( event->plot != pPlot )
+	{
+		send_to_char("That event does not belong to this plot.\n\r", ch);
+		return FALSE;
+	}
+
+	/* Unlink from global event list */
+	if ( event_list == event )
+	{
+		event_list = event->next;
+	}
+	else
+	{
+		for ( pe = event_list; pe; pe = pe->next )
 		{
-			pe->next = event->next;
-			free_event(event);
-			return TRUE;
+			if ( pe->next == event )
+			{
+				pe->next = event->next;
+				break;
+			}
 		}
 	}
 
-	send_to_char("No such event.\n\r", ch);
-	return FALSE;
+	/* Unlink from parent plot's event list */
+	if ( pPlot->event_list == event )
+	{
+		pPlot->event_list = event->next_in_plot;
+	}
+	else
+	{
+		for ( pe = pPlot->event_list; pe; pe = pe->next_in_plot )
+		{
+			if ( pe->next_in_plot == event )
+			{
+				pe->next_in_plot = event->next_in_plot;
+				break;
+			}
+		}
+	}
+
+	free_event(event);
+	send_to_char("Event deleted.\n\r", ch);
+	return TRUE;
 }
 
 
 PEDIT( pedit_assignevent )
 {
-	EVENT_DATA *pEvent;
+	PLOT_DATA *pPlot;
 	char name[MSL]={'\0'};
 	char buf[MSL]={'\0'};
 
-	EDIT_EVENT(ch, pEvent);
+	EDIT_PLOT(ch, pPlot);
 
 	one_argument( argument, name );
 
@@ -5620,15 +5675,15 @@ PEDIT( pedit_assignevent )
 
 	name[0] = UPPER( name[0] );
 
-	if ( strstr( pEvent->author, name ) != NULL )
+	if ( strstr( pPlot->author, name ) != NULL )
 	{
-		pEvent->author = string_replace( pEvent->author, name, "\0" );
-		pEvent->author = string_unpad( pEvent->author );
+		pPlot->author = string_replace( pPlot->author, name, "\0" );
+		pPlot->author = string_unpad( pPlot->author );
 
-		if ( pEvent->author[0] == '\0' )
+		if ( pPlot->author[0] == '\0' )
 		{
-			PURGE_DATA( pEvent->author );
-			pEvent->author = str_dup( "None" );
+			PURGE_DATA( pPlot->author );
+			pPlot->author = str_dup( "None" );
 		}
 		send_to_char( "Author removed.\n\r", ch );
 		return TRUE;
@@ -5636,23 +5691,23 @@ PEDIT( pedit_assignevent )
 	else
 	{
 		buf[0] = '\0';
-		if ( strstr( pEvent->author, "None" ) != NULL )
+		if ( strstr( pPlot->author, "None" ) != NULL )
 		{
-			pEvent->author = string_replace( pEvent->author, "None", "\0" );
-			pEvent->author = string_unpad( pEvent->author );
+			pPlot->author = string_replace( pPlot->author, "None", "\0" );
+			pPlot->author = string_unpad( pPlot->author );
 		}
 
-		if (pEvent->author[0] != '\0' )
+		if (pPlot->author[0] != '\0' )
 		{
-			strncat( buf, pEvent->author, sizeof(buf) - strlen(buf) - 1 );
+			strncat( buf, pPlot->author, sizeof(buf) - strlen(buf) - 1 );
 			strncat( buf, " ", sizeof(buf) - strlen(buf) - 1 );
 		}
 		strncat( buf, name, sizeof(buf) - strlen(buf) - 1 );
-		PURGE_DATA( pEvent->author );
-		pEvent->author = string_proper( str_dup( buf ) );
+		PURGE_DATA( pPlot->author );
+		pPlot->author = string_proper( str_dup( buf ) );
 
 		send_to_char( "Author added.\n\r", ch );
-		send_to_char( pEvent->author,ch);
+		send_to_char( pPlot->author, ch );
 		return TRUE;
 	}
 
@@ -5736,7 +5791,10 @@ EEDIT( eedit_show )
 	send_to_char(Format("Vnum: [%d]\n\r", pEvent->vnum), ch);
 	send_to_char(Format("Author: [%s]\n\r", pEvent->author), ch);
 	room = get_room_index(pEvent->loc);
-	send_to_char(Format("Location: [%s] (%d)\n\r", room->name, pEvent->loc), ch);
+	if ( room != NULL )
+		send_to_char(Format("Location: [%s] (%d)\n\r", room->name, pEvent->loc), ch);
+	else
+		send_to_char(Format("Location: [INVALID ROOM] (%d)\n\r", pEvent->loc), ch);
 	show_plot_races(ch, pEvent->races);
 	eedit_show_actors(ch, pEvent);
 	eedit_show_scripts(ch, pEvent);
@@ -5794,18 +5852,48 @@ EEDIT( eedit_remove )
 
 	EDIT_EVENT(ch, event);
 
-	for(pe = event_list; pe; pe = pe->next)
+	edit_done(ch);
+
+	/* Unlink from global event list */
+	if ( event_list == event )
 	{
-		if(pe->next == event)
+		event_list = event->next;
+	}
+	else
+	{
+		for ( pe = event_list; pe; pe = pe->next )
 		{
-			pe->next = event->next;
-			free_event(event);
-			return TRUE;
+			if ( pe->next == event )
+			{
+				pe->next = event->next;
+				break;
+			}
 		}
 	}
 
-	send_to_char("No such event.\n\r", ch);
-	return FALSE;
+	/* Unlink from parent plot's event list */
+	if ( event->plot != NULL )
+	{
+		if ( event->plot->event_list == event )
+		{
+			event->plot->event_list = event->next_in_plot;
+		}
+		else
+		{
+			for ( pe = event->plot->event_list; pe; pe = pe->next_in_plot )
+			{
+				if ( pe->next_in_plot == event )
+				{
+					pe->next_in_plot = event->next_in_plot;
+					break;
+				}
+			}
+		}
+	}
+
+	free_event(event);
+	send_to_char("Event deleted.\n\r", ch);
+	return TRUE;
 }
 
 EEDIT( eedit_races )
@@ -5868,23 +5956,67 @@ EEDIT( eedit_scripts )
 
 EEDIT( eedit_delscript )
 {
+	EVENT_DATA *pEvent;
 	SCRIPT_DATA *script;
 	SCRIPT_DATA *ps;
 
-	EDIT_SCRIPT(ch, script);
+	EDIT_EVENT(ch, pEvent);
 
-	for(ps = script_first; ps; ps = ps->next)
+	if ( !is_number(argument) )
 	{
-		if(ps->next == script)
+		send_to_char("Syntax:  delscript <script vnum>\n\r", ch);
+		return FALSE;
+	}
+
+	if ( (script = get_script_index(atoi(argument))) == NULL )
+	{
+		send_to_char("No such script.\n\r", ch);
+		return FALSE;
+	}
+
+	if ( script->event != pEvent )
+	{
+		send_to_char("That script does not belong to this event.\n\r", ch);
+		return FALSE;
+	}
+
+	/* Unlink from global script list */
+	if ( script_first == script )
+	{
+		script_first = script->next;
+	}
+	else
+	{
+		for ( ps = script_first; ps; ps = ps->next )
 		{
-			ps->next = script->next;
-			free_script(script);
-			return TRUE;
+			if ( ps->next == script )
+			{
+				ps->next = script->next;
+				break;
+			}
 		}
 	}
 
-	send_to_char("No such script.\n\r", ch);
-	return FALSE;
+	/* Unlink from parent event's script list */
+	if ( pEvent->script_list == script )
+	{
+		pEvent->script_list = script->next_in_event;
+	}
+	else
+	{
+		for ( ps = pEvent->script_list; ps; ps = ps->next_in_event )
+		{
+			if ( ps->next_in_event == script )
+			{
+				ps->next_in_event = script->next_in_event;
+				break;
+			}
+		}
+	}
+
+	free_script(script);
+	send_to_char("Script deleted.\n\r", ch);
+	return TRUE;
 }
 
 SEDIT( sedit_show )
@@ -5942,7 +6074,7 @@ SEDIT( sedit_create )
 	ch->desc->pEdit		= (void *)pScript;
 	pScript->first_script	= FALSE;
 
-	send_to_char( "Script Created.\n\r", ch );
+	send_to_char( "Script Created. Use 'event <vnum>' to assign this script to an event.\n\r", ch );
 	return TRUE;
 }
 
@@ -6037,18 +6169,48 @@ SEDIT( sedit_remove )
 
 	EDIT_SCRIPT(ch, script);
 
-	for(ps = script_first; ps; ps = ps->next)
+	edit_done(ch);
+
+	/* Unlink from global script list */
+	if ( script_first == script )
 	{
-		if(ps->next == script)
+		script_first = script->next;
+	}
+	else
+	{
+		for ( ps = script_first; ps; ps = ps->next )
 		{
-			ps->next = script->next;
-			free_script(script);
-			return TRUE;
+			if ( ps->next == script )
+			{
+				ps->next = script->next;
+				break;
+			}
 		}
 	}
 
-	send_to_char("No such script.\n\r", ch);
-	return FALSE;
+	/* Unlink from parent event's script list */
+	if ( script->event != NULL )
+	{
+		if ( script->event->script_list == script )
+		{
+			script->event->script_list = script->next_in_event;
+		}
+		else
+		{
+			for ( ps = script->event->script_list; ps; ps = ps->next_in_event )
+			{
+				if ( ps->next_in_event == script )
+				{
+					ps->next_in_event = script->next_in_event;
+					break;
+				}
+			}
+		}
+	}
+
+	free_script(script);
+	send_to_char("Script deleted.\n\r", ch);
+	return TRUE;
 }
 
 SEDIT( sedit_event )
@@ -6071,7 +6233,7 @@ SEDIT( sedit_event )
 
 	ps->event = event;
 
-	ps->next = event->script_list;
+	ps->next_in_event = event->script_list;
 	event->script_list = ps;
 
 	send_to_char("Script added to event.\n\r", ch);
