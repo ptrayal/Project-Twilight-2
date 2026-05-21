@@ -60,6 +60,7 @@ void purge_socials(void)
 		PURGE_DATA(social->char_no_arg);
 		PURGE_DATA(social->others_no_arg);
 		PURGE_DATA(social->char_found);
+		PURGE_DATA(social->others_found);
 		PURGE_DATA(social->vict_found);
 		PURGE_DATA(social->char_auto);
 		PURGE_DATA(social->others_auto);
@@ -97,14 +98,19 @@ void load_social_table ()
 	if (fscanf (fp, "%d\n", &maxSocial) == -1)
     {
         log_string(LOG_ERR,"Problem scanning for Social Files in load_social_table.");
+        fclose(fp);
         return;
     }
 
-	// fscanf (fp, "%d\n", &maxSocial);
-
 	/* IMPORTANT to use malloc so we can realloc later on */
-	//	ALLOC_DATA(social_table, maxSocial+1);
 	social_table = (struct social_type *)malloc (sizeof(struct social_type) * (maxSocial+1));
+
+	if (!social_table)
+	{
+		log_string(LOG_ERR, "load_social_table: malloc failed");
+		fclose(fp);
+		exit(1);
+	}
 
 	for (i = 0; i < maxSocial; i++)
 		load_social (fp,&social_table[i]);
@@ -169,7 +175,7 @@ int social_lookup (const char *name)
 	int i;
 	
 	for (i = 0; i < maxSocial ; i++)
-		if (!str_cmp(name, social_table[i].name))
+		if (social_table[i].name && !str_cmp(name, social_table[i].name))
 			return i;
 			
 	return -1;
@@ -223,6 +229,16 @@ void do_socedit (CHAR_DATA *ch, char *argument)
 			return;
 		}
 		
+		/* Free string fields of the entry being removed */
+		PURGE_DATA(social_table[iSocial].name);
+		PURGE_DATA(social_table[iSocial].char_no_arg);
+		PURGE_DATA(social_table[iSocial].others_no_arg);
+		PURGE_DATA(social_table[iSocial].char_found);
+		PURGE_DATA(social_table[iSocial].others_found);
+		PURGE_DATA(social_table[iSocial].vict_found);
+		PURGE_DATA(social_table[iSocial].char_auto);
+		PURGE_DATA(social_table[iSocial].others_auto);
+
 		/* Copy all elements of old table into new table, except the deleted social */
 		for (i = 0, j = 0; i < maxSocial+1; i++)
 			if (i != iSocial) /* copy, increase only if copied */
@@ -230,7 +246,7 @@ void do_socedit (CHAR_DATA *ch, char *argument)
 				new_table[j] = social_table[i];
 				j++;
 			}
-	
+
 		free (social_table);
 		social_table = new_table;
 		
@@ -255,25 +271,26 @@ void do_socedit (CHAR_DATA *ch, char *argument)
 		
 		maxSocial++;
 		new_table = (struct social_type *)realloc (social_table, sizeof(struct social_type) * (maxSocial + 1));
-		
+
 		if (!new_table) /* realloc failed */
 		{
+			maxSocial--;
 			send_to_char ("Memory allocation failed. Brace for impact.\n\r",ch);
 			return;
 		}
-		
+
 		social_table = new_table;
-		
-		strncpy(social_table[maxSocial-1].name, str_dup (social), MSL);
-		social_table[maxSocial-1].char_no_arg = NULL;
+
+		social_table[maxSocial-1].name         = str_dup(social);
+		social_table[maxSocial-1].char_no_arg   = NULL;
 		social_table[maxSocial-1].others_no_arg = NULL;
-		social_table[maxSocial-1].char_found = NULL;
-		social_table[maxSocial-1].others_found = NULL;
-		social_table[maxSocial-1].vict_found = NULL;
-		social_table[maxSocial-1].char_auto = NULL;
-		social_table[maxSocial-1].others_auto = NULL;
-		
-		strncpy(social_table[maxSocial].name, str_dup(""), MSL); /* 'terminating' empty string */
+		social_table[maxSocial-1].char_found    = NULL;
+		social_table[maxSocial-1].others_found  = NULL;
+		social_table[maxSocial-1].vict_found    = NULL;
+		social_table[maxSocial-1].char_auto     = NULL;
+		social_table[maxSocial-1].others_auto   = NULL;
+
+		social_table[maxSocial].name = NULL; /* terminator */
 		
 		send_to_char ("New social added.\n\r",ch);
 			
@@ -281,21 +298,23 @@ void do_socedit (CHAR_DATA *ch, char *argument)
 	
 	else if (!str_cmp(cmd, "show")) /* Show a certain social */
 	{
-		send_to_char(Format("Social: %s\n\r", social_table[iSocial].name), ch);
+#define SF(x) ((x) ? (x) : "(none)")
+		send_to_char(Format("Social: %s\n\r", SF(social_table[iSocial].name)), ch);
 		send_to_char("(cnoarg) No argument given, character sees:\n\r", ch);
-		send_to_char(Format("%s\n\r\n\r", social_table[iSocial].char_no_arg), ch);
+		send_to_char(Format("%s\n\r\n\r", SF(social_table[iSocial].char_no_arg)), ch);
 		send_to_char("(onoarg) No argument given, others see:\n\r", ch);
-		send_to_char(Format("%s\n\r\n\r", social_table[iSocial].others_no_arg), ch);
+		send_to_char(Format("%s\n\r\n\r", SF(social_table[iSocial].others_no_arg)), ch);
 		send_to_char("(cfound) Target found, character sees:\n\r", ch);
-		send_to_char(Format("%s\n\r\n\r", social_table[iSocial].char_found), ch);
+		send_to_char(Format("%s\n\r\n\r", SF(social_table[iSocial].char_found)), ch);
 		send_to_char("(ofound) Target found, others see:\n\r", ch);
-		send_to_char(Format("%s\n\r\n\r", social_table[iSocial].others_found), ch);
+		send_to_char(Format("%s\n\r\n\r", SF(social_table[iSocial].others_found)), ch);
 		send_to_char("(vfound) Target found, victim sees:\n\r", ch);
-		send_to_char(Format("%s\n\r\n\r", social_table[iSocial].vict_found), ch);
+		send_to_char(Format("%s\n\r\n\r", SF(social_table[iSocial].vict_found)), ch);
 		send_to_char("(cself) Target is character himself:\n\r", ch);
-		send_to_char(Format("%s\n\r\n\r", social_table[iSocial].char_auto), ch);
+		send_to_char(Format("%s\n\r\n\r", SF(social_table[iSocial].char_auto)), ch);
 		send_to_char("(oself) Target is character himself, others see:\n\r", ch);
-		send_to_char(Format("%s\n\r", social_table[iSocial].others_auto), ch);
+		send_to_char(Format("%s\n\r", SF(social_table[iSocial].others_auto)), ch);
+#undef SF
 
 		return; /* return right away, do not save the table */
 	}
