@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<research_topics>
+  <topic>
+    <title>Clan Gangrel</title>
+    <keywords>gangrel</keywords>
+    <stat>7</stat>
+    <ability>28</ability>
+    <base_difficulty>9</base_difficulty>
+    <tier_count>2</tier_count>
+    <tiers>
+      <tier>
+        <successes_required>2</successes_required>
+        <info_text>These were the members of Clan Gangrel at one time: 
+* Fang
+* Janet Weaver
+* Logan Reeves
+* Private Hudson
+* McLir
+* Fizzy Fitzgerald
+* Marigold
+* Nikola Sleat
+</info_text>
+      </tier>
+      <tier>
+        <successes_required>1</successes_required>
+        <info_text>The Gangrel were the most powerful and most numerous clan in the city,
+mostly due to the fact that if you included the Prince, almost half the
+gangrel were of the Prince&apos;s bloodline.  (Note: No Player may start of the
+McLir bloodline).  
+</info_text>
+      </tier>
+    </tiers>
+  </topic>
+  <topic>
+    <title>Vampire Lore</title>
+    <keywords>vampire lord kindred</keywords>
+    <stat>7</stat>
+    <ability>0</ability>
+    <base_difficulty>6</base_difficulty>
+    <tier_count>3</tier_count>
+    <failure_text>Your research into vampires turns up some interesting develops. 
+Apparently vampires are not supernatural creatures, but homo sapiens with a
+mutant gene called the solarus imperius gene.  It&apos;s what gives them their
+unique vulnerability to sunlight but they are certainly not supernatural as
+most believe.  
+</failure_text>
+    <modifiers>
+      <modifier>
+        <type>clan</type>
+        <value>tremere</value>
+        <adjustment>-1</adjustment>
+      </modifier>
+    </modifiers>
+    <tiers>
+      <tier>
+        <successes_required>1</successes_required>
+        <info_text>Vampires are undead creatures that drink blood.</info_text>
+      </tier>
+      <tier>
+        <successes_required>2</successes_required>
+        <info_text>Vampires are organized into clans, each with unique powers and flaws.</info_text>
+      </tier>
+      <tier>
+        <successes_required>3</successes_required>
+        <info_text>The Camarilla is the largest vampire sect, enforcing the Masquerade.  
+ 
+This is more text.
+</info_text>
+      </tier>
+    </tiers>
+  </topic>
+</research_topics>

@@ -91,6 +91,7 @@ DECLARE_SPELL_FUN( spell_null );
 #define ED_BG   12
 #define ED_TIP   13
 #define ED_MPCODE   14
+#define ED_RITUAL   15
 
 /*
  * Interpreter Prototypes
@@ -101,6 +102,7 @@ void    medit           args( ( CHAR_DATA *ch, char *argument ) );
 void    oedit           args( ( CHAR_DATA *ch, char *argument ) );
 void    hedit           args( ( CHAR_DATA *ch, char *argument, int type ) );
 void    mpedit          args( ( CHAR_DATA *ch, char *argument ) );
+void    ritedit         args( ( CHAR_DATA *ch, char *argument ) );
 
 /*
  * Interpreter Prototypes for Storyteller module editors
@@ -296,6 +298,7 @@ DECLARE_OLC_FUN( oedit_liqlist		);
 DECLARE_OLC_FUN( oedit_use_strings      );
 DECLARE_OLC_FUN( oedit_quality          );
 DECLARE_OLC_FUN( oedit_company          );
+DECLARE_OLC_FUN( oedit_grimoire         );
 
 /*
  * Mobile Editor Prototypes
@@ -367,6 +370,22 @@ DECLARE_OLC_FUN( hedit_no_format	);
  * Tip Editor Prototype (Otherwise uses hedits)
  */
 DECLARE_OLC_FUN( tipedit_create		);
+
+/*
+ * Rite Editor Prototypes
+ */
+DECLARE_OLC_FUN( ritedit_create   );
+DECLARE_OLC_FUN( ritedit_name     );
+DECLARE_OLC_FUN( ritedit_races    );
+DECLARE_OLC_FUN( ritedit_disc     );
+DECLARE_OLC_FUN( ritedit_level    );
+DECLARE_OLC_FUN( ritedit_beats    );
+DECLARE_OLC_FUN( ritedit_target   );
+DECLARE_OLC_FUN( ritedit_effect   );
+DECLARE_OLC_FUN( ritedit_sequence );
+DECLARE_OLC_FUN( ritedit_delete   );
+DECLARE_OLC_FUN( ritedit_show     );
+extern const struct olc_cmd_type ritedit_table[];
 
 /*
  * Plot Editor Prototypes

@@ -205,6 +205,7 @@ typedef	int  BLD_FUN	args( ( CHAR_DATA *ch, char *argument, int type,
 #define MAX_VOTE_OPTIONS		10
 #define MAX_RITE_STEPS			10
 #define MAX_RITE_ACTIONS		19
+#define MAX_KNOWN_RITES			64
 #define WARRANT_THRESHOLD		50
 #define MAX_RESEARCH_TIERS		10
 #define RECOMMENDED_MAX_TIERS		5
@@ -1162,6 +1163,7 @@ struct	affect_data
 #define ITEM_BOMB		     32
 #define ITEM_LIQUID		     33
 #define ITEM_RELIC			 34
+#define ITEM_GRIMOIRE		 35
 
 
 /*
@@ -2108,6 +2110,8 @@ struct	char_data
     int			current_tip;
     int			riteacts[MAX_RITE_STEPS];
     int			ritepoint;
+    int			known_rite_ids[MAX_KNOWN_RITES];
+    int			n_known_rites;
     LIQUID_DATA	*	coating;
 };
 

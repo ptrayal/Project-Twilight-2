@@ -567,6 +567,8 @@ const	struct	cmd_type	cmd_table	[] =
 	{	"help_edit",		do_hedit,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"help_save",		do_hsave,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"help_save2",		do_hsave2,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
+	{	"ritedit",			do_ritedit,			P_DEAD,	IM,	L_NRM,	2,	A|B,	0 },
+	{	"ritesave",			do_ritesave,		P_DEAD,	IM,	L_NRM,	1,	A|B,	0 },
 	{	"help_unformatted",	do_help_unformatted,P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"holylight",		do_holylight,		P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"hunted",			do_hunted,			P_DEAD,	MA,	L_NRM,	1,	A|B|E,	0 },

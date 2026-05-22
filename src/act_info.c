@@ -1931,6 +1931,11 @@ void do_examine( CHAR_DATA *ch, char *argument )
         case ITEM_CORPSE_NPC:
         case ITEM_CORPSE_PC:
             do_function(ch, &do_look, (char *)Format("in %s", argument));
+            break;
+
+        case ITEM_GRIMOIRE:
+            show_grimoire(ch, obj);
+            break;
         }
     }
 

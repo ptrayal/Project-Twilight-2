@@ -2259,6 +2259,20 @@ void init_clan_powers(CHAR_DATA *ch, int clan)
 			k = clan_table[clan].powers[i];
 			ch->disc[k] = 1;
 		}
+		/* Tremere auto-learn the vampire Rite of Introduction at Thaumaturgy 1 */
+		if (clan == clan_lookup("tremere"))
+		{
+			struct ritual_type *r;
+			for (r = ritual_list; r != NULL; r = r->next)
+			{
+				if (r->spell_fun == rite_introduction
+					&& !str_cmp(r->races, "vampire"))
+				{
+					learn_rite(ch, r);
+					break;
+				}
+			}
+		}
 		break;
 	case RACE_CHANGELING:
 		for(i = 0; i < 3; i++)
@@ -5699,30 +5713,125 @@ void clear_rite(CHAR_DATA *ch)
 }
 
 
-int rite_available(int sn, CHAR_DATA *ch)
+void show_grimoire(CHAR_DATA *ch, OBJ_DATA *obj)
+{
+	EXTRA_DESCR_DATA *ed;
+	struct ritual_type *r;
+	const char *ritual_name = NULL;
+	int clarity, condition;
+	int i, step, total;
+	char buf[MSL];
+	char phrase[MIL];
+
+	for (ed = obj->extra_descr; ed != NULL; ed = ed->next)
+	{
+		if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL"))
+		{
+			ritual_name = ed->description;
+			break;
+		}
+	}
+
+	if (!ritual_name)
+	{
+		send_to_char("The pages of this tome are blank, holding no ritual lore.\n\r", ch);
+		return;
+	}
+
+	for (r = ritual_list; r != NULL; r = r->next)
+		if (!str_cmp(r->name, ritual_name)) break;
+
+	if (r == NULL)
+	{
+		send_to_char("The text seems to reference a ritual you don't recognise.\n\r", ch);
+		return;
+	}
+
+	clarity   = obj->value[0]; /* 0=Full 1=Partial 2=Cryptic */
+	condition = obj->value[1]; /* 0-100 */
+	total     = rite_count_steps(r);
+
+	/* Build step list based on clarity and condition */
+	buf[0]  = '\0';
+	step    = 0;
+	for (i = 0; i < MAX_RITE_STEPS; i++)
+	{
+		if (r->actions[i] < 0) break;
+
+		/* Condition dropout: roll against condition */
+		if (number_range(1, 100) > condition)
+		{
+			strncat(buf, "[illegible section]", sizeof(buf) - strlen(buf) - 1);
+		}
+		else
+		{
+			switch (clarity)
+			{
+			case 0: /* Full */
+				snprintf(phrase, sizeof(phrase), "%s", rite_actions[r->actions[i]].grimoire_text
+					? rite_actions[r->actions[i]].grimoire_text : rite_actions[r->actions[i]].name);
+				break;
+			case 1: /* Partial */
+				snprintf(phrase, sizeof(phrase), "%s", rite_actions[r->actions[i]].name);
+				break;
+			case 2: /* Cryptic */
+				snprintf(phrase, sizeof(phrase), "...%s...", rite_actions[r->actions[i]].name);
+				break;
+			default:
+				snprintf(phrase, sizeof(phrase), "%s", rite_actions[r->actions[i]].name);
+				break;
+			}
+			strncat(buf, phrase, sizeof(buf) - strlen(buf) - 1);
+		}
+
+		step++;
+		if (step < total)
+			strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
+	}
+
+	switch (clarity)
+	{
+	case 0:
+		send_to_char(Format("The text describes a rite performed in %d parts: %s.\n\r", total, buf), ch);
+		break;
+	case 1:
+		send_to_char(Format("The text references %d steps: %s.\n\r", total, buf), ch);
+		break;
+	case 2:
+		send_to_char(Format("Fragments of text speak of %s.\n\r", buf), ch);
+		break;
+	default:
+		send_to_char(Format("The text describes: %s.\n\r", buf), ch);
+		break;
+	}
+}
+
+
+int rite_available(struct ritual_type *r, CHAR_DATA *ch)
 {
 	ORG_DATA *org;
 	ORGMEM_DATA *mem;
 
-	if(strstr(race_table[ch->race].name, ritual_table[sn].races))
+	if(!str_cmp(race_table[ch->race].name, r->races)
+		|| !str_cmp(r->races, "all"))
 	{
-		if(ritual_table[sn].level == 0) return TRUE;
+		if(r->level == 0) return TRUE;
 
-		if(ritual_table[sn].disc_test < 0
+		if(r->disc_test < 0
 				&& ch->race == race_lookup("werewolf")
-				&& ritual_table[sn].level <= ch->backgrounds[RACE_STATUS])
+				&& r->level <= ch->backgrounds[RACE_STATUS])
 			return TRUE;
 
-		if(ritual_table[sn].disc_test >= 0
-				&& ch->disc[ritual_table[sn].disc_test] >= ritual_table[sn].level)
+		if(r->disc_test >= 0
+				&& ch->disc[r->disc_test] >= r->level)
 			return TRUE;
 	}
 
 	for(org = org_list; org != NULL; org = org->next)
 	{
 		if((mem = mem_lookup(org, ch->name)) != NULL
-				&& strstr(org->name, ritual_table[sn].races)
-		&& mem->status >= ritual_table[sn].level)
+				&& !str_cmp(org->name, r->races)
+		&& mem->status >= r->level)
 			return TRUE;
 	}
 
@@ -5736,6 +5845,7 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 	OBJ_DATA *obj;
 	char arg1[MAX_INPUT_LENGTH]={'\0'};
 	char arg2[MAX_INPUT_LENGTH]={'\0'};
+	struct ritual_type *ritual;
 	void *vo;
 	int sn, rn;
 	int target;
@@ -5745,11 +5855,7 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 	target_name = one_argument( argument, arg1 );
 	one_argument( target_name, arg2 );
 
-	if(ch->power_timer > 0)
-	{
-		send_to_char("Your powers have not rejuvenated yet.\n\r", ch);
-		return;
-	}
+	/* Informational subcommands work regardless of power_timer */
 
 	if ( IS_NULLSTR(arg1) )
 	{
@@ -5765,18 +5871,68 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
+	if(!str_prefix("known", arg1))
+	{
+		struct ritual_type *r;
+		bool found = FALSE;
+		send_to_char("Rituals you have completed:\n\r", ch);
+		for (r = ritual_list; r != NULL; r = r->next)
+		{
+			if (knows_rite(ch, r))
+			{
+				int j, steps = rite_count_steps(r);
+				int shown = 0;
+				send_to_char(Format("  %-30s  (%d steps: ", r->name, steps), ch);
+				for (j = 0; j < MAX_RITE_STEPS; j++)
+				{
+					if (r->actions[j] != -1)
+					{
+						if (shown) send_to_char(", ", ch);
+						send_to_char(rite_actions[r->actions[j]].name, ch);
+						shown++;
+					}
+				}
+				send_to_char(")\n\r", ch);
+				found = TRUE;
+			}
+		}
+		if (!found)
+			send_to_char("  None.\n\r", ch);
+		return;
+	}
+
+	if(!str_prefix("hint", arg1))
+	{
+		struct ritual_type *r;
+		bool found = FALSE;
+		send_to_char("Rituals available to you:\n\r", ch);
+		for (r = ritual_list; r != NULL; r = r->next)
+		{
+			if (rite_available(r, ch))
+			{
+				send_to_char(Format("  %-30s  (%d steps)\n\r", r->name, rite_count_steps(r)), ch);
+				found = TRUE;
+			}
+		}
+		if (!found)
+			send_to_char("  None.\n\r", ch);
+		return;
+	}
+
 	if(!str_prefix(arg1, "list"))
 	{
 		if(IS_NULLSTR(arg2))
 		{
 			send_to_char("Are you trying to list the actions or rites?\n\r",ch);
+			if (IS_ADMIN(ch))
+				send_to_char("  (Staff: 'rituals list all' shows every ritual.)\n\r", ch);
 			return;
 		}
 
 		if(!str_prefix(arg2, "actions"))
 		{
 			send_to_char("Available ritual actions are:\n\r", ch);
-			for(sn = 0; rite_actions[sn].name != NULL; sn++)
+			for(sn = 0; sn < max_rite_actions; sn++)
 			{
 				if(sn%4==0) send_to_char("\n\r", ch);
 				send_to_char(Format("%14s", rite_actions[sn].name), ch);
@@ -5787,13 +5943,14 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 
 		if(!str_prefix(arg2, "rites"))
 		{
+			struct ritual_type *r;
 			rn = 1;
 			send_to_char("Available rituals are:\n\r", ch);
-			for(sn = 0; ritual_table[sn].name != NULL; sn++)
+			for(r = ritual_list; r != NULL; r = r->next)
 			{
-				if(rite_available(sn, ch))
+				if(rite_available(r, ch))
 				{
-					send_to_char(Format("%14s", rite_actions[sn].name), ch);
+					send_to_char(Format("%14s", r->name), ch);
 					rn++;
 				}
 				if(rn%4==0) send_to_char("\n\r", ch);
@@ -5801,7 +5958,29 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 			send_to_char("\n\r", ch);
 			send_to_char("In order to use any of the above rituals,", ch);
 			send_to_char(" you need to know the proper actions.\n\r", ch);
-			send_to_char("There is no automated method of learning rites.)\n\r", ch);
+			send_to_char("There is no automated method of learning rites.\n\r", ch);
+			return;
+		}
+
+		if(!str_prefix(arg2, "all") && IS_ADMIN(ch))
+		{
+			struct ritual_type *r;
+			int j;
+			send_to_char("All rituals (staff view):\n\r", ch);
+			for(r = ritual_list; r != NULL; r = r->next)
+			{
+				int shown = 0;
+				send_to_char(Format("  [%3d] %-30s  races=%-10s  disc=%2d  lvl=%d  steps: ",
+					r->id, r->name, r->races ? r->races : "?",
+					r->disc_test, r->level), ch);
+				for (j = 0; j < MAX_RITE_STEPS; j++)
+				{
+					if (r->actions[j] < 0) break;
+					if (shown++) send_to_char(", ", ch);
+					send_to_char(rite_actions[r->actions[j]].name, ch);
+				}
+				send_to_char("\n\r", ch);
+			}
 			return;
 		}
 
@@ -5809,12 +5988,19 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-	if((rn = riteaction_lookup(arg1)) >= 0 && rn < MAX_RITE_ACTIONS)
+	/* Only actual ritual performance is gated by power_timer */
+	if(ch->power_timer > 0)
+	{
+		send_to_char("Your powers have not rejuvenated yet.\n\r", ch);
+		return;
+	}
+
+	if((rn = riteaction_lookup(arg1)) >= 0 && rn < max_rite_actions)
 	{
 		if(ch->ritepoint >= MAX_RITE_STEPS)
 		{
 			send_to_char("You can't add any more steps to this ritual!\n\r",ch);
-			send_to_char("(Use 'ritual intone' to complete it.)\n\r",ch);
+			send_to_char("(Use 'rituals intone' to complete it.)\n\r",ch);
 			return;
 		}
 
@@ -5823,6 +6009,24 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 		ch->riteacts[ch->ritepoint] = rn;
 		ch->ritepoint++;
 		WAIT_STATE( ch, rite_actions[rn].beats );
+
+		{
+			struct ritual_type *match = rite_partial_lookup(ch);
+			if (match == NULL)
+			{
+				send_to_char("That wasn't the correct part of the ritual. The ritual has failed and you'll need to start over.\n\r", ch);
+				clear_rite(ch);
+			}
+			else
+			{
+				int x = ch->ritepoint;
+				int y = rite_count_steps(match);
+				if (x >= y)
+					send_to_char("With that part of the ritual complete, you feel the energy build. It is now time to intone the ritual.\n\r", ch);
+				else
+					send_to_char(Format("That part of the ritual was done successfully. %d of %d ritual steps done.\n\r", x, y), ch);
+			}
+		}
 		return;
 	}
 
@@ -5834,29 +6038,26 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 
 
 	log_string(LOG_GAME, "rite: 1");
-	if((rn = rite_lookup(ch)) < 0)
+	if((ritual = rite_lookup(ch)) == NULL)
 	{
-		send_to_char("Nothing happens.\n\r", ch);
+		send_to_char("The actions you performed don't seem to coalesce into anything meaningful.\n\r", ch);
 		clear_rite(ch);
 		return;
 	}
 
 	log_string(LOG_GAME, "rite: 2");
-	if ((sn = find_spell(ch,ritual_table[rn].name)) < 1)
-	{
-		send_to_char( "Your actions seem to mean nothing... yet...\n\r", ch );
-		return;
-	}
-
-	if (skill_table[sn].spell_fun == spell_null)
-	{
-		send_to_char( "Your actions seem to mean nothing...\n\r", ch );
-		return;
-	}
-
-	if ((!IS_NPC(ch) && !skill_table[sn].available[ch->race]))
+	if (!rite_available(ritual, ch))
 	{
 		send_to_char( "Your actions seem to mean nothing to you...\n\r", ch );
+		clear_rite(ch);
+		return;
+	}
+
+	if (ritual->spell_fun == NULL)
+	{
+		log_string(LOG_BUG, Format("do_rituals: ritual '%s' has no spell_fun", ritual->name));
+		send_to_char("The rite seems incomplete.\n\r", ch);
+		clear_rite(ch);
 		return;
 	}
 
@@ -5869,13 +6070,27 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 	vo		= NULL;
 	target	= TARGET_NONE;
 
-	switch ( skill_table[sn].target )
+	switch ( ritual->target )
 	{
 	default:
-		log_string(LOG_BUG, Format("Do_ritual: bad target for sn %d.", sn ));
+		log_string(LOG_BUG, Format("Do_ritual: bad target for ritual '%s'.", ritual->name));
 		return;
 
 	case TAR_IGNORE:
+		/* rite_introduction requires a message passed as the intone argument */
+		if (ritual->spell_fun == rite_introduction)
+		{
+			if (IS_NULLSTR(target_name))
+			{
+				send_to_char("This rite requires a message: rituals intone <message>\n\r", ch);
+				return;
+			}
+			if (count_words(target_name) > 20)
+			{
+				send_to_char("Your message must be 20 words or less.\n\r", ch);
+				return;
+			}
+		}
 		break;
 
 	case TAR_CHAR_DEFENSIVE:
@@ -5991,18 +6206,18 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 	/* FIX - Put in tests into spells (abil calls/skill calls) */
 
 	log_string(LOG_GAME, "rite: 4");
-	WAIT_STATE( ch, ritual_table[rn].beats );	// use rn here, not sn (sn points to skill table) rn points to the ritual_table
-							// ritual table is what we need to find the beats for, not the skill_table
-							// they are not hte same location : thus causes lockup.
+	WAIT_STATE( ch, ritual->beats );
 	clear_rite(ch);
 
 	log_string(LOG_GAME, "rite: 5");
-	(*skill_table[sn].spell_fun) ( sn, ch->trust, ch, vo,target);
+	(*ritual->spell_fun)( 0, ch->trust, ch, vo, target );
+
+	/* Mark ritual as known */
+	learn_rite(ch, ritual);
 
 	log_string(LOG_GAME, "rite: 6");
-	if ((skill_table[sn].target == TAR_CHAR_OFFENSIVE
-			||   (skill_table[sn].target == TAR_OBJ_CHAR_OFF && target == TARGET_CHAR))
-			&&   victim != ch)
+	if ((ritual->target == TAR_OBJ_CHAR_OFF && target == TARGET_CHAR)
+			&& victim != NULL && victim != ch)
 	{
 		CHAR_DATA *vch;
 		CHAR_DATA *vch_next;
@@ -6018,7 +6233,6 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 		}
 	}
 
-	log_string(LOG_GAME, "rite: 6");
 	return;
 }
 
@@ -6133,6 +6347,7 @@ void rite_recognition( int sn, int level, CHAR_DATA *ch, void *vo, int target)
 	{
 		act("$n performs a rite over $N, but has no effect on $N's rank.", ch, NULL, vch, TO_ROOM, 0);
 		act("You perform the rite over $N, but has no effect on $M rank.", ch, NULL, vch, TO_CHAR, 1);
+		return;
 	}
 
 	act("$n performs a rite over $N, improving $N's rank.", ch, NULL, vch, TO_ROOM, 0);

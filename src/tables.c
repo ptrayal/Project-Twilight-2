@@ -4360,213 +4360,125 @@ const struct flag_type flag_list[] =
 };
 
 
-const	struct	ritemove_type rite_actions [] =
+/* Global ritual data — loaded from XML or bootstrap */
+struct ritual_type  *ritual_list     = NULL;
+struct ritemove_type *rite_actions   = NULL;
+int                   max_rite_actions = 0;
+
+/* Forward declarations for ritual effect functions (defined in magic.c) */
+DECLARE_SPELL_FUN( rite_introduction );
+DECLARE_SPELL_FUN( rite_pack         );
+DECLARE_SPELL_FUN( rite_attune       );
+DECLARE_SPELL_FUN( rite_recognition  );
+DECLARE_SPELL_FUN( rite_hero         );
+
+/* Name-to-function table used by the XML loader */
+static const struct { const char *name; SPELL_FUN *fun; } rite_fun_table[] =
 {
-  /*
-
-	{
-	action name,
-	to_char,
-	to_room,
-	beats
-	},
-
-   */
-
-	{
-	"step",
-	"You take a slow, measured step.",
-	"$n takes a solemn step.",
-	2
-	},
-
-	{
-	"temples",
-	"You press your fingertips to your temples firmly.",
-	"$n rubs $s temples.",
-	1
-	},
-
-	{
-	"circles",
-	"You draw circles in the air.",
-	"$n waves $s hands in circles.",
-	2
-	},
-
-	{
-	"focus",
-	"You focus your mind, drawing in energies.",
-	"$n stares intently.",
-	2
-	},
-
-	{
-	"raise",
-	"You raise your hands in the air.",
-	"$n raises $s hands in the air.",
-	2
-	},
-
-	{
-	"point",
-	"You point your finger.",
-	"$n points $s finger.",
-	1
-	},
-
-	{
-	"draw",
-	"You draw shapes and sigils in the air.",
-	"$n waves $s hands in the air.",
-	2
-	},
-
-	{
-	"howl",
-	"You let out a howl.",
-	"$n howls.",
-	2
-	},
-
-	{
-	"chant",
-	"You chant the words...",
-	"$n begins to chant, but you don't recognise the language.",
-	4
-	},
-
-	{
-	"trace",
-	"You trace out symbols on nearby surfaces.",
-	"$n traces out symbols.",
-	3
-	},
-
-	{
-	"entreat",
-	"You entreat the powers to your aid.",
-	"$n seems to call on some occult source of power.",
-	4
-	},
-
-	{
-	"scratch",
-	"You scratch symbols in the earth.",
-	"$n scratches around on the ground.",
-	5
-	},
-
-	{
-	"splay",
-	"You splay your hand before you with an outstretched arm.",
-	"$n splays $s hand at arms length as if directing something.",
-	1
-	},
-
-	{
-	"halt",
-	"You demand a halt!",
-	"$n holds up $s hand, as if to demand 'Halt!'",
-	1
-	},
-
-	{
-	"dance",
-	"You dance around in a circle.",
-	"$n dances around in a circle.",
-	3
-	},
-
-	{
-	"breathe",
-	"You perform the breathing exercises.",
-	"$n starts controlling $s breathing.",
-	1
-	},
-
-	{
-	"blood",
-	"You draw blood from your hand.",
-	"$n draws some of $s own blood!",
-	1
-	},
-
-	{
-	"beat",
-	"You beat your chest rhythmically.",
-	"$n beats $s chest.",
-	2
-	},
-
-	{
-	"groan",
-	"You groan loudly.",
-	"$n groans loudly.",
-	3
-	},
-
-	{
-	NULL,
-	NULL,
-	NULL,
-	0
-	}
+	{ "rite_introduction", rite_introduction },
+	{ "rite_pack",         rite_pack         },
+	{ "rite_attune",       rite_attune       },
+	{ "rite_recognition",  rite_recognition  },
+	{ "rite_hero",         rite_hero         },
+	{ NULL,                NULL              }
 };
 
-
-const struct ritual_type ritual_table [] =
+SPELL_FUN *rite_fun_lookup(const char *name)
 {
+	int i;
+	for (i = 0; rite_fun_table[i].name != NULL; i++)
+		if (!str_cmp(name, rite_fun_table[i].name))
+			return rite_fun_table[i].fun;
+	return NULL;
+}
 
-	{
-	"rite of introduction",
-	"vampire", DISC_THAUMATURGY, 1,
-	{ 15, 3, 1, -1, -1, -1, -1, -1, -1, -1 },
-	2
-	},
+const char *rite_fun_name(SPELL_FUN *fun)
+{
+	int i;
+	for (i = 0; rite_fun_table[i].fun != NULL; i++)
+		if (rite_fun_table[i].fun == fun)
+			return rite_fun_table[i].name;
+	return "unknown";
+}
 
-	{
-	"rite of introduction",
-	"werewolf", -1, 1,
-	{ 15, 3, 1, -1, -1, -1, -1, -1, -1, -1 },
-	1
-	},
-
-	{
-	"rite of attunement",
-	"werewolf", -1, 1,
-	{ 1, 4, 5, 10, -1, -1, -1, -1, -1, -1 },
-	1
-	},
-
-	{
-	"rite of pack creation",
-	"werewolf", -1, 1,
-	{ 10, 8, 0, 2, 8, 4, 7, 10, 14, -1 },
-	1
-	},
-
-	{
-	"rite of recognition",
-	"werewolf", -1, 1,
-	{ 0, 4, 0, 4, 5, 12, 13, 16, 5, -1 },
-	1
-	},
-
-	{
-	"rite of the returning hero",
-	"werewolf", -1, 1,
-	{ 0, 4, 0, 4, 7, 17, 7, 13, -1, -1 },
-	1
-	},
-
-	{
-	NULL,
-	NULL, -1, -1,
-	{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
-	0
-	}
+/* Bootstrap action data (copied to dynamic array on first boot) */
+static const struct ritemove_type rite_actions_bootstrap[] =
+{
+	{ "step",    "You take a slow, measured step.",                    "$n takes a solemn step.",                                  "a slow, measured step",                   1 },
+	{ "temples", "You press your fingertips to your temples firmly.",  "$n rubs $s temples.",                                      "fingertips pressed firmly to the temples", 1 },
+	{ "circles", "You draw circles in the air.",                       "$n waves $s hands in circles.",                            "hands tracing circles through the air",   1 },
+	{ "focus",   "You focus your mind, drawing in energies.",          "$n stares intently.",                                      "deep concentration drawing in energies",  1 },
+	{ "raise",   "You raise your hands in the air.",                   "$n raises $s hands in the air.",                           "hands raised skyward",                    1 },
+	{ "point",   "You point your finger.",                             "$n points $s finger.",                                     "a pointing finger directing power",       1 },
+	{ "draw",    "You draw shapes and sigils in the air.",             "$n waves $s hands in the air.",                            "shapes and sigils drawn through the air", 1 },
+	{ "howl",    "You let out a howl.",                                "$n howls.",                                                "a haunting howl released",                1 },
+	{ "chant",   "You chant the words...",                             "$n begins to chant, but you don't recognise the language.", "words chanted in a forgotten tongue",    1 },
+	{ "trace",   "You trace out symbols on nearby surfaces.",          "$n traces out symbols.",                                   "symbols traced upon nearby surfaces",     1 },
+	{ "entreat", "You entreat the powers to your aid.",                "$n seems to call on some occult source of power.",         "an appeal to occult powers",              1 },
+	{ "scratch", "You scratch symbols in the earth.",                  "$n scratches around on the ground.",                       "symbols scratched into the earth",        1 },
+	{ "splay",   "You splay your hand before you with an outstretched arm.", "$n splays $s hand at arms length as if directing something.", "an outstretched hand directing will", 1 },
+	{ "halt",    "You demand a halt!",                                 "$n holds up $s hand, as if to demand 'Halt!'",             "a commanding gesture demanding halt",     1 },
+	{ "dance",   "You dance around in a circle.",                      "$n dances around in a circle.",                            "a ritual dance in a circle",              1 },
+	{ "breathe", "You perform the breathing exercises.",               "$n starts controlling $s breathing.",                      "controlled breathing exercises",          1 },
+	{ "blood",   "You draw blood from your hand.",                     "$n draws some of $s own blood!",                           "an offering of blood drawn from the palm",1 },
+	{ "beat",    "You beat your chest rhythmically.",                  "$n beats $s chest.",                                       "rhythmic beating of the chest",           1 },
+	{ "groan",   "You groan loudly.",                                  "$n groans loudly.",                                        "a deep, resonant groan",                  1 },
+	{ NULL, NULL, NULL, NULL, 0 }
 };
+
+/* Bootstrap ritual data (linked into ritual_list on first boot) */
+/* id fields are 0 here; load_rituals_bootstrap() assigns real IDs 1..N */
+static struct ritual_type ritual_bootstrap[] =
+{
+	{ NULL, 0, "rite of introduction",    "vampire",  DISC_THAUMATURGY, 1, { 15, 3, 1, -1, -1, -1, -1, -1, -1, -1 }, 2, TAR_IGNORE,        rite_introduction },
+	{ NULL, 0, "rite of introduction",    "werewolf", -1,               1, { 15, 3, 1, -1, -1, -1, -1, -1, -1, -1 }, 1, TAR_IGNORE,        rite_introduction },
+	{ NULL, 0, "rite of attunement",      "werewolf", -1,               1, {  1, 4, 5, 10, -1, -1, -1, -1, -1, -1 }, 1, TAR_OBJ_INV,       rite_attune       },
+	{ NULL, 0, "rite of pack creation",   "werewolf", -1,               1, { 10, 8, 0,  2,  8,  4,  7, 10, 14, -1 }, 1, TAR_CHAR_DEFENSIVE, rite_pack         },
+	{ NULL, 0, "rite of recognition",     "werewolf", -1,               1, {  0, 4, 0,  4,  5, 12, 13, 16,  5, -1 }, 1, TAR_CHAR_DEFENSIVE, rite_recognition  },
+	{ NULL, 0, "rite of the returning hero", "werewolf", -1,            1, {  0, 4, 0,  4,  7, 17,  7, 13, -1, -1 }, 1, TAR_IGNORE,        rite_hero         }
+};
+
+int next_ritual_id = 1;
+
+void load_rituals_bootstrap(void)
+{
+	int i;
+	int n_actions = (int)(sizeof(rite_actions_bootstrap) / sizeof(rite_actions_bootstrap[0]));
+	int n_rituals = (int)(sizeof(ritual_bootstrap)        / sizeof(ritual_bootstrap[0]));
+	struct ritual_type *tail = NULL;
+
+	/* Copy action array (includes NULL terminator entry) */
+	rite_actions = (struct ritemove_type *)malloc(n_actions * sizeof(struct ritemove_type));
+	if (!rite_actions)
+	{
+		log_string(LOG_ERR, "load_rituals_bootstrap: malloc failed for rite_actions");
+		exit(1);
+	}
+	for (i = 0; i < n_actions; i++)
+		rite_actions[i] = rite_actions_bootstrap[i];
+	max_rite_actions = n_actions - 1; /* exclude NULL terminator */
+
+	/* Build linked list from bootstrap rituals, assigning stable IDs */
+	for (i = 0; i < n_rituals; i++)
+	{
+		struct ritual_type *r = (struct ritual_type *)malloc(sizeof(struct ritual_type));
+		if (!r)
+		{
+			log_string(LOG_ERR, "load_rituals_bootstrap: malloc failed for ritual");
+			exit(1);
+		}
+		*r = ritual_bootstrap[i];
+		r->id    = next_ritual_id++;
+		r->name  = str_dup(ritual_bootstrap[i].name);
+		r->races = str_dup(ritual_bootstrap[i].races);
+		r->next  = NULL;
+		if (tail == NULL)
+			ritual_list = r;
+		else
+			tail->next  = r;
+		tail = r;
+	}
+}
 
 
 const struct flag_type fame_table	[] =

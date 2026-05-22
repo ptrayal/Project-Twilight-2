@@ -35,7 +35,12 @@ int	home_cmd_lookup	args( (char *name) );
 int	home_price_lookup args( (char *name) );
 char * colour_lookup (char name, bool colour);
 int trait_lookup(char *name, const struct trait_struct *trait_table);
-int rite_lookup(CHAR_DATA *ch);
-int riteaction_lookup(char *name);
+struct ritual_type *rite_lookup(CHAR_DATA *ch);
+int riteaction_lookup(const char *name);
+int rite_count_steps(struct ritual_type *r);
+struct ritual_type *rite_partial_lookup(CHAR_DATA *ch);
+int rite_available(struct ritual_type *r, CHAR_DATA *ch);
+bool knows_rite(CHAR_DATA *ch, struct ritual_type *r);
+void learn_rite(CHAR_DATA *ch, struct ritual_type *r);
 
 #endif

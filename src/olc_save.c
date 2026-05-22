@@ -1152,10 +1152,10 @@ void do_save_plots (CHAR_DATA *ch, char *argument)
 	FILE *fp;
 
 	closeReserve();
-	if ( !( fp = fopen( "plots.are", "w" ) ) )
+	if ( !( fp = fopen( AREA_DIR "plots.are", "w" ) ) )
 	{
 		log_string(LOG_BUG, "Save_plots: fopen");
-		perror( "plots.are" );
+		perror( AREA_DIR "plots.are" );
 	}
 
 	fprintf(fp, "#PLOTS\n");
@@ -1240,6 +1240,8 @@ void save_reactions(FILE *fp, REACT *trig)
 // }
 
 
+static void hsave_xml_list(FILE *fp, HELP_DATA *list);
+
 void do_hsave (CHAR_DATA *ch, char *argument)
 {
 	FILE *fp;
@@ -1281,6 +1283,15 @@ void do_hsave (CHAR_DATA *ch, char *argument)
 	fprintf( fp, "#$\n" );
 
 	fclose( fp );
+
+	if ((fp = fopen("area/help.xml", "w")))
+	{
+		hsave_xml_list(fp, help_list);
+		fclose(fp);
+	}
+	else
+		log_string(LOG_BUG, "HSave: fopen area/help.xml");
+
 	openReserve();
 
 	send_to_char("\tGSuccess\tn: Help files have been saved.\n\r", ch);
@@ -1327,6 +1338,15 @@ void do_tsave (CHAR_DATA *ch, char *argument)
 	fprintf( fp, "#$\n" );
 
 	fclose( fp );
+
+	if ((fp = fopen("area/tips.xml", "w")))
+	{
+		hsave_xml_list(fp, tip_list);
+		fclose(fp);
+	}
+	else
+		log_string(LOG_BUG, "TSave: fopen area/tips.xml");
+
 	openReserve();
 
 	send_to_char("\tGSuccess\tn: Tip file has been saved.\n\r", ch);
@@ -1430,52 +1450,148 @@ void fwrite_org (ORG_DATA *org)
 }
 
 
+static void fwrite_xml_str(FILE *fp, const char *tag, const char *str)
+{
+	const char *p;
+
+	if (IS_NULLSTR(str))
+		return;
+
+	fprintf(fp, "<%s>", tag);
+	for (p = str; *p; p++)
+	{
+		switch (*p)
+		{
+			case '&':  fputs("&amp;",  fp); break;
+			case '<':  fputs("&lt;",   fp); break;
+			case '>':  fputs("&gt;",   fp); break;
+			case '"':  fputs("&quot;", fp); break;
+			case '\'': fputs("&apos;", fp); break;
+			default:   fputc(*p,       fp); break;
+		}
+	}
+	fprintf(fp, "</%s>\n", tag);
+}
+
+static void hsave_xml_list(FILE *fp, HELP_DATA *list)
+{
+	HELP_DATA *help;
+
+	fprintf(fp, "<?xml version='1.0' encoding='UTF-8'?>\n");
+	fprintf(fp, "<Helps>\n");
+
+	for (help = list; help; help = help->next)
+	{
+		fprintf(fp, "<Help>\n");
+		fprintf(fp, "<level>%d</level>\n", help->level);
+		fwrite_xml_str(fp, "keyword",     help->keyword);
+		fwrite_xml_str(fp, "races",       help->races);
+		fwrite_xml_str(fp, "clans",       help->clans);
+		fwrite_xml_str(fp, "Topic",       help->topic);
+		fwrite_xml_str(fp, "Quote",       help->quote);
+		fwrite_xml_str(fp, "Syntax",      help->syntax);
+		fwrite_xml_str(fp, "Desc",        help->description);
+		fwrite_xml_str(fp, "See",         help->see_also);
+		fwrite_xml_str(fp, "Web",         help->website);
+		fwrite_xml_str(fp, "Unformatted", help->unformatted);
+		fprintf(fp, "</Help>\n");
+	}
+
+	fprintf(fp, "</Helps>\n");
+}
+
 void do_hsave2 (CHAR_DATA *ch, char *argument)
 {
 	FILE *fp;
-	HELP_DATA *help;
 
 	closeReserve();
-	if ( !( fp = fopen( "help.xml", "w" ) ) )
+
+	if (!(fp = fopen("help.xml", "w")))
 	{
-		log_string(LOG_BUG, "HSave: fopen");
-		perror( "help.xml" );
+		log_string(LOG_BUG, "HSave2: fopen area/help.xml");
+		send_to_char("Error: could not open area/help.xml for writing.\n\r", ch);
+		openReserve();
+		return;
 	}
+	hsave_xml_list(fp, help_list);
+	fclose(fp);
 
-	fprintf(fp, "<?xml version='1.0' encoding='ISO-8859-1'?>");
-	fprintf(fp, "<?xml-stylesheet type='text/xsl' href='help.xsl'?>");
-	fprintf(fp, "<Help>");
-
-	for(help = help_list; help; help = help->next)
+	if (!(fp = fopen("tips.xml", "w")))
 	{
-		fprintf(fp,"<help_object>");
-		fprintf(fp, "<level>%d</level>\n", help->level);
-		fprintf(fp, "<keyword>%s~</keyword>\n", help->keyword);
-		fprintf(fp, "<race>%s~</race>\n<clan>%s~</clan>\n", help->races, help->clans);
-
-		if(!IS_NULLSTR(help->topic))
-			fprintf(fp, "<Topic>%s~</Topic>\n", help->topic);
-		if(!IS_NULLSTR(help->quote))
-			fprintf(fp, "<Quote>%s~</Quote>\n", help->quote);
-		if(!IS_NULLSTR(help->syntax))
-			fprintf(fp, "<Syntax>%s~</Syntax>\n", help->syntax);
-		if(!IS_NULLSTR(help->description))
-			fprintf(fp, "<Desc>%s~</Desc>\n", help->description);
-		if(!IS_NULLSTR(help->see_also))
-			fprintf(fp, "<See>%s~</See>\n", help->see_also);
-		if(!IS_NULLSTR(help->website))
-			fprintf(fp, "<Web>%s~</Web>\n", help->website);
-		if(!IS_NULLSTR(help->unformatted))
-			fprintf(fp, "<Unformatted>%s~</Unformatted>\n", help->unformatted);
-		fprintf(fp, "</help_object>\n");
+		log_string(LOG_BUG, "HSave2: fopen area/tips.xml");
+		send_to_char("Error: could not open area/tips.xml for writing.\n\r", ch);
+		openReserve();
+		return;
 	}
+	hsave_xml_list(fp, tip_list);
+	fclose(fp);
 
-	fprintf( fp, "</Help>\n" );
-
-	fclose( fp );
 	openReserve();
+	send_to_char("\tGSuccess\tn: Help and tips saved to area/help.xml and area/tips.xml.\n\r", ch);
+	return;
+}
 
-	send_to_char("\tGSuccess\tn: XML version of help files has been saved.\n\r", ch);
+void do_ritesave (CHAR_DATA *ch, char *argument)
+{
+	FILE *fp;
+	struct ritual_type *r;
+	char seq[MSL];
+	int i, step;
+
+	closeReserve();
+
+	if (!(fp = fopen("rituals.xml", "w")))
+	{
+		log_string(LOG_BUG, "RiteSave: fopen rituals.xml");
+		send_to_char("Error: could not open rituals.xml for writing.\n\r", ch);
+		openReserve();
+		return;
+	}
+
+	fprintf(fp, "<?xml version='1.0' encoding='UTF-8'?>\n<Rituals>\n");
+	fprintf(fp, "  <next_id>%d</next_id>\n", next_ritual_id);
+
+	/* Write all action entries */
+	for (i = 0; i < max_rite_actions; i++)
+	{
+		fprintf(fp, "  <Action>\n");
+		fwrite_xml_str(fp, "name",          rite_actions[i].name);
+		fwrite_xml_str(fp, "to_char",       rite_actions[i].to_char);
+		fwrite_xml_str(fp, "to_room",       rite_actions[i].to_room);
+		fwrite_xml_str(fp, "grimoire_text", rite_actions[i].grimoire_text);
+		fprintf(fp, "    <beats>%d</beats>\n", rite_actions[i].beats);
+		fprintf(fp, "  </Action>\n");
+	}
+
+	/* Write all ritual entries */
+	for (r = ritual_list; r != NULL; r = r->next)
+	{
+		seq[0] = '\0';
+		fprintf(fp, "  <Ritual>\n");
+		fprintf(fp, "    <id>%d</id>\n", r->id);
+		fwrite_xml_str(fp, "name",      r->name);
+		fwrite_xml_str(fp, "races",     r->races);
+		fprintf(fp, "    <disc_test>%d</disc_test>\n", r->disc_test);
+		fprintf(fp, "    <level>%d</level>\n",         r->level);
+		fprintf(fp, "    <beats>%d</beats>\n",         r->beats);
+		fprintf(fp, "    <target>%d</target>\n",       r->target);
+		fwrite_xml_str(fp, "effect", rite_fun_name(r->spell_fun));
+		/* Build space-separated sequence of action names */
+		for (step = 0; step < MAX_RITE_STEPS; step++)
+		{
+			if (r->actions[step] < 0) break;
+			if (seq[0]) strncat(seq, " ", sizeof(seq) - strlen(seq) - 1);
+			strncat(seq, rite_actions[r->actions[step]].name, sizeof(seq) - strlen(seq) - 1);
+		}
+		fwrite_xml_str(fp, "sequence", seq);
+		fprintf(fp, "  </Ritual>\n");
+	}
+
+	fprintf(fp, "</Rituals>\n");
+	fclose(fp);
+
+	openReserve();
+	send_to_char("\tGSuccess\tn: Rituals saved to rituals.xml.\n\r", ch);
 	return;
 }
 

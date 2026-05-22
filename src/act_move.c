@@ -2586,6 +2586,8 @@ bool CAN_TRAIN_POWER(CHAR_DATA *ch, int loop, int type)
     return FALSE;
 }
 
+DECLARE_SPELL_FUN (rite_introduction);
+
 void do_basediscs( CHAR_DATA *ch, char *argument )
 {
     char arg1[MSL]={'\0'};
@@ -2663,6 +2665,27 @@ void do_basediscs( CHAR_DATA *ch, char *argument )
 
     ch->disc[loop]++;
     send_to_char(Format("%s has been added as one of your base disciplines.\n\r", disc_table[loop].vname), ch);
+
+    if (!IS_NPC(ch)
+        && ch->clan == clan_lookup("tremere")
+        && loop == DISC_THAUMATURGY
+        && ch->disc[DISC_THAUMATURGY] == 1)
+    {
+        struct ritual_type *r;
+        for (r = ritual_list; r != NULL; r = r->next)
+        {
+            if (r->spell_fun == rite_introduction
+                && !str_cmp(r->races, "vampire"))
+            {
+                if (!knows_rite(ch, r))
+                {
+                    learn_rite(ch, r);
+                    send_to_char("Your awakening Thaumaturgy reveals the vampire Rite of Introduction to you.\n\r", ch);
+                }
+                break;
+            }
+        }
+    }
 }
 
 void do_train_power( CHAR_DATA *ch, char *argument )

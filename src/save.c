@@ -703,6 +703,11 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 		WriteToFile(fp, true, "Ign", tmp);
 		free(tmp);
 	}
+	{
+		int ki;
+		for (ki = 0; ki < ch->n_known_rites; ki++)
+			fprintf(fp, "KnRite  %d\n", ch->known_rite_ids[ki]);
+	}
     fprintf( fp, "End\n\n" );
     return;
 }
@@ -1575,6 +1580,16 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 				break;
 			}
 			KEY( "Invi",	ch->invis_level,	fread_number( fp ) );
+			break;
+
+		case 'K':
+			if (!str_cmp(word, "KnRite"))
+			{
+				int rid = fread_number(fp);
+				if (ch->n_known_rites < MAX_KNOWN_RITES)
+					ch->known_rite_ids[ch->n_known_rites++] = rid;
+				fMatch = TRUE;
+			}
 			break;
 
 		case 'L':

@@ -292,17 +292,22 @@ struct ritemove_type
     char *name;
     char *to_char;
     char *to_room;
+    char *grimoire_text;
     int beats;
 };
 
 struct ritual_type
 {
-    char *name;
-    char *races;
-    int disc_test;
-    int level;
-    int actions[MAX_RITE_STEPS];
-    int beats;
+    struct ritual_type *next;
+    int    id;          /* stable identity — never reused, survives reordering/rename */
+    char  *name;
+    char  *races;
+    int    disc_test;
+    int    level;
+    int    actions[MAX_RITE_STEPS];
+    int    beats;
+    int    target;
+    SPELL_FUN *spell_fun;
 };
 
 struct bit_type
@@ -352,8 +357,13 @@ extern  const   struct  org_cmd_type	org_cmd_table[];
 extern	const	struct	trait_struct	merit_table[];
 extern	const	struct	trait_struct	flaw_table[];
 extern	const	struct	trait_struct	derangement_table[];
-extern	const	struct	ritual_type	ritual_table[];
-extern	const	struct	ritemove_type	rite_actions[];
+extern          struct  ritual_type    *ritual_list;
+extern          struct  ritemove_type  *rite_actions;
+extern          int                    max_rite_actions;
+extern          int                    next_ritual_id;
+SPELL_FUN      *rite_fun_lookup(const char *name);
+const char     *rite_fun_name(SPELL_FUN *fun);
+void            load_rituals_bootstrap(void);
 
 /* flag tables */
 extern	const	struct	flag_type	act_flags[];

@@ -33,6 +33,9 @@
 #include "twilight.h"
 #include "tables.h"
 
+/* rite_available is defined in magic.c */
+int rite_available(struct ritual_type *r, CHAR_DATA *ch);
+
 int flag_lookup (const char *name, const struct flag_type *flag_table)
 {
 	int flag;
@@ -493,41 +496,104 @@ int trait_lookup (const char *name, const struct trait_struct *trait_table)
 /*
  * Ritual table lookups.
  */
-int rite_lookup (CHAR_DATA *ch)
+struct ritual_type *rite_lookup (CHAR_DATA *ch)
 {
-	int t = 0;
-	int i = 0;
-	bool found = TRUE;
+	struct ritual_type *r;
+	int i;
+	bool found;
 
-	for (t = 0; ritual_table[t].name != NULL; t++)
+	for (r = ritual_list; r != NULL; r = r->next)
 	{
 		found = TRUE;
-		for(i = 0; i < MAX_RITE_STEPS; i++)
+		for (i = 0; i < MAX_RITE_STEPS; i++)
 		{
-			if (ch->riteacts[i] != ritual_table[t].actions[i])
+			if (ch->riteacts[i] != r->actions[i])
+			{
 				found = FALSE;
+				break;
+			}
 		}
-		if(found == TRUE) break;
+		if (found) return r;
 	}
 
-	if(found == FALSE) return -1;
-
-	return t;
+	return NULL;
 }
 
 int riteaction_lookup (const char *name)
 {
 	int t = 0;
 
-	// prevent negative exposure here; null name = this thing blow up on LOWER(name[0])
-	if(name == NULL || name[0] == '\0')
+	if (name == NULL || name[0] == '\0')
 		return -1;
 
-	for (t = 0; rite_actions[t].name != NULL; t++)
+	for (t = 0; t < max_rite_actions; t++)
 	{
-		if (LOWER(name[0]) == LOWER(rite_actions[t].name[0]) &&  !str_prefix(name,rite_actions[t].name))
+		if (LOWER(name[0]) == LOWER(rite_actions[t].name[0]) && !str_prefix(name, rite_actions[t].name))
 			return t;
 	}
 
 	return -1;
+}
+
+int rite_count_steps (struct ritual_type *r)
+{
+	int i, count = 0;
+	for (i = 0; i < MAX_RITE_STEPS; i++)
+		if (r->actions[i] != -1) count++;
+	return count;
+}
+
+struct ritual_type *rite_partial_lookup (CHAR_DATA *ch)
+{
+	struct ritual_type *r;
+	struct ritual_type *match = NULL;
+	bool ok;
+	int i;
+
+	if (ch->ritepoint == 0)
+		return NULL;
+
+	for (r = ritual_list; r != NULL; r = r->next)
+	{
+		if (!rite_available(r, ch))
+			continue;
+
+		if (ch->ritepoint > rite_count_steps(r))
+			continue;
+
+		ok = TRUE;
+		for (i = 0; i < ch->ritepoint; i++)
+		{
+			if (r->actions[i] != ch->riteacts[i])
+			{
+				ok = FALSE;
+				break;
+			}
+		}
+
+		if (ok)
+		{
+			match = r;
+			break;
+		}
+	}
+
+	return match;
+}
+
+bool knows_rite (CHAR_DATA *ch, struct ritual_type *r)
+{
+	int i;
+	if (IS_NPC(ch)) return FALSE;
+	for (i = 0; i < ch->n_known_rites; i++)
+		if (ch->known_rite_ids[i] == r->id) return TRUE;
+	return FALSE;
+}
+
+void learn_rite (CHAR_DATA *ch, struct ritual_type *r)
+{
+	if (IS_NPC(ch)) return;
+	if (knows_rite(ch, r)) return;
+	if (ch->n_known_rites >= MAX_KNOWN_RITES) return;
+	ch->known_rite_ids[ch->n_known_rites++] = r->id;
 }

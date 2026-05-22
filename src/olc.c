@@ -100,6 +100,9 @@ bool run_olc_editor( DESCRIPTOR_DATA *d )
 	case ED_MPCODE:
 	mpedit( d->character, d->incomm );
 	break;
+	case ED_RITUAL:
+	ritedit( d->character, d->incomm );
+	break;
 	default:
 	return FALSE;
 	}
@@ -159,6 +162,9 @@ char *olc_ed_name( CHAR_DATA *ch )
 		break;
 	case ED_MPCODE:
 		send_to_char("MPEdit", ch);
+		break;
+	case ED_RITUAL:
+		send_to_char("RiteEdit", ch);
 		break;
 	default:
 		send_to_char(" ", ch);
@@ -239,6 +245,12 @@ char *olc_ed_vnum( CHAR_DATA *ch )
 	case ED_MPCODE:
 		pMprog = (MPROG_CODE *)ch->desc->pEdit;
 		send_to_char(Format("%d", pMprog ? pMprog->vnum : 0), ch);
+		break;
+	case ED_RITUAL:
+		{
+			struct ritual_type *pRite = (struct ritual_type *)ch->desc->pEdit;
+			send_to_char(Format("%s", pRite ? pRite->name : "(null)"), ch);
+		}
 		break;
 	default:
 		send_to_char(" ", ch);
@@ -328,6 +340,9 @@ bool show_commands( CHAR_DATA *ch, char *argument )
 		break;
 	case ED_MPCODE:
 		show_olc_cmds( ch, mpedit_table );
+		break;
+	case ED_RITUAL:
+		show_olc_cmds( ch, ritedit_table );
 		break;
 	}
 
@@ -452,6 +467,7 @@ const struct olc_cmd_type oedit_table[] =
 	{	"liqlist",	oedit_liqlist	},  /* ROM */
 	{	"use",		oedit_use_strings },
 	{	"company",	oedit_company	},
+	{	"grimoire",	oedit_grimoire	},
 
 	{   "?",		show_help	},
 	{   "version",	show_version	},
@@ -5028,5 +5044,114 @@ void do_freevnums(CHAR_DATA *ch, char *argument)
 	page_to_char(buffer->string, ch);
 	free_buf(buffer);
 	return;
+}
 
+
+/* ==================== RITEDIT ==================== */
+
+const struct olc_cmd_type ritedit_table[] =
+{
+	{ "create",   ritedit_create   },
+	{ "name",     ritedit_name     },
+	{ "races",    ritedit_races    },
+	{ "disc",     ritedit_disc     },
+	{ "level",    ritedit_level    },
+	{ "beats",    ritedit_beats    },
+	{ "target",   ritedit_target   },
+	{ "effect",   ritedit_effect   },
+	{ "sequence", ritedit_sequence },
+	{ "delete",   ritedit_delete   },
+	{ "show",     ritedit_show     },
+	{ "?",        show_help        },
+	{ NULL,       0                }
+};
+
+/* Dispatcher called by do_ritedit(). */
+void ritedit( CHAR_DATA *ch, char *argument )
+{
+	char command[MIL];
+	int  cmd;
+
+	smash_tilde(argument);
+	argument = one_argument(argument, command);
+
+	if (IS_NULLSTR(command))
+	{
+		ritedit_show(ch, argument);
+		return;
+	}
+
+	if (!str_cmp(command, "done"))
+	{
+		edit_done(ch);
+		return;
+	}
+
+	for (cmd = 0; ritedit_table[cmd].name != NULL; cmd++)
+	{
+		if (!str_prefix(command, ritedit_table[cmd].name))
+		{
+			if ((*ritedit_table[cmd].olc_fun)(ch, argument))
+				ritedit_show(ch, "");
+			return;
+		}
+	}
+
+	send_to_char("Huh? Type '?' for a list of ritedit commands.\n\r", ch);
+}
+
+/* Entry point: ritedit [name]  or  ritedit create [name] */
+void do_ritedit( CHAR_DATA *ch, char *argument )
+{
+	struct ritual_type *r;
+	char arg[MSL];
+
+	CheckChNPC(ch);
+
+	argument = one_argument(argument, arg);
+
+	if (!str_cmp(arg, "create"))
+	{
+		if (IS_NULLSTR(argument))
+		{
+			send_to_char("Syntax: ritedit create [ritual name]\n\r", ch);
+			return;
+		}
+		ritedit_create(ch, argument);
+		if (ch->desc->pEdit != NULL)
+			ch->desc->editor = ED_RITUAL;
+		return;
+	}
+
+	if (IS_NULLSTR(arg))
+	{
+		send_to_char("Syntax: ritedit [name]  or  ritedit create [name]\n\r", ch);
+		return;
+	}
+
+	/* Reassemble full name from arg + argument */
+	if (!IS_NULLSTR(argument))
+	{
+		char full[MSL];
+		snprintf(full, sizeof(full), "%s %s", arg, argument);
+		for (r = ritual_list; r != NULL; r = r->next)
+			if (!str_cmp(r->name, full)) break;
+		if (r == NULL)
+			for (r = ritual_list; r != NULL; r = r->next)
+				if (!str_prefix(arg, r->name)) break;
+	}
+	else
+	{
+		for (r = ritual_list; r != NULL; r = r->next)
+			if (!str_prefix(arg, r->name)) break;
+	}
+
+	if (r == NULL)
+	{
+		send_to_char("RiteEdit: No ritual by that name.\n\r", ch);
+		return;
+	}
+
+	ch->desc->pEdit  = (void *)r;
+	ch->desc->editor = ED_RITUAL;
 }

@@ -86,7 +86,11 @@ const char *Lower(const char *str)
 extern  int _filbuf     args( (FILE *) );
 #endif
 
-void new_reset  args(( ROOM_INDEX_DATA *pR, RESET_DATA *pReset ));
+void new_reset          args(( ROOM_INDEX_DATA *pR, RESET_DATA *pReset ));
+static void skip_helps_section  args(( FILE *fp ));
+void load_helps_xml             args(( FILE *fp, int type ));
+void load_rituals_xml           args(( FILE *fp ));
+void load_rituals_bootstrap     args(( void ));
 
 /*
  * Globals.
@@ -405,13 +409,35 @@ void boot_db()
                 }
                 else if ( !str_cmp( word, "HELPS"    ) )
                 {
-                    load_helps (fpArea, 0);
-                    log_string( LOG_CONNECT, "Help files loaded successfully." );
+                    FILE *fxml = fopen("area/help.xml", "r");
+                    if (fxml)
+                    {
+                        load_helps_xml(fxml, 0);
+                        fclose(fxml);
+                        skip_helps_section(fpArea);
+                        log_string(LOG_CONNECT, "Help files loaded from XML.");
+                    }
+                    else
+                    {
+                        load_helps(fpArea, 0);
+                        log_string(LOG_CONNECT, "Help files loaded from .are (no XML found).");
+                    }
                 }
                 else if ( !str_cmp( word, "TIPS"     ) )
                 {
-                    load_helps (fpArea, 1);
-                    log_string( LOG_CONNECT, "Tips loaded successfully." );
+                    FILE *fxml = fopen("area/tips.xml", "r");
+                    if (fxml)
+                    {
+                        load_helps_xml(fxml, 1);
+                        fclose(fxml);
+                        skip_helps_section(fpArea);
+                        log_string(LOG_CONNECT, "Tips loaded from XML.");
+                    }
+                    else
+                    {
+                        load_helps(fpArea, 1);
+                        log_string(LOG_CONNECT, "Tips loaded from .are (no XML found).");
+                    }
                 }
                 else if ( !str_cmp( word, "HELP"  ) )
                 {
@@ -582,6 +608,21 @@ void boot_db()
         load_stocks();
         load_research_topics();
         load_social_table();
+
+        {
+            FILE *fxml = fopen("rituals.xml", "r");
+            if (fxml)
+            {
+                load_rituals_xml(fxml);
+                fclose(fxml);
+                log_string(LOG_CONNECT, "Rituals loaded from XML.");
+            }
+            else
+            {
+                load_rituals_bootstrap();
+                log_string(LOG_CONNECT, "Rituals loaded from bootstrap (no XML found).");
+            }
+        }
     }
 
     return;
@@ -1082,6 +1123,335 @@ void load_helps(FILE *fp, int type)
         }
     }
 }
+
+/* ---------- XML help loader helpers ---------- */
+
+static void xml_unescape(char *buf)
+{
+    char *src, *dst;
+    for (src = dst = buf; *src; src++, dst++)
+    {
+        if (*src == '&')
+        {
+                 if (!strncmp(src, "&amp;",  5)) { *dst = '&';  src += 4; }
+            else if (!strncmp(src, "&lt;",   4)) { *dst = '<';  src += 3; }
+            else if (!strncmp(src, "&gt;",   4)) { *dst = '>';  src += 3; }
+            else if (!strncmp(src, "&quot;", 6)) { *dst = '"';  src += 5; }
+            else if (!strncmp(src, "&apos;", 6)) { *dst = '\''; src += 5; }
+            else                                  *dst = *src;
+        }
+        else
+            *dst = *src;
+    }
+    *dst = '\0';
+}
+
+/*
+ * Extracts the text content of an XML element whose opening tag appears in
+ * line.  Reads further lines from fp if the closing tag is not on the same
+ * line.  Returns 1 on success (opening tag found in line), 0 otherwise.
+ * out is NUL-terminated and will not exceed outsize-1 characters.
+ */
+static int xml_get_field(FILE *fp, const char *line, const char *tag,
+                          char *out, int outsize)
+{
+    static char extra[MSL * 4];
+    char open_tag[64], close_tag[64];
+    const char *p, *q;
+    int len, n;
+
+    snprintf(open_tag,  sizeof(open_tag),  "<%s>",  tag);
+    snprintf(close_tag, sizeof(close_tag), "</%s>", tag);
+
+    p = strstr(line, open_tag);
+    if (!p)
+        return 0;
+    p += strlen(open_tag);
+
+    q = strstr(p, close_tag);
+    if (q)
+    {
+        len = (int)(q - p);
+        if (len >= outsize) len = outsize - 1;
+        strncpy(out, p, len);
+        out[len] = '\0';
+        return 1;
+    }
+
+    len = strlen(p);
+    if (len >= outsize - 1) len = outsize - 2;
+    strncpy(out, p, len);
+    out[len] = '\0';
+
+    while (fgets(extra, sizeof(extra), fp))
+    {
+        q = strstr(extra, close_tag);
+        if (q)
+        {
+            n = (int)(q - extra);
+            if (len + n >= outsize - 1) n = outsize - 1 - len;
+            if (n > 0) { strncat(out, extra, n); len += n; }
+            break;
+        }
+        n = strlen(extra);
+        if (len + n >= outsize - 1) n = outsize - 1 - len;
+        if (n > 0) { strncat(out, extra, n); len += n; }
+    }
+    return 1;
+}
+
+/*
+ * Skips the rest of a legacy #HELPS or #TIPS section so the area file parser
+ * stays in sync when help data is loaded from XML instead.
+ */
+static void skip_helps_section(FILE *fp)
+{
+    char line[MSL];
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (line[0] == '$')
+            break;
+    }
+}
+
+/*
+ * Loads help or tip entries from an XML file written by do_hsave2.
+ * type 0 = help_list, type 1 = tip_list.
+ */
+void load_helps_xml(FILE *fp, int type)
+{
+    HELP_DATA *pHelp = NULL;
+    char line[MSL * 4];
+    char content[MSL * 4];
+
+    if (!type)
+    {
+        clear_help_list(&help_list);
+        top_help = 0;
+    }
+    else
+    {
+        clear_help_list(&tip_list);
+        top_tip = 0;
+    }
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (strstr(line, "<Help>"))
+        {
+            pHelp = new_help();
+            continue;
+        }
+
+        if (strstr(line, "</Help>"))
+        {
+            if (!pHelp)
+                continue;
+            if (pHelp->keyword && !str_cmp(pHelp->keyword, "greeting"))
+                help_greeting = pHelp->unformatted;
+            if (!type)
+            {
+                LINK_SINGLE(pHelp, next, help_list);
+                top_help++;
+            }
+            else
+            {
+                LINK_SINGLE(pHelp, next, tip_list);
+                top_tip++;
+            }
+            pHelp = NULL;
+            continue;
+        }
+
+        if (!pHelp)
+            continue;
+
+        if (xml_get_field(fp, line, "level", content, sizeof(content)))
+            { xml_unescape(content); pHelp->level = atoi(content); }
+        else if (xml_get_field(fp, line, "keyword", content, sizeof(content)))
+            { xml_unescape(content); pHelp->keyword = str_dup(content); }
+        else if (xml_get_field(fp, line, "races", content, sizeof(content)))
+            { xml_unescape(content); if (content[0]) pHelp->races = str_dup(content); }
+        else if (xml_get_field(fp, line, "clans", content, sizeof(content)))
+            { xml_unescape(content); if (content[0]) pHelp->clans = str_dup(content); }
+        else if (xml_get_field(fp, line, "Topic", content, sizeof(content)))
+            { xml_unescape(content); pHelp->topic = str_dup(content); }
+        else if (xml_get_field(fp, line, "Quote", content, sizeof(content)))
+            { xml_unescape(content); pHelp->quote = str_dup(content); }
+        else if (xml_get_field(fp, line, "Syntax", content, sizeof(content)))
+            { xml_unescape(content); pHelp->syntax = str_dup(content); }
+        else if (xml_get_field(fp, line, "Desc", content, sizeof(content)))
+            { xml_unescape(content); pHelp->description = str_dup(content); }
+        else if (xml_get_field(fp, line, "See", content, sizeof(content)))
+            { xml_unescape(content); pHelp->see_also = str_dup(content); }
+        else if (xml_get_field(fp, line, "Web", content, sizeof(content)))
+            { xml_unescape(content); pHelp->website = str_dup(content); }
+        else if (xml_get_field(fp, line, "Unformatted", content, sizeof(content)))
+            { xml_unescape(content); pHelp->unformatted = str_dup(content); }
+    }
+}
+
+/* ---------- end XML help loader ---------- */
+
+/* ---------- XML ritual loader ---------- */
+
+void load_rituals_xml(FILE *fp)
+{
+    char line[4 * MSL];
+    char content[4 * MSL];
+    struct ritemove_type *action_buf = NULL;
+    int  action_cap = 0;
+    int  action_cnt = 0;
+    struct ritual_type *tail = NULL;
+    bool got_next_id = FALSE;
+
+    /* free any previously loaded data */
+    while (ritual_list)
+    {
+        struct ritual_type *next = ritual_list->next;
+        PURGE_DATA(ritual_list->name);
+        PURGE_DATA(ritual_list->races);
+        free(ritual_list);
+        ritual_list = next;
+    }
+    if (rite_actions) { free(rite_actions); rite_actions = NULL; }
+    max_rite_actions = 0;
+    next_ritual_id   = 1;
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (!got_next_id && xml_get_field(fp, line, "next_id", content, sizeof(content)))
+        {
+            next_ritual_id = atoi(content);
+            got_next_id = TRUE;
+        }
+        else if (strstr(line, "<Action>"))
+        {
+            /* read action fields until </Action> */
+            struct ritemove_type act;
+            memset(&act, 0, sizeof(act));
+
+            while (fgets(line, sizeof(line), fp) && !strstr(line, "</Action>"))
+            {
+                if (xml_get_field(fp, line, "name", content, sizeof(content)))
+                    { xml_unescape(content); act.name = str_dup(content); }
+                else if (xml_get_field(fp, line, "to_char", content, sizeof(content)))
+                    { xml_unescape(content); act.to_char = str_dup(content); }
+                else if (xml_get_field(fp, line, "to_room", content, sizeof(content)))
+                    { xml_unescape(content); act.to_room = str_dup(content); }
+                else if (xml_get_field(fp, line, "grimoire_text", content, sizeof(content)))
+                    { xml_unescape(content); act.grimoire_text = str_dup(content); }
+                else if (xml_get_field(fp, line, "beats", content, sizeof(content)))
+                    act.beats = atoi(content);
+            }
+
+            /* grow action buffer */
+            if (action_cnt >= action_cap)
+            {
+                action_cap = action_cap ? action_cap * 2 : 32;
+                action_buf = (struct ritemove_type *)realloc(action_buf, (action_cap + 1) * sizeof(struct ritemove_type));
+                if (!action_buf)
+                {
+                    log_string(LOG_ERR, "load_rituals_xml: realloc failed for actions");
+                    return;
+                }
+            }
+            action_buf[action_cnt++] = act;
+            // Keep rite_actions current so riteaction_lookup() works when
+            // sequence fields are parsed inside subsequent <Ritual> blocks.
+            rite_actions     = action_buf;
+            max_rite_actions = action_cnt;
+        }
+        else if (strstr(line, "<Ritual>"))
+        {
+            struct ritual_type *r = (struct ritual_type *)calloc(1, sizeof(struct ritual_type));
+            int i;
+
+            for (i = 0; i < MAX_RITE_STEPS; i++)
+                r->actions[i] = -1;
+
+            while (fgets(line, sizeof(line), fp) && !strstr(line, "</Ritual>"))
+            {
+                if (xml_get_field(fp, line, "id", content, sizeof(content)))
+                    r->id = atoi(content);
+                else if (xml_get_field(fp, line, "name", content, sizeof(content)))
+                    { xml_unescape(content); r->name = str_dup(content); }
+                else if (xml_get_field(fp, line, "races", content, sizeof(content)))
+                    { xml_unescape(content); r->races = str_dup(content); }
+                else if (xml_get_field(fp, line, "disc_test", content, sizeof(content)))
+                    r->disc_test = atoi(content);
+                else if (xml_get_field(fp, line, "level", content, sizeof(content)))
+                    r->level = atoi(content);
+                else if (xml_get_field(fp, line, "beats", content, sizeof(content)))
+                    r->beats = atoi(content);
+                else if (xml_get_field(fp, line, "target", content, sizeof(content)))
+                    r->target = atoi(content);
+                else if (xml_get_field(fp, line, "effect", content, sizeof(content)))
+                {
+                    xml_unescape(content);
+                    r->spell_fun = rite_fun_lookup(content);
+                    if (!r->spell_fun)
+                        log_string(LOG_BUG, Format("load_rituals_xml: unknown effect '%s'", content));
+                }
+                else if (xml_get_field(fp, line, "sequence", content, sizeof(content)))
+                {
+                    /* space-separated action names */
+                    char buf[4 * MSL];
+                    char word[MIL];
+                    char *p;
+                    int step = 0;
+                    xml_unescape(content);
+                    strncpy(buf, content, sizeof(buf) - 1);
+                    buf[sizeof(buf) - 1] = '\0';
+                    p = buf;
+                    while (*p && step < MAX_RITE_STEPS)
+                    {
+                        p = one_argument(p, word);
+                        if (!word[0]) break;
+                        r->actions[step] = riteaction_lookup(word);
+                        if (r->actions[step] < 0)
+                            log_string(LOG_BUG, Format("load_rituals_xml: unknown action '%s'", word));
+                        step++;
+                    }
+                }
+            }
+
+            /* Migration: XML written before IDs existed has id=0; assign one now */
+            if (r->id == 0)
+                r->id = next_ritual_id++;
+
+            r->next = NULL;
+            if (tail == NULL) ritual_list = r;
+            else              tail->next  = r;
+            tail = r;
+        }
+    }
+
+    /* finalise action array with NULL terminator */
+    if (action_buf && action_cnt > 0)
+    {
+        action_buf = (struct ritemove_type *)realloc(action_buf, (action_cnt + 1) * sizeof(struct ritemove_type));
+        memset(&action_buf[action_cnt], 0, sizeof(struct ritemove_type));
+        rite_actions     = action_buf;
+        max_rite_actions = action_cnt;
+    }
+    else
+    {
+        free(action_buf);
+    }
+
+    /* Safety: if next_id was missing, derive it from max id seen */
+    if (!got_next_id)
+    {
+        struct ritual_type *r;
+        int max_id = 0;
+        for (r = ritual_list; r; r = r->next)
+            if (r->id > max_id) max_id = r->id;
+        next_ritual_id = max_id + 1;
+    }
+}
+
+/* ---------- end XML ritual loader ---------- */
 
 void load_old_helps(FILE *fp, int type)
 {

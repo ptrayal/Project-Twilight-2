@@ -117,4 +117,6 @@ DECLARE_SPELL_FUN(	rite_pack		);
 DECLARE_SPELL_FUN(	rite_recognition	);
 DECLARE_SPELL_FUN(	rite_hero		);
 
+void show_grimoire( CHAR_DATA *ch, OBJ_DATA *obj );
+
 #endif

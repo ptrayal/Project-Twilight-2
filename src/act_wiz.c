@@ -6492,7 +6492,7 @@ void do_goquest(CHAR_DATA *ch, char *argument)
 
 void do_ritemoves(CHAR_DATA *ch, char *argument)
 {
-	int i = 0, j = 0;
+	int j = 0;
 	int race = 0;
 	bool found = FALSE;
 
@@ -6514,26 +6514,29 @@ void do_ritemoves(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	for(i = 0; ritual_table[i].name != NULL; i++)
 	{
-		if( !str_cmp(ritual_table[i].races, "all")
-				|| race == race_lookup(ritual_table[i].races))
+		struct ritual_type *r;
+		for(r = ritual_list; r != NULL; r = r->next)
 		{
-			if(!found)
+			if( !str_cmp(r->races, "all")
+					|| race == race_lookup(r->races))
 			{
-				send_to_char("Ritual move cheat sheet\n\r", ch);
-			}
-			found = TRUE;
-
-			send_to_char(Format("%s: ", ritual_table[i].name), ch);
-			for(j = 0; j < MAX_RITE_STEPS; j++)
-			{
-				if(ritual_table[i].actions[j] > -1)
+				if(!found)
 				{
-					send_to_char(Format("%s ", rite_actions[ritual_table[i].actions[j]].name), ch);
+					send_to_char("Ritual move cheat sheet\n\r", ch);
 				}
+				found = TRUE;
+
+				send_to_char(Format("%s: ", r->name), ch);
+				for(j = 0; j < MAX_RITE_STEPS; j++)
+				{
+					if(r->actions[j] > -1)
+					{
+						send_to_char(Format("%s ", rite_actions[r->actions[j]].name), ch);
+					}
+				}
+				send_to_char("\n\r", ch);
 			}
-			send_to_char("\n\r", ch);
 		}
 	}
 

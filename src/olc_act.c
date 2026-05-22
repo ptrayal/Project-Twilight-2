@@ -2610,6 +2610,18 @@ void show_obj_values( CHAR_DATA *ch, OBJ_INDEX_DATA *obj )
 	case ITEM_KEY:
 		send_to_char( Format("[v0] Reset Room: [%d]\n\r[v1] Reset Mob:  [%d]\n\r", obj->value[0], obj->value[1]), ch );
 		break;
+
+	case ITEM_GRIMOIRE:
+	{
+		EXTRA_DESCR_DATA *ed;
+		const char *rname = "(none)";
+		send_to_char( Format("[v0] Clarity:   [%d] (0=Full 1=Partial 2=Cryptic)\n\r", obj->value[0]), ch );
+		send_to_char( Format("[v1] Condition: [%d%%]\n\r", obj->value[1]), ch );
+		for (ed = obj->extra_descr; ed; ed = ed->next)
+			if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL")) { rname = ed->description; break; }
+		send_to_char( Format("[ritual] Linked ritual: %s\n\r", rname), ch );
+		break;
+	}
     }
 
     return;
@@ -3054,6 +3066,31 @@ bool set_obj_values( CHAR_DATA *ch, OBJ_INDEX_DATA *pObj, int value_num, char *a
 		    break;
 	    }
             break;
+
+	case ITEM_GRIMOIRE:
+		switch (value_num)
+		{
+		default:
+			send_to_char("Grimoire values: v0=clarity(0-2)  v1=condition(0-100).\n\r", ch);
+			return FALSE;
+		case 0:
+			{
+				int v = atoi(argument);
+				if (v < 0 || v > 2) { send_to_char("Clarity must be 0, 1, or 2.\n\r", ch); return FALSE; }
+				pObj->value[0] = v;
+				send_to_char("GRIMOIRE CLARITY SET.\n\r\n\r", ch);
+			}
+			break;
+		case 1:
+			{
+				int v = atoi(argument);
+				if (v < 0 || v > 100) { send_to_char("Condition must be 0-100.\n\r", ch); return FALSE; }
+				pObj->value[1] = v;
+				send_to_char("GRIMOIRE CONDITION SET.\n\r\n\r", ch);
+			}
+			break;
+		}
+		break;
     }
 
     show_obj_values( ch, pObj );
@@ -4109,6 +4146,81 @@ OEDIT( oedit_company )
 	}
 
 	return check;
+}
+
+
+
+OEDIT( oedit_grimoire )
+{
+	OBJ_INDEX_DATA *pObj;
+	EXTRA_DESCR_DATA *ed;
+	struct ritual_type *r;
+
+	EDIT_OBJ(ch, pObj);
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax:  grimoire <ritual name>\n\r", ch);
+		send_to_char("         grimoire none\n\r", ch);
+		return FALSE;
+	}
+
+	if (!str_cmp(argument, "none"))
+	{
+		/* Remove any existing GRIMOIRE_RITUAL extra_descr */
+		EXTRA_DESCR_DATA *prev = NULL;
+		for (ed = pObj->extra_descr; ed; ed = ed->next)
+		{
+			if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL"))
+			{
+				if (prev)
+					prev->next = ed->next;
+				else
+					pObj->extra_descr = ed->next;
+				free_extra_descr(ed);
+				send_to_char("Grimoire ritual link cleared.\n\r", ch);
+				return TRUE;
+			}
+			prev = ed;
+		}
+		send_to_char("No ritual link to clear.\n\r", ch);
+		return FALSE;
+	}
+
+	/* Validate: ritual must exist */
+	for (r = ritual_list; r != NULL; r = r->next)
+	{
+		if (!str_cmp(r->name, argument))
+			break;
+	}
+
+	if (r == NULL)
+	{
+		send_to_char("That ritual does not exist. Use 'rituals list rites' to see valid names.\n\r", ch);
+		return FALSE;
+	}
+
+	/* Find existing GRIMOIRE_RITUAL extra_descr or create one */
+	for (ed = pObj->extra_descr; ed; ed = ed->next)
+	{
+		if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL"))
+			break;
+	}
+
+	if (ed == NULL)
+	{
+		ed = new_extra_descr();
+		PURGE_DATA(ed->keyword);
+		ed->keyword   = str_dup("GRIMOIRE_RITUAL");
+		ed->next      = pObj->extra_descr;
+		pObj->extra_descr = ed;
+	}
+
+	PURGE_DATA(ed->description);
+	ed->description = str_dup(r->name);
+
+	send_to_char(Format("Grimoire linked to ritual: %s\n\r", r->name), ch);
+	return TRUE;
 }
 
 
@@ -7332,4 +7444,268 @@ NEDIT( kbedit_successes )
 
 	send_to_char( "Successes set.\n\r", ch);
 	return TRUE;
+}
+
+
+/* ==================== RITEDIT FUNCTIONS ==================== */
+
+#define RITEDIT( fun ) HEDIT( fun )
+#define EDIT_RITUAL(ch, r) ( r = (struct ritual_type *)ch->desc->pEdit )
+
+RITEDIT( ritedit_show )
+{
+	struct ritual_type *r;
+	int i, j;
+
+	EDIT_RITUAL(ch, r);
+
+	send_to_char(Format("ID:        %d\n\r", r->id), ch);
+	send_to_char(Format("Ritual:    %s\n\r", r->name  ? r->name  : "(none)"), ch);
+	send_to_char(Format("Races:     %s\n\r", r->races ? r->races : "(none)"), ch);
+	send_to_char(Format("Disc:      %d\n\r", r->disc_test), ch);
+	send_to_char(Format("Level:     %d\n\r", r->level), ch);
+	send_to_char(Format("Beats:     %d\n\r", r->beats), ch);
+	send_to_char(Format("Target:    %d\n\r", r->target), ch);
+	send_to_char(Format("Effect:    %s\n\r", rite_fun_name(r->spell_fun)), ch);
+	send_to_char("Sequence:  ", ch);
+	j = 0;
+	for (i = 0; i < MAX_RITE_STEPS; i++)
+	{
+		if (r->actions[i] < 0) break;
+		if (j++) send_to_char(", ", ch);
+		send_to_char(rite_actions[r->actions[i]].name, ch);
+	}
+	send_to_char("\n\r", ch);
+	return FALSE;
+}
+
+RITEDIT( ritedit_create )
+{
+	struct ritual_type *r;
+	int i;
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: ritedit create [ritual name]\n\r", ch);
+		return FALSE;
+	}
+
+	r = (struct ritual_type *)calloc(1, sizeof(struct ritual_type));
+	r->id       = next_ritual_id++;
+	r->name     = str_dup(argument);
+	r->races    = str_dup("all");
+	r->disc_test = -1;
+	r->level    = 1;
+	r->beats    = 1;
+	r->target   = TAR_IGNORE;
+	r->spell_fun = NULL;
+	for (i = 0; i < MAX_RITE_STEPS; i++)
+		r->actions[i] = -1;
+
+	r->next = ritual_list;
+	ritual_list = r;
+
+	ch->desc->pEdit  = (void *)r;
+	send_to_char("Ritual created.\n\r", ch);
+	return FALSE;
+}
+
+RITEDIT( ritedit_name )
+{
+	struct ritual_type *r;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: name [ritual name]\n\r", ch);
+		return FALSE;
+	}
+	PURGE_DATA(r->name);
+	r->name = str_dup(argument);
+	send_to_char("Name set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_races )
+{
+	struct ritual_type *r;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: races [race name | all]\n\r", ch);
+		return FALSE;
+	}
+	if (str_cmp(argument, "all") && race_lookup(argument) < 0)
+	{
+		send_to_char("That is not a valid race (or 'all').\n\r", ch);
+		return FALSE;
+	}
+	PURGE_DATA(r->races);
+	r->races = str_dup(argument);
+	send_to_char("Races set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_disc )
+{
+	struct ritual_type *r;
+	int d;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: disc [-1 | disc_index]\n\r", ch);
+		return FALSE;
+	}
+	if (!is_number(argument))
+	{
+		d = disc_lookup(ch, argument);
+		if (d < 0)
+		{
+			send_to_char("That discipline was not found. Use -1 for none.\n\r", ch);
+			return FALSE;
+		}
+	}
+	else
+	{
+		d = atoi(argument);
+	}
+	r->disc_test = d;
+	send_to_char("Disc_test set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_level )
+{
+	struct ritual_type *r;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument) || !is_number(argument))
+	{
+		send_to_char("Syntax: level [number]\n\r", ch);
+		return FALSE;
+	}
+	r->level = atoi(argument);
+	send_to_char("Level set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_beats )
+{
+	struct ritual_type *r;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument) || !is_number(argument))
+	{
+		send_to_char("Syntax: beats [number]\n\r", ch);
+		return FALSE;
+	}
+	r->beats = atoi(argument);
+	send_to_char("Beats set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_target )
+{
+	struct ritual_type *r;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument) || !is_number(argument))
+	{
+		send_to_char("Syntax: target [0=ignore 2=char_def 4=obj_inv]\n\r", ch);
+		return FALSE;
+	}
+	r->target = atoi(argument);
+	send_to_char("Target set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_effect )
+{
+	struct ritual_type *r;
+	SPELL_FUN *fun;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: effect [function_name]\n\r", ch);
+		return FALSE;
+	}
+	fun = rite_fun_lookup(argument);
+	if (!fun)
+	{
+		send_to_char(Format("Unknown effect function '%s'.\n\r", argument), ch);
+		return FALSE;
+	}
+	r->spell_fun = fun;
+	send_to_char("Effect set.\n\r", ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_sequence )
+{
+	struct ritual_type *r;
+	char word[MIL];
+	char *p;
+	int step = 0;
+	int i;
+	EDIT_RITUAL(ch, r);
+
+	if (IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: sequence [action1] [action2] ...\n\r", ch);
+		return FALSE;
+	}
+
+	for (i = 0; i < MAX_RITE_STEPS; i++)
+		r->actions[i] = -1;
+
+	p = argument;
+	while (*p && step < MAX_RITE_STEPS)
+	{
+		p = one_argument(p, word);
+		if (!word[0]) break;
+		r->actions[step] = riteaction_lookup(word);
+		if (r->actions[step] < 0)
+		{
+			send_to_char(Format("Unknown action '%s'.\n\r", word), ch);
+			for (i = 0; i < MAX_RITE_STEPS; i++)
+				r->actions[i] = -1;
+			return FALSE;
+		}
+		step++;
+	}
+	send_to_char(Format("Sequence set (%d steps).\n\r", step), ch);
+	return TRUE;
+}
+
+RITEDIT( ritedit_delete )
+{
+	struct ritual_type *r, *prev, *cur;
+	EDIT_RITUAL(ch, r);
+
+	prev = NULL;
+	for (cur = ritual_list; cur != NULL; cur = cur->next)
+	{
+		if (cur == r) break;
+		prev = cur;
+	}
+
+	if (cur == NULL)
+	{
+		send_to_char("RiteEdit: ritual not found in list (already deleted?).\n\r", ch);
+		return FALSE;
+	}
+
+	if (prev == NULL) ritual_list = r->next;
+	else              prev->next  = r->next;
+
+	PURGE_DATA(r->name);
+	PURGE_DATA(r->races);
+	free(r);
+
+	edit_done(ch);
+	send_to_char("Ritual deleted.\n\r", ch);
+	return FALSE;
 }

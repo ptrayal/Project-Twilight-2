@@ -1,0 +1,203 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rituals>
+  <next_id>7</next_id>
+  <Action>
+<name>step</name>
+<to_char>You take a slow, measured step.</to_char>
+<to_room>$n takes a solemn step.</to_room>
+<grimoire_text>a slow, measured step</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>temples</name>
+<to_char>You press your fingertips to your temples firmly.</to_char>
+<to_room>$n rubs $s temples.</to_room>
+<grimoire_text>fingertips pressed firmly to the temples</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>circles</name>
+<to_char>You draw circles in the air.</to_char>
+<to_room>$n waves $s hands in circles.</to_room>
+<grimoire_text>hands tracing circles through the air</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>focus</name>
+<to_char>You focus your mind, drawing in energies.</to_char>
+<to_room>$n stares intently.</to_room>
+<grimoire_text>deep concentration drawing in energies</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>raise</name>
+<to_char>You raise your hands in the air.</to_char>
+<to_room>$n raises $s hands in the air.</to_room>
+<grimoire_text>hands raised skyward</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>point</name>
+<to_char>You point your finger.</to_char>
+<to_room>$n points $s finger.</to_room>
+<grimoire_text>a pointing finger directing power</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>draw</name>
+<to_char>You draw shapes and sigils in the air.</to_char>
+<to_room>$n waves $s hands in the air.</to_room>
+<grimoire_text>shapes and sigils drawn through the air</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>howl</name>
+<to_char>You let out a howl.</to_char>
+<to_room>$n howls.</to_room>
+<grimoire_text>a haunting howl released</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>chant</name>
+<to_char>You chant the words...</to_char>
+<to_room>$n begins to chant, but you don&apos;t recognise the language.</to_room>
+<grimoire_text>words chanted in a forgotten tongue</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>trace</name>
+<to_char>You trace out symbols on nearby surfaces.</to_char>
+<to_room>$n traces out symbols.</to_room>
+<grimoire_text>symbols traced upon nearby surfaces</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>entreat</name>
+<to_char>You entreat the powers to your aid.</to_char>
+<to_room>$n seems to call on some occult source of power.</to_room>
+<grimoire_text>an appeal to occult powers</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>scratch</name>
+<to_char>You scratch symbols in the earth.</to_char>
+<to_room>$n scratches around on the ground.</to_room>
+<grimoire_text>symbols scratched into the earth</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>splay</name>
+<to_char>You splay your hand before you with an outstretched arm.</to_char>
+<to_room>$n splays $s hand at arms length as if directing something.</to_room>
+<grimoire_text>an outstretched hand directing will</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>halt</name>
+<to_char>You demand a halt!</to_char>
+<to_room>$n holds up $s hand, as if to demand &apos;Halt!&apos;</to_room>
+<grimoire_text>a commanding gesture demanding halt</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>dance</name>
+<to_char>You dance around in a circle.</to_char>
+<to_room>$n dances around in a circle.</to_room>
+<grimoire_text>a ritual dance in a circle</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>breathe</name>
+<to_char>You perform the breathing exercises.</to_char>
+<to_room>$n starts controlling $s breathing.</to_room>
+<grimoire_text>controlled breathing exercises</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>blood</name>
+<to_char>You draw blood from your hand.</to_char>
+<to_room>$n draws some of $s own blood!</to_room>
+<grimoire_text>an offering of blood drawn from the palm</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>beat</name>
+<to_char>You beat your chest rhythmically.</to_char>
+<to_room>$n beats $s chest.</to_room>
+<grimoire_text>rhythmic beating of the chest</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Action>
+<name>groan</name>
+<to_char>You groan loudly.</to_char>
+<to_room>$n groans loudly.</to_room>
+<grimoire_text>a deep, resonant groan</grimoire_text>
+    <beats>1</beats>
+  </Action>
+  <Ritual>
+    <id>1</id>
+<name>Ritual of Introduction</name>
+<races>vampire</races>
+    <disc_test>18</disc_test>
+    <level>1</level>
+    <beats>2</beats>
+    <target>0</target>
+<effect>rite_introduction</effect>
+<sequence>breathe focus temples</sequence>
+  </Ritual>
+  <Ritual>
+    <id>2</id>
+<name>rite of introduction</name>
+<races>werewolf</races>
+    <disc_test>-1</disc_test>
+    <level>1</level>
+    <beats>1</beats>
+    <target>0</target>
+<effect>rite_introduction</effect>
+<sequence>breathe focus temples</sequence>
+  </Ritual>
+  <Ritual>
+    <id>3</id>
+<name>rite of attunement</name>
+<races>werewolf</races>
+    <disc_test>-1</disc_test>
+    <level>1</level>
+    <beats>1</beats>
+    <target>4</target>
+<effect>rite_attune</effect>
+<sequence>temples raise point entreat</sequence>
+  </Ritual>
+  <Ritual>
+    <id>4</id>
+<name>rite of pack creation</name>
+<races>werewolf</races>
+    <disc_test>-1</disc_test>
+    <level>1</level>
+    <beats>1</beats>
+    <target>2</target>
+<effect>rite_pack</effect>
+<sequence>entreat chant step circles chant raise howl entreat dance</sequence>
+  </Ritual>
+  <Ritual>
+    <id>5</id>
+<name>rite of recognition</name>
+<races>werewolf</races>
+    <disc_test>-1</disc_test>
+    <level>1</level>
+    <beats>1</beats>
+    <target>2</target>
+<effect>rite_recognition</effect>
+<sequence>step raise step raise point splay halt blood point</sequence>
+  </Ritual>
+  <Ritual>
+    <id>6</id>
+<name>rite of the returning hero</name>
+<races>werewolf</races>
+    <disc_test>-1</disc_test>
+    <level>1</level>
+    <beats>1</beats>
+    <target>0</target>
+<effect>rite_hero</effect>
+<sequence>step raise step raise howl beat howl halt</sequence>
+  </Ritual>
+</Rituals>
