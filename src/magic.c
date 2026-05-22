@@ -5875,29 +5875,30 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 	{
 		struct ritual_type *r;
 		bool found = FALSE;
-		send_to_char("Rituals you have completed:\n\r", ch);
+		send_to_char("\tBRituals you have completed:\tn\n\r", ch);
 		for (r = ritual_list; r != NULL; r = r->next)
 		{
 			if (knows_rite(ch, r))
 			{
-				int j, steps = rite_count_steps(r);
-				int shown = 0;
-				send_to_char(Format("  %-30s  (%d steps: ", r->name, steps), ch);
+				int j, shown = 0;
+				send_to_char(Format("\n\r  \tW%s\tn  \tC(%d steps)\tn\n\r",
+					r->name, rite_count_steps(r)), ch);
+				send_to_char("       \tG", ch);
 				for (j = 0; j < MAX_RITE_STEPS; j++)
 				{
-					if (r->actions[j] != -1)
-					{
-						if (shown) send_to_char(", ", ch);
-						send_to_char(rite_actions[r->actions[j]].name, ch);
-						shown++;
-					}
+					if (r->actions[j] == -1) break;
+					if (shown++) send_to_char(", ", ch);
+					send_to_char(rite_actions[r->actions[j]].name, ch);
 				}
-				send_to_char(")\n\r", ch);
+				if (!shown) send_to_char("(no sequence recorded)", ch);
+				send_to_char("\tn\n\r", ch);
 				found = TRUE;
 			}
 		}
 		if (!found)
 			send_to_char("  None.\n\r", ch);
+		else
+			send_to_char("\n\r", ch);
 		return;
 	}
 
@@ -5905,12 +5906,15 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 	{
 		struct ritual_type *r;
 		bool found = FALSE;
-		send_to_char("Rituals available to you:\n\r", ch);
+		send_to_char("\tBRituals available to you:\tn\n\r", ch);
 		for (r = ritual_list; r != NULL; r = r->next)
 		{
 			if (rite_available(r, ch))
 			{
-				send_to_char(Format("  %-30s  (%d steps)\n\r", r->name, rite_count_steps(r)), ch);
+				int steps = rite_count_steps(r);
+				send_to_char(Format("  \tW%-30s\tn  \tC%d step%s\tn%s\n\r",
+					r->name, steps, steps == 1 ? "" : "s",
+					knows_rite(ch, r) ? "  \tG[known]\tn" : ""), ch);
 				found = TRUE;
 			}
 		}
@@ -5966,21 +5970,29 @@ void do_rituals( CHAR_DATA *ch, char *argument )
 		{
 			struct ritual_type *r;
 			int j;
-			send_to_char("All rituals (staff view):\n\r", ch);
+			send_to_char("\tB=== All Rituals (Staff View) ===\tn\n\r", ch);
 			for(r = ritual_list; r != NULL; r = r->next)
 			{
+				const char *disc_name = (r->disc_test >= 0) ? disc_table[r->disc_test].vname : "rank";
+				const char *tgt_name  = (r->target == TAR_CHAR_DEFENSIVE) ? "char"
+				                      : (r->target == TAR_OBJ_INV)        ? "object"
+				                      :                                      "none";
 				int shown = 0;
-				send_to_char(Format("  [%3d] %-30s  races=%-10s  disc=%2d  lvl=%d  steps: ",
-					r->id, r->name, r->races ? r->races : "?",
-					r->disc_test, r->level), ch);
+
+				send_to_char(Format("\n\r  [\tY%3d\tn] \tW%s\tn\n\r", r->id, r->name ? r->name : "(unnamed)"), ch);
+				send_to_char(Format("       races=\tC%-10s\tn  disc=\tC%-14s\tn  lvl=\tC%d\tn  target=\tC%s\tn\n\r",
+					r->races ? r->races : "?", disc_name, r->level, tgt_name), ch);
+				send_to_char("       steps: \tG", ch);
 				for (j = 0; j < MAX_RITE_STEPS; j++)
 				{
 					if (r->actions[j] < 0) break;
 					if (shown++) send_to_char(", ", ch);
 					send_to_char(rite_actions[r->actions[j]].name, ch);
 				}
-				send_to_char("\n\r", ch);
+				if (!shown) send_to_char("(none)", ch);
+				send_to_char("\tn\n\r", ch);
 			}
+			send_to_char("\n\r", ch);
 			return;
 		}
 

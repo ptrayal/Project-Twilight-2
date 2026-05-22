@@ -7459,23 +7459,31 @@ RITEDIT( ritedit_show )
 
 	EDIT_RITUAL(ch, r);
 
-	send_to_char(Format("ID:        %d\n\r", r->id), ch);
-	send_to_char(Format("Ritual:    %s\n\r", r->name  ? r->name  : "(none)"), ch);
-	send_to_char(Format("Races:     %s\n\r", r->races ? r->races : "(none)"), ch);
-	send_to_char(Format("Disc:      %d\n\r", r->disc_test), ch);
-	send_to_char(Format("Level:     %d\n\r", r->level), ch);
-	send_to_char(Format("Beats:     %d\n\r", r->beats), ch);
-	send_to_char(Format("Target:    %d\n\r", r->target), ch);
-	send_to_char(Format("Effect:    %s\n\r", rite_fun_name(r->spell_fun)), ch);
-	send_to_char("Sequence:  ", ch);
-	j = 0;
-	for (i = 0; i < MAX_RITE_STEPS; i++)
 	{
-		if (r->actions[i] < 0) break;
-		if (j++) send_to_char(", ", ch);
-		send_to_char(rite_actions[r->actions[i]].name, ch);
+		const char *disc_name = (r->disc_test >= 0) ? disc_table[r->disc_test].vname : "rank";
+		const char *tgt_name  = (r->target == TAR_CHAR_DEFENSIVE) ? "char"
+		                      : (r->target == TAR_OBJ_INV)        ? "object"
+		                      :                                      "none";
+		send_to_char("\tB--- Ritual Editor ---\tn\n\r", ch);
+		send_to_char(Format("  ID:       \tY%d\tn\n\r", r->id), ch);
+		send_to_char(Format("  Ritual:   \tW%s\tn\n\r", r->name  ? r->name  : "(none)"), ch);
+		send_to_char(Format("  Races:    \tC%s\tn\n\r", r->races ? r->races : "(none)"), ch);
+		send_to_char(Format("  Disc:     \tC%s\tn\n\r", disc_name), ch);
+		send_to_char(Format("  Level:    \tC%d\tn\n\r", r->level), ch);
+		send_to_char(Format("  Beats:    \tC%d\tn\n\r", r->beats), ch);
+		send_to_char(Format("  Target:   \tC%s\tn\n\r", tgt_name), ch);
+		send_to_char(Format("  Effect:   \tC%s\tn\n\r", rite_fun_name(r->spell_fun)), ch);
+		send_to_char("  Sequence: \tG", ch);
+		j = 0;
+		for (i = 0; i < MAX_RITE_STEPS; i++)
+		{
+			if (r->actions[i] < 0) break;
+			if (j++) send_to_char(", ", ch);
+			send_to_char(rite_actions[r->actions[i]].name, ch);
+		}
+		if (!j) send_to_char("(none)", ch);
+		send_to_char("\tn\n\r", ch);
 	}
-	send_to_char("\n\r", ch);
 	return FALSE;
 }
 
