@@ -1357,8 +1357,8 @@ void load_rituals_xml(FILE *fp)
                 }
             }
             action_buf[action_cnt++] = act;
-            // Keep rite_actions current so riteaction_lookup() works when
-            // sequence fields are parsed inside subsequent <Ritual> blocks.
+            /* Keep rite_actions current so riteaction_lookup() works when
+               sequence fields are parsed inside subsequent <Ritual> blocks. */
             rite_actions     = action_buf;
             max_rite_actions = action_cnt;
         }
@@ -1448,6 +1448,31 @@ void load_rituals_xml(FILE *fp)
         for (r = ritual_list; r; r = r->next)
             if (r->id > max_id) max_id = r->id;
         next_ritual_id = max_id + 1;
+    }
+
+    /* Sort ritual_list by ID so display order is always consistent */
+    {
+        struct ritual_type *sorted = NULL;
+        struct ritual_type *cur = ritual_list;
+        while (cur)
+        {
+            struct ritual_type *next = cur->next;
+            if (sorted == NULL || cur->id < sorted->id)
+            {
+                cur->next = sorted;
+                sorted = cur;
+            }
+            else
+            {
+                struct ritual_type *prev = sorted;
+                while (prev->next && prev->next->id < cur->id)
+                    prev = prev->next;
+                cur->next = prev->next;
+                prev->next = cur;
+            }
+            cur = next;
+        }
+        ritual_list = sorted;
     }
 }
 

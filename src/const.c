@@ -66,6 +66,7 @@ const struct item_type		item_table	[]	=
     {	ITEM_TELEPHONE, "phone"		},
     {	ITEM_AMMO,		"ammo"		},
     {	ITEM_BOMB,		"bomb"		},
+    {	ITEM_GRIMOIRE,	"grimoire"	},
     {   0,				NULL		}
 };
 

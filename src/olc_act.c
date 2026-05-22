@@ -2618,7 +2618,7 @@ void show_obj_values( CHAR_DATA *ch, OBJ_INDEX_DATA *obj )
 		send_to_char( Format("[v0] Clarity:   [%d] (0=Full 1=Partial 2=Cryptic)\n\r", obj->value[0]), ch );
 		send_to_char( Format("[v1] Condition: [%d%%]\n\r", obj->value[1]), ch );
 		for (ed = obj->extra_descr; ed; ed = ed->next)
-			if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL")) { rname = ed->description; break; }
+			if (!str_cmp(ed->keyword, "RITELINK")) { rname = ed->description; break; }
 		send_to_char( Format("[ritual] Linked ritual: %s\n\r", rname), ch );
 		break;
 	}
@@ -4167,11 +4167,11 @@ OEDIT( oedit_grimoire )
 
 	if (!str_cmp(argument, "none"))
 	{
-		/* Remove any existing GRIMOIRE_RITUAL extra_descr */
+		/* Remove any existing RITELINK extra_descr */
 		EXTRA_DESCR_DATA *prev = NULL;
 		for (ed = pObj->extra_descr; ed; ed = ed->next)
 		{
-			if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL"))
+			if (!str_cmp(ed->keyword, "RITELINK"))
 			{
 				if (prev)
 					prev->next = ed->next;
@@ -4200,10 +4200,10 @@ OEDIT( oedit_grimoire )
 		return FALSE;
 	}
 
-	/* Find existing GRIMOIRE_RITUAL extra_descr or create one */
+	/* Find existing RITELINK extra_descr or create one */
 	for (ed = pObj->extra_descr; ed; ed = ed->next)
 	{
-		if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL"))
+		if (!str_cmp(ed->keyword, "RITELINK"))
 			break;
 	}
 
@@ -4211,7 +4211,7 @@ OEDIT( oedit_grimoire )
 	{
 		ed = new_extra_descr();
 		PURGE_DATA(ed->keyword);
-		ed->keyword   = str_dup("GRIMOIRE_RITUAL");
+		ed->keyword   = str_dup("RITELINK");
 		ed->next      = pObj->extra_descr;
 		pObj->extra_descr = ed;
 	}
@@ -7510,8 +7510,21 @@ RITEDIT( ritedit_create )
 	for (i = 0; i < MAX_RITE_STEPS; i++)
 		r->actions[i] = -1;
 
-	r->next = ritual_list;
-	ritual_list = r;
+	/* Insert sorted by ID so the list stays ordered regardless of creation order */
+	r->next = NULL;
+	if (ritual_list == NULL || r->id < ritual_list->id)
+	{
+		r->next = ritual_list;
+		ritual_list = r;
+	}
+	else
+	{
+		struct ritual_type *prev = ritual_list;
+		while (prev->next && prev->next->id < r->id)
+			prev = prev->next;
+		r->next = prev->next;
+		prev->next = r;
+	}
 
 	ch->desc->pEdit  = (void *)r;
 	send_to_char("Ritual created.\n\r", ch);

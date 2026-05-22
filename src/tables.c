@@ -714,6 +714,7 @@ const struct flag_type type_flags[] =
 	{	"bomb",				ITEM_BOMB,			FALSE	},
 	{	"liquid",			ITEM_LIQUID,		TRUE	},
 	{	"relic",			ITEM_RELIC,			TRUE	},
+	{	"grimoire",			ITEM_GRIMOIRE,		TRUE    },
 	{	NULL,				0,					0		}
 };
 

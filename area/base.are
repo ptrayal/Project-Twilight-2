@@ -721,6 +721,26 @@ E
 --USES~
 -2~
 Q 2
+#120
+grimoire slim ritual introduction~
+a slim grimoire~
+A slim grimoire is here.~
+(no full description)~
+unknown~
+35 0 A
+0 CFG 0 0 0
+0
+0 0 100
+E
+--USES~
+-2~
+E
+GRIMOIRE_RITUAL~
+Ritual of Introduction~
+E
+RITELINK~
+Ritual of Introduction~
+Q 2
 #151
 test relice~
 test relic~

@@ -5725,10 +5725,22 @@ void show_grimoire(CHAR_DATA *ch, OBJ_DATA *obj)
 
 	for (ed = obj->extra_descr; ed != NULL; ed = ed->next)
 	{
-		if (!str_cmp(ed->keyword, "GRIMOIRE_RITUAL"))
+		if (!str_cmp(ed->keyword, "RITELINK"))
 		{
 			ritual_name = ed->description;
 			break;
+		}
+	}
+
+	if (!ritual_name && obj->pIndexData)
+	{
+		for (ed = obj->pIndexData->extra_descr; ed != NULL; ed = ed->next)
+		{
+			if (!str_cmp(ed->keyword, "RITELINK"))
+			{
+				ritual_name = ed->description;
+				break;
+			}
 		}
 	}
 

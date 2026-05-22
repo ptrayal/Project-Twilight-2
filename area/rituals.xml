@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <Rituals>
-  <next_id>7</next_id>
+  <next_id>8</next_id>
   <Action>
 <name>step</name>
 <to_char>You take a slow, measured step.</to_char>
@@ -134,6 +134,17 @@
 <grimoire_text>a deep, resonant groan</grimoire_text>
     <beats>1</beats>
   </Action>
+  <Ritual>
+    <id>7</id>
+<name>Rite of Testing</name>
+<races>all</races>
+    <disc_test>-1</disc_test>
+    <level>1</level>
+    <beats>1</beats>
+    <target>0</target>
+<effect>rite_introduction</effect>
+<sequence>breathe</sequence>
+  </Ritual>
   <Ritual>
     <id>1</id>
 <name>Ritual of Introduction</name>
