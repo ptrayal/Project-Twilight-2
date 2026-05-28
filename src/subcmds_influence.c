@@ -104,7 +104,8 @@ void do_influences (CHAR_DATA *ch, char *argument)
 
 	if(ch->infl_timer > 0 && str_prefix(argument, "commands") && str_prefix(argument, "advance"))
 	{
-		send_to_char("You're going to have to wait a bit or people won't respect your influence.\n\r", ch);
+		send_to_char(Format("You need to wait %d more tick%s before using your influence again.\n\r",
+			ch->infl_timer, ch->infl_timer == 1 ? "" : "s"), ch);
 		return;
 	}
 
@@ -115,7 +116,7 @@ void do_influences (CHAR_DATA *ch, char *argument)
 			in = influence_cmd_table[cmd].type;
 		}
 
-	if(cmd <= -1 || ch->influences[in] < influence_cmd_table[cmd].level)
+	if(cmd <= -1 || (in >= 0 && ch->influences[in] < influence_cmd_table[cmd].level))
 	{
 		if(IS_ADMIN(ch))
 		{
@@ -125,7 +126,7 @@ void do_influences (CHAR_DATA *ch, char *argument)
 				return;
 			}
 		}
-		send_to_char("Huh?\n\r", ch);
+		send_to_char("That is not a valid influence command. Use \t(influence commands\t) to see what you can do.\n\r", ch);
 		return;
 	}
 
@@ -155,13 +156,20 @@ int influence_commands(CHAR_DATA *ch, char *argument)
     }
 
     buf = new_buf();
+    if (influence_type == NO_FLAG)
+        add_buf(buf, "\tBInfluence Commands\tn\n\r\tY--------------------------------------------------------------------------------\tn\n\r");
+    else
+        add_buf(buf, Format("\tB%s Influence Commands\tn\n\r\tY--------------------------------------------------------------------------------\tn\n\r",
+                            influence_table[influence_type].name));
+
     for (cmd = 0; influence_cmd_table[cmd].name != NULL; cmd++)
     {
         int type_index = influence_cmd_table[cmd].type;
+        bool always_show = (type_index < 0);
 
-        if (ch->influences[type_index] >= influence_cmd_table[cmd].level)
+        if (always_show || ch->influences[type_index] >= influence_cmd_table[cmd].level)
         {
-            if (influence_type == NO_FLAG || type_index == influence_type)
+            if (influence_type == NO_FLAG || type_index == influence_type || always_show)
             {
                 add_buf(buf, Format("\t<send href='influence %s'>%-12s\t</send> | ",
                                     influence_cmd_table[cmd].name,
@@ -175,7 +183,7 @@ int influence_commands(CHAR_DATA *ch, char *argument)
 
     if (IS_ADMIN(ch))
     {
-        add_buf(buf, Format("%-12s", "synopsis"));
+        add_buf(buf, Format("\t<send href='influence synopsis'>%-12s\t</send> | ", "synopsis"));
         if (++col % COLUMN_WIDTH == 0)
             add_buf(buf, "\n\r");
     }
@@ -227,7 +235,7 @@ int influence_advance(CHAR_DATA *ch, char *argument)
 
 	ch->exp -= cost;
 	ch->influences[in]++;
-	act("\tGSuccess\tn: Your $t influence increases.", ch, influence_table[in].name, NULL, TO_CHAR, 1);
+	send_to_char(Format("\tGSuccess\tn: Your %s influence increases to %d.\n\r", influence_table[in].name, ch->influences[in]), ch);
 
 	return TRUE;
 }
@@ -249,7 +257,8 @@ int influence_adminlist(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
-	send_to_char(Format("\tB%s Influence\tn\n\r\tY------------------------\tn\n\r", influence_table[inf].name), ch);
+	send_to_char(Format("\tB%s Influence\tn\n\r\tY%-24s\tn\n\r", influence_table[inf].name,
+		"------------------------"), ch);
 	for(vd = descriptor_list; vd != NULL; vd = vd->next)
 	{
 		if(vd->connected == CON_PLAYING)
@@ -265,7 +274,7 @@ int influence_adminlist(CHAR_DATA *ch, char *argument)
 			}
 			else
 			{
-				send_to_char(Format("\tW%-20s\tn %d\n\r", vd->character->name,	vd->character->influences[inf]), ch);
+				send_to_char(Format("\tW%-20s\tn %d\n\r", vd->character->name, vd->character->influences[inf]), ch);
 			}
 		}
 	}
@@ -489,7 +498,8 @@ int criminal_scout(CHAR_DATA *ch, char *argument)
 
 	if(fail > 0)
 	{
-		send_to_char(Format("\tB%s Influence\tn\n\r\tY------------------------\tn\n\r",influence_table[inf].name), ch);
+		send_to_char(Format("\tB%s Influence\tn\n\r\tY%-24s\tn\n\r", influence_table[inf].name,
+			"------------------------"), ch);
 		for(vd = descriptor_list; vd != NULL; vd = vd->next)
 		{
 			if(vd->connected == CON_PLAYING)
@@ -937,7 +947,7 @@ int media_articles(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tRFailure\tn: Your wiles fail to allow you to read the articles.\n\r", ch);
+		send_to_char("\tRFailure\tn: Your contacts in the media won't return your calls.\n\r", ch);
 	}
 	else
 	{
@@ -1268,11 +1278,11 @@ int scientific_materials(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tRFailure\tn: You fail to avoid the trade fees.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to procure any of the material.\n\r", ch);
 	}
 	else
 	{
-		send_to_char("\tRBOTCH\tn: You damage your credibility in the market.\n\r", ch);
+		send_to_char("\tRBOTCH\tn: You offend your contacts and come away empty-handed.\n\r", ch);
 		ch->influences[INFL_SCIENTIFIC] = UMAX(0, ch->influences[INFL_SCIENTIFIC] - 1);
 	}
 
@@ -1357,7 +1367,7 @@ void do_backgrounds (CHAR_DATA *ch, char *argument)
 
 	if(cmd <= -1 || ch->backgrounds[bg] < bg_cmd_table[cmd].level)
 	{
-		send_to_char("Huh?\n\r", ch);
+		send_to_char("That is not a valid background command. Use \t(background commands\t) to see what you can do.\n\r", ch);
 		return;
 	}
 
@@ -1376,6 +1386,7 @@ int background_commands(CHAR_DATA *ch, char *argument)
 	int col = 0;
 
 	buf = new_buf();
+	add_buf(buf, "\tBBackground Commands\tn\n\r\tY--------------------------------------------------------------------------------\tn\n\r");
 	for( cmd = 0; bg_cmd_table[cmd].name != NULL; cmd++ )
 	{
 		int i = bg_cmd_table[cmd].type;
@@ -1471,7 +1482,7 @@ int background_advance(CHAR_DATA *ch, char *argument)
 	ch->backgrounds[in]++;
 	ch->bg_timer--;
 	ch->bg_count++;
-	act("Your $t increases.", ch, background_table[in].name, NULL, TO_CHAR, 1);
+	send_to_char(Format("\tGSuccess\tn: Your %s increases to %d.\n\r", background_table[in].name, ch->backgrounds[in]), ch);
 
 	return TRUE;
 }
@@ -1514,7 +1525,9 @@ int background_herd(CHAR_DATA *ch, char *argument)
 	}
 	else
 	{
-		ch->RBPG += UMIN(ch->max_RBPG - ch->RBPG, successes);
+		int gained = UMIN(ch->max_RBPG - ch->RBPG, successes);
+		ch->RBPG += gained;
+		send_to_char(Format("\tGSuccess\tn: Your herd provides %d blood point%s.\n\r", gained, gained == 1 ? "" : "s"), ch);
 	}
 	ch->herd_timer = i * 4;
 	return TRUE;
@@ -1528,12 +1541,12 @@ int newspaper_commands(CHAR_DATA *ch, char *argument)
 	int col = 0;
 
 	buf = new_buf();
-	add_buf(buf, "\tBNewspaper Commands\tn\n\rSyntax: \tWnewspaper <command> <arguments>\tn\n\r");
+	add_buf(buf, "\tBNewspaper Commands\tn\n\r\tY--------------------------------------------------------------------------------\tn\n\rSyntax: \tWnewspaper <command> <arguments>\tn\n\r");
 	for( cmd = 0; news_cmd_table[cmd].name != NULL; cmd++ )
 	{
 		if(ch->trust >= news_cmd_table[cmd].level)
 		{
-			add_buf(buf, Format("%-12s | ", news_cmd_table[cmd].name));
+			add_buf(buf, Format("\t<send href='newspaper %s'>%-12s\t</send> | ", news_cmd_table[cmd].name, news_cmd_table[cmd].name));
 			if(++col % 4 == 0)
 				add_buf(buf, "\n\r");
 		}
@@ -1612,6 +1625,7 @@ int newspaper_list(CHAR_DATA *ch, char *argument)
 	}
 
 	send_to_char("\tBNumber | Name            | Price  | Stands\tn\n\r", ch);
+	send_to_char("\tY-------+-----------------+--------+-----------\tn\n\r", ch);
 	for(news = paper_list; news; news = news->next)
 	{
 		if(on_stands == -1 || news->on_stands == on_stands)
@@ -1917,7 +1931,7 @@ int newspaper_start_stop(CHAR_DATA *ch, char *argument, int on_stands)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Which newspaper do you wish to mess with?\n\r", ch);
+		send_to_char(Format("Which newspaper do you wish to %s?\n\r", on_stands ? "put on stands" : "pull from stands"), ch);
 		return FALSE;
 	}
 
@@ -1971,12 +1985,12 @@ int smarket_commands(CHAR_DATA *ch, char *argument)
 	int col = 0;
 
 	buf = new_buf();
-	add_buf(buf, "\tBStock Market Commands\tn\n\rSyntax: \tWsmarket [command] [arguments]\tn\n\r");
+	add_buf(buf, "\tBStock Market Commands\tn\n\r\tY--------------------------------------------------------------------------------\tn\n\rSyntax: \tWsmarket [command] [arguments]\tn\n\r");
 	for( cmd = 0; smarket_cmd_table[cmd].name != NULL; cmd++ )
 	{
 		if(ch->trust >= smarket_cmd_table[cmd].level)
 		{
-			add_buf(buf, Format("%-12s | ", smarket_cmd_table[cmd].name));
+			add_buf(buf, Format("\t<send href='smarket %s'>%-12s\t</send> | ", smarket_cmd_table[cmd].name, smarket_cmd_table[cmd].name));
 			if(++col % 4 == 0)
 				add_buf(buf, "\n\r");
 		}
@@ -2037,6 +2051,8 @@ int smarket_list(CHAR_DATA *ch, char *argument)
 	STOCKS *stock;
 	int count = 0;
 
+	send_to_char("\tBNum  | Company                   | Price\tn\n\r", ch);
+	send_to_char("\tY-----+---------------------------+--------\tn\n\r", ch);
 	for(stock = stock_list; stock; stock = stock->next)
 	{
 		send_to_char(Format("\tY[\tn%4d\tY]\tn %-25s $%d.%.2d\n\r", count, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
