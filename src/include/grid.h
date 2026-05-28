@@ -6,7 +6,7 @@
 	#define MSL MAX_STRING_LENGTH
 #endif
 
-#define DEFAULT_GRID_SIZE = 80 //characters
+#define DEFAULT_GRID_SIZE 80 //characters
 #define GRID_VERSION 1
 
 

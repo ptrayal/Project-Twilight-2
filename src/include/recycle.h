@@ -124,7 +124,7 @@ BUFFER	*__new_buf args( (const char *file, const char *function, int line) );
 void BufPrintf args(( BUFFER * buffer, char * fmt, ... ));
 
 void	free_buf args( (BUFFER *buffer) );
-bool	add_buf args( (BUFFER *buffer, char *string) );
+bool	add_buf args( (BUFFER *buffer, const char *string) );
 void	clear_buf args( (BUFFER *buffer) );
 char	*buf_string args( (BUFFER *buffer) );
 

@@ -55,6 +55,37 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy);
 
 int get_door(CHAR_DATA *ch, char *argument);
 
+/* Lookup a newspaper by name or by numeric index into paper_list. */
+static NEWSPAPER *find_newspaper_by_arg(char *arg)
+{
+    NEWSPAPER *paper;
+    int i, index;
+
+    if (!is_number(arg))
+        return newspaper_lookup(arg);
+
+    index = atoi(arg);
+    paper = paper_list;
+    for (i = 0; i < index && paper; i++)
+        paper = paper->next;
+    return paper;
+}
+
+/* Lookup a stock by name or by numeric index into stock_list. */
+static STOCKS *find_stock_by_arg(char *arg)
+{
+    STOCKS *stock;
+    int i, index;
+
+    if (!is_number(arg))
+        return stock_lookup(arg);
+
+    index = atoi(arg);
+    stock = stock_list;
+    for (i = 0; i < index && stock; i++)
+        stock = stock->next;
+    return stock;
+}
 
 /* >>>>>>>>>>>>>>> Influence Commands <<<<<<<<<<<<<<< */
 void do_influences (CHAR_DATA *ch, char *argument)
@@ -108,6 +139,7 @@ void do_influences (CHAR_DATA *ch, char *argument)
 
 int influence_commands(CHAR_DATA *ch, char *argument)
 {
+    BUFFER *buf;
     int cmd = 0;
     int col = 0;
     int influence_type = NO_FLAG;
@@ -122,6 +154,7 @@ int influence_commands(CHAR_DATA *ch, char *argument)
         }
     }
 
+    buf = new_buf();
     for (cmd = 0; influence_cmd_table[cmd].name != NULL; cmd++)
     {
         int type_index = influence_cmd_table[cmd].type;
@@ -130,26 +163,28 @@ int influence_commands(CHAR_DATA *ch, char *argument)
         {
             if (influence_type == NO_FLAG || type_index == influence_type)
             {
-                send_to_char(Format("\t<send href='influence %s'>%-12s\t</send> | ",
+                add_buf(buf, Format("\t<send href='influence %s'>%-12s\t</send> | ",
                                     influence_cmd_table[cmd].name,
-                                    influence_cmd_table[cmd].name), ch);
+                                    influence_cmd_table[cmd].name));
 
                 if (++col % COLUMN_WIDTH == 0)
-                    send_to_char("\n\r", ch);
+                    add_buf(buf, "\n\r");
             }
         }
     }
 
     if (IS_ADMIN(ch))
     {
-        send_to_char(Format("%-12s", "synopsis"), ch);
+        add_buf(buf, Format("%-12s", "synopsis"));
         if (++col % COLUMN_WIDTH == 0)
-            send_to_char("\n\r", ch);
+            add_buf(buf, "\n\r");
     }
 
     if (col % COLUMN_WIDTH != 0)
-        send_to_char("\n\r", ch);
+        add_buf(buf, "\n\r");
 
+    page_to_char(buf_string(buf), ch);
+    free_buf(buf);
     return TRUE;
 }
 
@@ -204,7 +239,7 @@ int influence_adminlist(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence synopsis [influence type]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence synopsis [influence type]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -214,7 +249,7 @@ int influence_adminlist(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
-	send_to_char(Format("\tW%s Influence\tn\n\r\tW------------------------\tn\n\r", influence_table[inf].name), ch);
+	send_to_char(Format("\tB%s Influence\tn\n\r\tY------------------------\tn\n\r", influence_table[inf].name), ch);
 	for(vd = descriptor_list; vd != NULL; vd = vd->next)
 	{
 		if(vd->connected == CON_PLAYING)
@@ -226,11 +261,11 @@ int influence_adminlist(CHAR_DATA *ch, char *argument)
 
 			if(vd->original != NULL)
 			{
-				send_to_char(Format("\tY%-20s %d\tn\n\r", vd->original->name, vd->original->influences[inf]), ch);
+				send_to_char(Format("\tW%-20s\tn %d\n\r", vd->original->name, vd->original->influences[inf]), ch);
 			}
 			else
 			{
-				send_to_char(Format("\tY%-20s %d\tn\n\r", vd->character->name,	vd->character->influences[inf]), ch);
+				send_to_char(Format("\tW%-20s\tn %d\n\r", vd->character->name,	vd->character->influences[inf]), ch);
 			}
 		}
 	}
@@ -251,15 +286,14 @@ int church_collection(CHAR_DATA *ch, char *argument)
 	}
 	else if(successcheck == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to move people to donate.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to move people to donate.\n\r", ch);
 		ch->infl_timer = 2;
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some of the group.\n\r", ch);
-		ch->influences[INFL_CHURCH]--;
+		ch->influences[INFL_CHURCH] = UMAX(0, ch->influences[INFL_CHURCH] - 1);
 		ch->infl_timer = 4;
-
 	}
 
 	return TRUE;
@@ -285,7 +319,8 @@ int church_research(CHAR_DATA *ch, char *argument)
 
 	if(pbg == NULL)
 	{
-		send_to_char(Format("You find out nothing about %s.", argument), ch);
+		send_to_char(Format("You find out nothing about %s.\n\r", argument), ch);
+		ch->infl_timer = 2;
 		return TRUE;
 	}
 
@@ -299,11 +334,12 @@ int church_research(CHAR_DATA *ch, char *argument)
 	if(fail >= pbg->successes)
 	{
 		page_to_char( pbg->text, ch );
+		ch->infl_timer = 2;
 		return TRUE;
 	}
 	else
 	{
-		send_to_char(Format("You find out nothing about %s.", argument), ch);
+		send_to_char(Format("You find out nothing about %s.\n\r", argument), ch);
 	}
 
 	ch->infl_timer = 2;
@@ -329,14 +365,14 @@ int church_tipoff(CHAR_DATA *ch, char *argument)
 	/* Fail conditions. */
 	if(successcheck < 0)
 	{
-		send_to_char("\tRBOTCH\tn:Your story is openly ridiculed by your peers.\n\r", ch);
-		ch->influences[INFL_CHURCH] -= 2;
+		send_to_char("\tRBOTCH\tn: Your story is openly ridiculed by your peers.\n\r", ch);
+		ch->influences[INFL_CHURCH] = UMAX(0, ch->influences[INFL_CHURCH] - 2);
 		return FALSE;
 	}
 	else if(successcheck < 2)
 	{
-		send_to_char("\tYFailure\tn: Nobody believes your story.\n\r", ch);
-		ch->influences[INFL_CHURCH]--;
+		send_to_char("\tRFailure\tn: Nobody believes your story.\n\r", ch);
+		ch->influences[INFL_CHURCH] = UMAX(0, ch->influences[INFL_CHURCH] - 1);
 		return FALSE;
 	}
 
@@ -344,7 +380,7 @@ int church_tipoff(CHAR_DATA *ch, char *argument)
 	send_to_char("\tGSuccess\tn: The word is spread about that individual.\n\r", ch);
 	gen_hunter(vch);
 	ch->infl_timer = 3;
-	ch->influences[INFL_CHURCH]--;
+	ch->influences[INFL_CHURCH] = UMAX(0, ch->influences[INFL_CHURCH] - 1);
 	return TRUE;
 }
 
@@ -355,7 +391,6 @@ int church_findrelic(CHAR_DATA *ch, char *argument)
 	BUFFER              *buf1;
 	bool found;
 	int vnum = 0;
-	int  lsize = 0;
 	int  col = 0;
 	int nMatch = 0;
 
@@ -377,15 +412,10 @@ int church_findrelic(CHAR_DATA *ch, char *argument)
 			if(pObjIndex->item_type == ITEM_RELIC)
 			{
 				found = TRUE;
-				send_to_char("You know of the following relics which exist:\n\r", ch);
 				add_buf( buf1, (char *)Format("%-17.16s", capitalize( pObjIndex->short_descr )) );
 				if ( ++col % 3 == 0 )
 				{
 					add_buf( buf1, "\n\r" );
-				}
-				if(pObjIndex->weight > lsize)
-				{
-					lsize = pObjIndex->weight;
 				}
 			}
 		}
@@ -394,8 +424,12 @@ int church_findrelic(CHAR_DATA *ch, char *argument)
 	if ( !found )
 	{
 		send_to_char( "No object(s) found.\n\r", ch);
+		free_buf(buf1);
 		return TRUE;
 	}
+
+	/* Send header once, outside the search loop */
+	send_to_char("\tBYou know of the following relics which exist:\tn\n\r", ch);
 
 	if ( col % 3 != 0 )
 		add_buf( buf1, "\n\r" );
@@ -421,13 +455,13 @@ int criminal_racket(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to get ahead on the deal.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to get ahead on the deal.\n\r", ch);
 		ch->infl_timer = 2;
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some interested parties.\n\r", ch);
-		ch->influences[INFL_CRIMINAL]--;
+		ch->influences[INFL_CRIMINAL] = UMAX(0, ch->influences[INFL_CRIMINAL] - 1);
 		ch->warrants += 5;
 		ch->infl_timer = 4;
 	}
@@ -443,7 +477,7 @@ int criminal_scout(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence scout [influence type]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence scout [influence type]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -455,7 +489,7 @@ int criminal_scout(CHAR_DATA *ch, char *argument)
 
 	if(fail > 0)
 	{
-		send_to_char(Format("\tW%s Influence\tn\n\r\tW------------------------\tn\n\r",influence_table[inf].name), ch);
+		send_to_char(Format("\tB%s Influence\tn\n\r\tY------------------------\tn\n\r",influence_table[inf].name), ch);
 		for(vd = descriptor_list; vd != NULL; vd = vd->next)
 		{
 			if(vd->connected == CON_PLAYING)
@@ -468,11 +502,11 @@ int criminal_scout(CHAR_DATA *ch, char *argument)
 
 				if(vd->original != NULL)
 				{
-					send_to_char(Format("\tY%-20s %d\tn\n\r", vd->original->name, vd->original->influences[inf]), ch);
+					send_to_char(Format("\tW%-20s\tn %d\n\r", vd->original->name, vd->original->influences[inf]), ch);
 				}
 				else
 				{
-					send_to_char(Format("\tY%-20s %d\tn\n\r", vd->character->name, vd->character->influences[inf]), ch);
+					send_to_char(Format("\tW%-20s\tn %d\n\r", vd->character->name, vd->character->influences[inf]), ch);
 				}
 			}
 		}
@@ -480,13 +514,13 @@ int criminal_scout(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to get any scouting reports.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to get any scouting reports.\n\r", ch);
 		ch->infl_timer = 3;
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some interested parties.\n\r", ch);
-		ch->influences[INFL_CRIMINAL]--;
+		ch->influences[INFL_CRIMINAL] = UMAX(0, ch->influences[INFL_CRIMINAL] - 1);
 		ch->infl_timer = 6;
 	}
 
@@ -507,12 +541,12 @@ int political_raise(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to move people to donate.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to move people to donate.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some core supporters.\n\r", ch);
-		ch->influences[INFL_POLITICAL]--;
+		ch->influences[INFL_POLITICAL] = UMAX(0, ch->influences[INFL_POLITICAL] - 1);
 	}
 	ch->infl_timer = 2;
 
@@ -527,7 +561,8 @@ int political_campaign(CHAR_DATA *ch, char *argument)
 	char arg[MIL]={'\0'};
 	bool online = FALSE;
 	bool in_char_list = FALSE;
-	int i = 0,j = 0;
+	int i = 0;
+	int target_office = -1;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[POLITICS].value, 7);
 
 	argument = one_argument(argument, arg);
@@ -552,81 +587,62 @@ int political_campaign(CHAR_DATA *ch, char *argument)
 		if(!is_nominee(nominee, 0))
 		{
 			send_to_char("No such nominee.\n\r", ch);
+			if(!online && !in_char_list) free_char(nominee);
 			return FALSE;
 		}
-
-		for(i = 0; i < 6; i++)
-		{
-			if(!str_cmp(vote_tally[0][i].name, nominee->name))
-			{
-				vote_tally[0][i].votes += fail;
-				break;
-			}
-		}
+		target_office = 0;
 	}
 	else if(!str_prefix(argument, "alderman"))
 	{
 		if(!is_nominee(nominee, 1))
 		{
 			send_to_char("No such nominee.\n\r", ch);
+			if(!online && !in_char_list) free_char(nominee);
 			return FALSE;
 		}
-
-		for(i = 0; i < 6; i++)
-		{
-			if(!str_cmp(vote_tally[1][i].name, nominee->name))
-			{
-				vote_tally[1][i].votes += fail;
-				break;
-			}
-		}
+		target_office = 1;
 	}
 	else if(!str_prefix(argument, "judge"))
 	{
 		if(!is_nominee(nominee, 2))
 		{
 			send_to_char("No such nominee.\n\r", ch);
+			if(!online && !in_char_list) free_char(nominee);
 			return FALSE;
 		}
-
-		for(i = 0; i < 6; i++)
-		{
-			if(!str_cmp(vote_tally[2][i].name, nominee->name))
-			{
-				vote_tally[2][i].votes += fail;
-				break;
-			}
-		}
+		target_office = 2;
 	}
 	else
 	{
 		send_to_char("Positions available are: judge, alderman, mayor.\n\r", ch);
+		if(!online && !in_char_list) free_char(nominee);
 		return FALSE;
+	}
+
+	/* Update vote tally for the targeted office only */
+	for(i = 0; i < 6; i++)
+	{
+		if(!str_cmp(vote_tally[target_office][i].name, nominee->name))
+		{
+			vote_tally[target_office][i].votes += fail;
+			break;
+		}
 	}
 
 	if(fail > 0)
 	{
 		fwrite_votes();
 		act(Format("\tGSuccess\tn: You manage to add %d votes to $N's cause.\n\r", fail), ch, NULL, nominee, TO_CHAR, 1);
-		ch->influences[INFL_POLITICAL]--;
+		ch->influences[INFL_POLITICAL] = UMAX(0, ch->influences[INFL_POLITICAL] - 1);
 	}
 	else if (fail < 0)
 	{
-		for(j = 0; j < 3; j++)
-			for(i = 0; i < 6; i++)
-			{
-				if(!str_cmp(vote_tally[j][i].name, nominee->name))
-				{
-					vote_tally[j][i].votes += -1 * fail;
-					break;
-				}
-			}
 		send_to_char("\tRBOTCH\tn: You offend some core supporters.\n\r", ch);
-		ch->influences[INFL_POLITICAL]--;
+		ch->influences[INFL_POLITICAL] = UMAX(0, ch->influences[INFL_POLITICAL] - 1);
 	}
 	else
 	{
-		send_to_char("\tYFailure\tn: You fail to move people to vote.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to move people to vote.\n\r", ch);
 	}
 
 	if(!online && !in_char_list)
@@ -642,7 +658,8 @@ int political_negcampaign(CHAR_DATA *ch, char *argument)
 	char arg[MIL]={'\0'};
 	bool online = FALSE;
 	bool in_char_list = FALSE;
-	int i = 0,j = 0;
+	int i = 0;
+	int target_office = -1;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[POLITICS].value, 7);
 
 	argument = one_argument(argument, arg);
@@ -667,80 +684,62 @@ int political_negcampaign(CHAR_DATA *ch, char *argument)
 		if(!is_nominee(nominee, 0))
 		{
 			send_to_char("No such nominee.\n\r", ch);
+			if(!online && !in_char_list) free_char(nominee);
 			return FALSE;
 		}
-
-		for(i = 0; i < 6; i++)
-		{
-			if(!str_cmp(vote_tally[0][i].name, nominee->name))
-			{
-				vote_tally[0][i].votes -= UMIN(fail,vote_tally[0][i].votes);
-				break;
-			}
-		}
+		target_office = 0;
 	}
 	else if(!str_prefix(argument, "alderman"))
 	{
 		if(!is_nominee(nominee, 1))
 		{
 			send_to_char("No such nominee.\n\r", ch);
+			if(!online && !in_char_list) free_char(nominee);
 			return FALSE;
 		}
-
-		for(i = 0; i < 6; i++)
-		{
-			if(!str_cmp(vote_tally[1][i].name, nominee->name))
-			{
-				vote_tally[1][i].votes -= UMIN(fail,vote_tally[1][i].votes);
-				break;
-			}
-		}
+		target_office = 1;
 	}
 	else if(!str_prefix(argument, "judge"))
 	{
 		if(!is_nominee(nominee, 2))
 		{
 			send_to_char("No such nominee.\n\r", ch);
+			if(!online && !in_char_list) free_char(nominee);
 			return FALSE;
 		}
-
-		for(i = 0; i < 6; i++)
-		{
-			if(!str_cmp(vote_tally[2][i].name, nominee->name))
-			{
-				vote_tally[2][i].votes -= UMIN(fail,vote_tally[2][i].votes);
-				break;
-			}
-		}
+		target_office = 2;
 	}
 	else
 	{
 		send_to_char("Positions available are: judge, alderman, mayor.\n\r", ch);
+		if(!online && !in_char_list) free_char(nominee);
 		return FALSE;
+	}
+
+	/* Update vote tally for the targeted office only */
+	for(i = 0; i < 6; i++)
+	{
+		if(!str_cmp(vote_tally[target_office][i].name, nominee->name))
+		{
+			vote_tally[target_office][i].votes -= UMIN(fail, vote_tally[target_office][i].votes);
+			break;
+		}
 	}
 
 	if(fail > 0)
 	{
 		fwrite_votes();
-		act(Format("\tGSuccess\tn: You manage to remove %d votes to $N's cause.\n\r", fail), ch, NULL, nominee, TO_CHAR, 1);
+		act(Format("\tGSuccess\tn: You manage to remove %d votes from $N's cause.\n\r", fail), ch, NULL, nominee, TO_CHAR, 1);
 	}
 	else if (fail < 0)
 	{
-		for(j = 0; j < 3; j++)
-			for(i = 0; i < 6; i++)
-			{
-				if(!str_cmp(vote_tally[j][i].name, nominee->name))
-				{
-					vote_tally[j][i].votes -= fail;
-					break;
-				}
-			}
+		/* Botch: negative campaign backfires — was already adjusted above */
 		send_to_char("\tRBOTCH\tn: Your actions backfire.\n\r", ch);
-		ch->influences[INFL_POLITICAL]--;
+		ch->influences[INFL_POLITICAL] = UMAX(0, ch->influences[INFL_POLITICAL] - 1);
 	}
 	else
 	{
-		send_to_char("\tYFailure\tn: You fail to move people to vote.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to move people to vote.\n\r", ch);
 	}
 
 	if(!online && !in_char_list)
@@ -760,7 +759,7 @@ int police_warrant(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence warrant [increase/decrease] [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence warrant [increase/decrease] [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -772,7 +771,7 @@ int police_warrant(CHAR_DATA *ch, char *argument)
 		UpOrDown = -1;
 	else
 	{
-		send_to_char("Syntax: \tCinfluence warrant [increase/decrease] [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence warrant [increase/decrease] [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -789,12 +788,12 @@ int police_warrant(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to change the criminal records.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to change the criminal records.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend a number of important people.\n\r", ch);
-		ch->influences[INFL_POLICE]--;
+		ch->influences[INFL_POLICE] = UMAX(0, ch->influences[INFL_POLICE] - 1);
 	}
 
 	ch->infl_timer = 1;
@@ -809,7 +808,7 @@ int police_apb(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence apb [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence apb [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -826,12 +825,12 @@ int police_apb(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		act("\tYFailure\tn: You fail to convince the authorities to arrest $N.", ch, NULL, victim, TO_CHAR, 1);
+		act("\tRFailure\tn: You fail to convince the authorities to arrest $N.", ch, NULL, victim, TO_CHAR, 1);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend a number of important people.\n\r", ch);
-		ch->influences[INFL_POLICE]--;
+		ch->influences[INFL_POLICE] = UMAX(0, ch->influences[INFL_POLICE] - 1);
 	}
 
 	ch->infl_timer = 4;
@@ -848,7 +847,7 @@ int judicial_sentence(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence sentence [increase/decrease] [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence sentence [increase/decrease] [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -860,7 +859,7 @@ int judicial_sentence(CHAR_DATA *ch, char *argument)
 		UpOrDown = -1;
 	else
 	{
-		send_to_char("Syntax: \tCinfluence sentence [increase/decrease] [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence sentence [increase/decrease] [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -877,12 +876,12 @@ int judicial_sentence(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to change the sentence.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to change the sentence.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend a number of important people.\n\r", ch);
-		ch->influences[INFL_JUDICIAL]--;
+		ch->influences[INFL_JUDICIAL] = UMAX(0, ch->influences[INFL_JUDICIAL] - 1);
 	}
 
 	ch->infl_timer = 1;
@@ -896,7 +895,7 @@ int judicial_pardon(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence pardon [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence pardon [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -908,18 +907,18 @@ int judicial_pardon(CHAR_DATA *ch, char *argument)
 
 	if(fail > 0)
 	{
-		act("\tGSuccess\tn: $N's is pardoned.\n\r", ch, NULL, victim, TO_CHAR, 1);
+		act("\tGSuccess\tn: $N is pardoned.\n\r", ch, NULL, victim, TO_CHAR, 1);
 		act("$n arranges a pardon for you.\n\r", ch, NULL, victim, TO_VICT, 1);
 		victim->warrants = 0;
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to change the sentence.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to change the sentence.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend a number of important people trying to obtain a pardon.\n\r",	ch);
-		ch->influences[INFL_JUDICIAL]--;
+		ch->influences[INFL_JUDICIAL] = UMAX(0, ch->influences[INFL_JUDICIAL] - 1);
 	}
 
 	ch->infl_timer = 4;
@@ -938,12 +937,12 @@ int media_articles(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: Your wiles fail to allow you to read the articles.\n\r", ch);
+		send_to_char("\tRFailure\tn: Your wiles fail to allow you to read the articles.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some members of the media.\n\r", ch);
-		ch->influences[INFL_MEDIA]--;
+		ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
 	}
 
 	ch->infl_timer = 1;
@@ -974,7 +973,7 @@ int media_suppress(CHAR_DATA *ch, char *argument)
 			{
 				send_to_char(Format("\tGSuccess\tn: You arrange the suppression of '%s'.\n\r", pnote->subject), ch);
 				pnote->successes += fail;
-				ch->influences[INFL_MEDIA]--;
+				ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
 
 				/* Added this so it will force the saving of the suppression */
 				save_notes(pnote->type);
@@ -987,12 +986,12 @@ int media_suppress(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: Your wiles fail to suppress the article.\n\r", ch);
+		send_to_char("\tRFailure\tn: Your wiles fail to suppress the article.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some members of the media.\n\r", ch);
-		ch->influences[INFL_MEDIA]--;
+		ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
 	}
 
 	ch->infl_timer = 2;
@@ -1022,7 +1021,7 @@ int media_promote(CHAR_DATA *ch, char *argument)
 				send_to_char(Format("\tGSuccess\tn: You arrange the release of '%s'.\n\r",	pnote->subject), ch);
 				pnote->successes -= fail;
 				if(pnote->successes < 0) pnote->successes = 0;
-				ch->influences[INFL_MEDIA]--;
+				ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
 				/* Added this so it will force the saving of the suppression */
 				save_notes(pnote->type);
 				return TRUE;
@@ -1034,12 +1033,12 @@ int media_promote(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: Your wiles fail to release the article.\n\r", ch);
+		send_to_char("\tRFailure\tn: Your wiles fail to release the article.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some members of the media.\n\r", ch);
-		ch->influences[INFL_MEDIA]--;
+		ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
 	}
 
 	ch->infl_timer = 3;
@@ -1061,12 +1060,12 @@ int economic_raise(CHAR_DATA *ch, char *argument)
 	}
 	else if(success == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to raise any capital.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to raise any capital.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You offend some venture capitalist.\n\r", ch);
-		ch->influences[INFL_ECONOMIC]--;
+		ch->influences[INFL_ECONOMIC] = UMAX(0, ch->influences[INFL_ECONOMIC] - 1);
 	}
 	ch->infl_timer = 1;
 
@@ -1085,7 +1084,7 @@ int economic_market(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence market [increase/decrease] [company]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence market [increase/decrease] [company]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1101,7 +1100,7 @@ int economic_market(CHAR_DATA *ch, char *argument)
 	}
 	else
 	{
-		send_to_char("Syntax: \tCinfluence market [increase/decrease] [company]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence market [increase/decrease] [company]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1121,12 +1120,12 @@ int economic_market(CHAR_DATA *ch, char *argument)
 	}
 	else if(success == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to cause a shift in the market.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to cause a shift in the market.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You damage your credibility in the market.\n\r", ch);
-		ch->influences[INFL_ECONOMIC]--;
+		ch->influences[INFL_ECONOMIC] = UMAX(0, ch->influences[INFL_ECONOMIC] - 1);
 	}
 
 	ch->infl_timer = 4;
@@ -1143,7 +1142,7 @@ int economic_trade(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence trade [buy/sell] [shares] [company]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence trade [buy/sell] [shares] [company]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1155,7 +1154,7 @@ int economic_trade(CHAR_DATA *ch, char *argument)
 	}
 	else if(str_prefix(buf, "sell"))
 	{
-		send_to_char("Syntax: \tCinfluence trade [buy/sell] [shares] [company]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence trade [buy/sell] [shares] [company]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1182,7 +1181,7 @@ int economic_trade(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to avoid the trade fees.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to avoid the trade fees.\n\r", ch);
 		if(!trade_stocks(ch, st, atoi(buf), TRUE, Buy))
 		{
 			return FALSE;
@@ -1191,7 +1190,7 @@ int economic_trade(CHAR_DATA *ch, char *argument)
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You damage your credibility in the market.\n\r", ch);
-		ch->influences[INFL_ECONOMIC]--;
+		ch->influences[INFL_ECONOMIC] = UMAX(0, ch->influences[INFL_ECONOMIC] - 1);
 		if(!trade_stocks(ch, st, atoi(buf), TRUE, Buy))
 		{
 			return FALSE;
@@ -1214,7 +1213,7 @@ int scientific_materials(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence materials [material]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence materials [material]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1269,12 +1268,12 @@ int scientific_materials(CHAR_DATA *ch, char *argument)
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tYFailure\tn: You fail to avoid the trade fees.\n\r", ch);
+		send_to_char("\tRFailure\tn: You fail to avoid the trade fees.\n\r", ch);
 	}
 	else
 	{
 		send_to_char("\tRBOTCH\tn: You damage your credibility in the market.\n\r", ch);
-		ch->influences[INFL_SCIENTIFIC]--;
+		ch->influences[INFL_SCIENTIFIC] = UMAX(0, ch->influences[INFL_SCIENTIFIC] - 1);
 	}
 
 	ch->infl_timer = 2;
@@ -1289,14 +1288,10 @@ int scientific_tipoff(CHAR_DATA *ch, char *argument)
 	int power_stat = 0;
 	int power_ability = 0;
 
-	power_stat = get_curr_stat(ch, STAT_MAN);
-	power_ability = ch->ability[SUBTERFUGE].value;
-
-	successes = dice_rolls(ch, power_stat + power_ability, difficulty);
-
+	/* Argument check comes first, before rolling dice */
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCinfluence document [target]\tn\n\r", ch);
+		send_to_char("Syntax: \tWinfluence document [target]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1306,6 +1301,10 @@ int scientific_tipoff(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
+	power_stat    = get_curr_stat(ch, STAT_MAN);
+	power_ability = ch->ability[SUBTERFUGE].value;
+	successes     = dice_rolls(ch, power_stat + power_ability, difficulty);
+
 	if(vch->hunter_vis > 0)
 	{
 		successes += vch->hunter_vis/10;
@@ -1314,22 +1313,22 @@ int scientific_tipoff(CHAR_DATA *ch, char *argument)
 	/* Fail conditions. */
 	if(successes < 0)
 	{
-		send_to_char("Your story is openly ridiculed by your peers.\n\r", ch);
-		ch->influences[INFL_SCIENTIFIC] -= 2;
+		send_to_char("\tRBOTCH\tn: Your story is openly ridiculed by your peers.\n\r", ch);
+		ch->influences[INFL_SCIENTIFIC] = UMAX(0, ch->influences[INFL_SCIENTIFIC] - 2);
 		return FALSE;
 	}
 	else if(successes < 2)
 	{
-		send_to_char("Nobody believes your story.\n\r", ch);
-		ch->influences[INFL_SCIENTIFIC]--;
+		send_to_char("\tRFailure\tn: Nobody believes your story.\n\r", ch);
+		ch->influences[INFL_SCIENTIFIC] = UMAX(0, ch->influences[INFL_SCIENTIFIC] - 1);
 		return FALSE;
 	}
 
 	/* Generate hunter and set on target. */
-	send_to_char("The word is spread about that individual.\n\r", ch);
+	send_to_char("\tGSuccess\tn: The word is spread about that individual.\n\r", ch);
 	gen_hunter(vch);
 	ch->infl_timer = 5;
-	ch->influences[INFL_SCIENTIFIC]--;
+	ch->influences[INFL_SCIENTIFIC] = UMAX(0, ch->influences[INFL_SCIENTIFIC] - 1);
 	return TRUE;
 }
 
@@ -1372,27 +1371,27 @@ void do_backgrounds (CHAR_DATA *ch, char *argument)
 
 int background_commands(CHAR_DATA *ch, char *argument)
 {
+	BUFFER *buf;
 	int cmd = 0;
 	int col = 0;
 
+	buf = new_buf();
 	for( cmd = 0; bg_cmd_table[cmd].name != NULL; cmd++ )
 	{
-		int i = 0;
-		i = bg_cmd_table[cmd].type;
+		int i = bg_cmd_table[cmd].type;
 		if(ch->backgrounds[i] >= bg_cmd_table[cmd].level)
 		{
-			send_to_char(Format("\t<send href='background %s'>%-11s\t</send> | ", bg_cmd_table[cmd].name, bg_cmd_table[cmd].name), ch);
+			add_buf(buf, Format("\t<send href='background %s'>%-11s\t</send> | ", bg_cmd_table[cmd].name, bg_cmd_table[cmd].name));
 			if(++col % 4 == 0)
-			{
-				send_to_char("\n\r", ch);
-			}
+				add_buf(buf, "\n\r");
 		}
 	}
 
 	if(col % 4 != 0)
-	{
-		send_to_char("\n\r", ch);
-	}
+		add_buf(buf, "\n\r");
+
+	page_to_char(buf_string(buf), ch);
+	free_buf(buf);
 	return TRUE;
 }
 
@@ -1485,20 +1484,20 @@ int background_herd(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument) || !is_number(argument))
 	{
-		send_to_char("Syntax: \tCbackground herd [amount of blood to draw upon]\tn\n\r", ch);
+		send_to_char("Syntax: \tWbackground herd [amount of blood to draw upon]\tn\n\r", ch);
 		send_to_char("How much of your herd do you wish to draw on?\n\r", ch);
 		return FALSE;
 	}
 
 	if(ch->herd_timer > 0)
 	{
-		send_to_char("\tOYour herd has not recovered from your last feeding.\tn\n\r", ch);
+		send_to_char("\tRYour herd has not recovered from your last feeding.\tn\n\r", ch);
 		return FALSE;
 	}
 
 	if(ch->backgrounds[HERD] < (i = atoi(argument)))
 	{
-		send_to_char("\tOYou do not have that much herd to draw on.\tn\n\r", ch);
+		send_to_char("\tRYou do not have that much herd to draw on.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1507,11 +1506,11 @@ int background_herd(CHAR_DATA *ch, char *argument)
 	if(successes < 0)
 	{
 		send_to_char("\tRBOTCH\tn: You unsettle your herd, losing some members.\n\r", ch);
-		ch->backgrounds[HERD]--;
+		ch->backgrounds[HERD] = UMAX(0, ch->backgrounds[HERD] - 1);
 	}
 	else if(successes == 0)
 	{
-		send_to_char("\tYFailure\tn: You do not manage to get in touch with your herd.\n\r", ch);
+		send_to_char("\tRFailure\tn: You do not manage to get in touch with your herd.\n\r", ch);
 	}
 	else
 	{
@@ -1524,26 +1523,27 @@ int background_herd(CHAR_DATA *ch, char *argument)
 /* >>>>>>>>>>>>>>> Newspaper Commands <<<<<<<<<<<<<<< */
 int newspaper_commands(CHAR_DATA *ch, char *argument)
 {
+	BUFFER *buf;
 	int cmd = 0;
 	int col = 0;
 
-	send_to_char("Newspaper Commands.\n\rSyntax:newspaper <command> <arguments>\n\r", ch);
+	buf = new_buf();
+	add_buf(buf, "\tBNewspaper Commands\tn\n\rSyntax: \tWnewspaper <command> <arguments>\tn\n\r");
 	for( cmd = 0; news_cmd_table[cmd].name != NULL; cmd++ )
 	{
 		if(ch->trust >= news_cmd_table[cmd].level)
 		{
-			send_to_char(Format("%-12s | ", news_cmd_table[cmd].name), ch);
+			add_buf(buf, Format("%-12s | ", news_cmd_table[cmd].name));
 			if(++col % 4 == 0)
-			{
-				send_to_char("\n\r", ch);
-			}
+				add_buf(buf, "\n\r");
 		}
 	}
 
 	if(col % 4 != 0)
-	{
-		send_to_char("\n\r", ch);
-	}
+		add_buf(buf, "\n\r");
+
+	page_to_char(buf_string(buf), ch);
+	free_buf(buf);
 	return TRUE;
 }
 
@@ -1555,14 +1555,14 @@ int newspaper_new(CHAR_DATA *ch, char *argument)
 
     if (IS_NULLSTR(argument))
     {
-        send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
+        send_to_char("Syntax: \tWnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
         return FALSE;
     }
 
     argument = one_argument(argument, arg);
     if (!is_number(arg))
     {
-        send_to_char("Syntax: \tCnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
+        send_to_char("Syntax: \tWnewspaper create [cost_in_cents] [name]\tn\n\r", ch);
         return FALSE;
     }
 
@@ -1611,12 +1611,12 @@ int newspaper_list(CHAR_DATA *ch, char *argument)
 		on_stands = 0;
 	}
 
-	send_to_char("\tWNumber | Name            | Price  | Stands\tn\n\r", ch);
+	send_to_char("\tBNumber | Name            | Price  | Stands\tn\n\r", ch);
 	for(news = paper_list; news; news = news->next)
 	{
 		if(on_stands == -1 || news->on_stands == on_stands)
 		{
-			send_to_char(Format("[%4d] | %-15s | $%2d.%.2d | [%s]\n\r", count, news->name, news->cost/100, news->cost%100, news->on_stands?"On Stands":"Off Stands"), ch);
+			send_to_char(Format("\tY[\tn%4d\tY] |\tn %-15s \tY|\tn $%2d.%.2d \tY| [\tn%s\tY]\tn\n\r", count, news->name, news->cost/100, news->cost%100, news->on_stands?"On Stands":"Off Stands"), ch);
 		}
 		count++;
 	}
@@ -1628,7 +1628,6 @@ int newspaper_clear (CHAR_DATA *ch, char *arg)
 {
 	NEWSPAPER *paper = NULL;
 	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -1636,23 +1635,7 @@ int newspaper_clear (CHAR_DATA *ch, char *arg)
 		return FALSE;
 	}
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
@@ -1677,8 +1660,8 @@ int newspaper_show (CHAR_DATA *ch, char *arg)
 	NEWSPAPER *paper = NULL;
 	NEWSPAPER *tmp;
 	NOTE_DATA *article = NULL;
-	int i = 0,j = 0;
-	int index = 0;
+	int i = 0, j = 0;
+	int display_index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -1686,58 +1669,45 @@ int newspaper_show (CHAR_DATA *ch, char *arg)
 		return FALSE;
 	}
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
 	}
 
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
+	/* Compute display index (position in list) */
 	if(is_number(arg))
 	{
-		i = atoi(arg);
+		display_index = atoi(arg);
 	}
 	else
 	{
-		i=0;
-		for(tmp=paper_list;tmp;tmp=tmp->next)
+		display_index = 0;
+		for(tmp = paper_list; tmp; tmp = tmp->next)
 		{
 			if(tmp == paper) break;
-			i++;
+			display_index++;
 		}
 	}
 
-	send_to_char(Format("[%4d] %-15s $%d.%.2d [%s]\n\r", i, paper->name, paper->cost/100, paper->cost%100, paper->on_stands?"On Stands":"Off Stands"), ch);
+	send_to_char(Format("\tY[\tn%4d\tY]\tn %-15s $%d.%.2d \tY[\tn%s\tY]\tn\n\r", display_index, paper->name, paper->cost/100, paper->cost%100, paper->on_stands?"On Stands":"Off Stands"), ch);
 
-	for(i=0;i<MAX_ARTICLES;i++)
+	for(i = 0; i < MAX_ARTICLES; i++)
 	{
 		if(paper->articles[i] == -1)
 		{
-			send_to_char(Format("%d: None\n\r", i), ch);
+			send_to_char(Format("\tY[\tn%d\tY]\tn: None\n\r", i), ch);
 			continue;
 		}
 
-		for(article=news_list;article;article=article->next)
+		/* Reset j each iteration so we search from the start of news_list */
+		j = 0;
+		for(article = news_list; article; article = article->next)
 		{
 			if(j == paper->articles[i])
 			{
-				send_to_char(Format("%d: [%3d] %s: %s (%s)%s\n\r", i, j, article->sender, article->subject, article->to_list,
-						article->successes ? " (\tYSuppressed\tn)" : ""), ch);
+				send_to_char(Format("\tY[\tn%d\tY]: [\tn%3d\tY]\tn %s: %s (%s)%s\n\r", i, j, article->sender, article->subject, article->to_list,
+						article->successes ? " (\tWSuppressed\tn)" : ""), ch);
 				break;
 			}
 			j++;
@@ -1759,8 +1729,6 @@ int newspaper_delete (CHAR_DATA *ch, char *arg)
 {
 	NEWSPAPER *paper = NULL;
 	NEWSPAPER *tmp;
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -1768,23 +1736,7 @@ int newspaper_delete (CHAR_DATA *ch, char *arg)
 		return FALSE;
 	}
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
@@ -1817,8 +1769,6 @@ int newspaper_rename(CHAR_DATA *ch, char *argument)
 {
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1828,23 +1778,7 @@ int newspaper_rename(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
@@ -1868,8 +1802,6 @@ int newspaper_price(CHAR_DATA *ch, char *argument)
 {
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1879,23 +1811,7 @@ int newspaper_price(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
@@ -1933,8 +1849,6 @@ int newspaper_place(CHAR_DATA *ch, char *argument)
 	char position[MIL]={'\0'};
 	char article[MIL]={'\0'};
 	int anum = 0, vnum = 0;
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1946,23 +1860,7 @@ int newspaper_place(CHAR_DATA *ch, char *argument)
 	argument = one_argument(argument, position);
 	argument = one_argument(argument, article);
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
@@ -1980,10 +1878,10 @@ int newspaper_place(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
-	/*test for position*/
-	if(atoi(position) < 0 || atoi(position) > MAX_ARTICLES)
+	/* Valid positions: 0 to MAX_ARTICLES-1 */
+	if(atoi(position) < 0 || atoi(position) >= MAX_ARTICLES)
 	{
-		send_to_char(Format("The target position must be between 0 and %d.\n\r", MAX_ARTICLES), ch);
+		send_to_char(Format("The target position must be between 0 and %d.\n\r", MAX_ARTICLES - 1), ch);
 		return FALSE;
 	}
 
@@ -2016,8 +1914,6 @@ int newspaper_start_stop(CHAR_DATA *ch, char *argument, int on_stands)
 {
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2027,23 +1923,7 @@ int newspaper_start_stop(CHAR_DATA *ch, char *argument, int on_stands)
 
 	argument = one_argument(argument, arg);
 
-	if(!is_number(arg) && (paper = newspaper_lookup(arg)) == NULL)
-	{
-		send_to_char("That newspaper doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(paper == NULL)
-	{
-		index = atoi(arg);
-		paper = paper_list;
-		for(i=0; i<index && paper; i++)
-		{
-			paper = paper->next;
-		}
-	}
-
-	if(paper == NULL)
+	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
 		send_to_char("That newspaper doesn't exist.\n\r", ch);
 		return FALSE;
@@ -2086,45 +1966,46 @@ int newspaper_release(CHAR_DATA *ch, char *argument)
  */
 int smarket_commands(CHAR_DATA *ch, char *argument)
 {
+	BUFFER *buf;
 	int cmd = 0;
 	int col = 0;
 
-	send_to_char("Stock Market Commands.\n\rSyntax: \tCsmarket [command] [arguments]\tn\n\r", ch);
+	buf = new_buf();
+	add_buf(buf, "\tBStock Market Commands\tn\n\rSyntax: \tWsmarket [command] [arguments]\tn\n\r");
 	for( cmd = 0; smarket_cmd_table[cmd].name != NULL; cmd++ )
 	{
 		if(ch->trust >= smarket_cmd_table[cmd].level)
 		{
-			send_to_char(Format("%-12s | ", smarket_cmd_table[cmd].name), ch);
+			add_buf(buf, Format("%-12s | ", smarket_cmd_table[cmd].name));
 			if(++col % 4 == 0)
-				{
-					send_to_char("\n\r", ch);
-				}
+				add_buf(buf, "\n\r");
 		}
 	}
 
 	if(col % 4 != 0)
-		{
-			send_to_char("\n\r", ch);
-		}
+		add_buf(buf, "\n\r");
+
+	page_to_char(buf_string(buf), ch);
+	free_buf(buf);
 	return TRUE;
 }
 
 int smarket_create(CHAR_DATA *ch, char *argument)
 {
-	STOCKS *stock = new_stock();
+	STOCKS *stock;
 	char arg[MIL]={'\0'};
 	char arg2[MIL]={'\0'};
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Syntax: \tCsmarket create [cost_in_cents] [ticker tag] [name]\tn\n\r", ch);
+		send_to_char("Syntax: \tWsmarket create [cost_in_cents] [ticker tag] [name]\tn\n\r", ch);
 		return FALSE;
 	}
 
 	argument = one_argument(argument, arg);
 	if(!is_number(arg))
 	{
-		send_to_char("Syntax: \tCsmarket create [cost_in_cents] [ticker tag] [name]\tn\n\r", ch);
+		send_to_char("Syntax: \tWsmarket create [cost_in_cents] [ticker tag] [name]\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -2135,11 +2016,18 @@ int smarket_create(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
-	stock->cost = atoi(arg);
-	stock->name = str_dup(argument);
+	stock = new_stock();
+	if(!stock)
+	{
+		send_to_char("Error: Failed to create stock entry. Memory allocation failed.\n\r", ch);
+		return FALSE;
+	}
+
+	stock->cost   = atoi(arg);
+	stock->name   = str_dup(argument);
 	stock->ticker = str_dup(arg2);
-	stock->next = stock_list;
-	stock_list = stock;
+	stock->next   = stock_list;
+	stock_list    = stock;
 	send_to_char(Format("Company '%s' created.\n\r", stock->name), ch);
 	return TRUE;
 }
@@ -2151,7 +2039,7 @@ int smarket_list(CHAR_DATA *ch, char *argument)
 
 	for(stock = stock_list; stock; stock = stock->next)
 	{
-		send_to_char(Format("[%4d] %-25s $%d.%.2d\n\r", count, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
+		send_to_char(Format("\tY[\tn%4d\tY]\tn %-25s $%d.%.2d\n\r", count, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
 		count++;
 	}
 
@@ -2163,8 +2051,6 @@ int smarket_show (CHAR_DATA *ch, char *arg)
 	STOCKS *stock = NULL;
 	STOCKS *tmp;
 	int i = 0;
-	int count = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -2172,42 +2058,28 @@ int smarket_show (CHAR_DATA *ch, char *arg)
 		return FALSE;
 	}
 
-	if(!is_number(arg) && (stock = stock_lookup(arg)) == NULL)
+	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
 		send_to_char("That company doesn't exist.\n\r", ch);
 		return FALSE;
 	}
 
-	if(stock == NULL)
-	{
-		index = atoi(arg);
-		stock = stock_list;
-		for(i=0; i<index && stock; i++)
-		{
-			stock = stock->next;
-		}
-	}
-
-	if(stock == NULL)
-	{
-		send_to_char("That company doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
+	/* Compute display index (position in list) */
 	if(is_number(arg))
 	{
 		i = atoi(arg);
 	}
 	else
 	{
-		i=0;
-		for(tmp=stock_list;tmp;tmp=tmp->next)
+		i = 0;
+		for(tmp = stock_list; tmp; tmp = tmp->next)
 		{
 			if(tmp == stock) break;
 			i++;
 		}
 	}
-	send_to_char(Format("[%4d] %-25s $%d.%.2d\n\r", count, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
+
+	send_to_char(Format("\tY[\tn%4d\tY]\tn %-25s $%d.%.2d\n\r", i, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
 
 	return TRUE;
 }
@@ -2216,8 +2088,6 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 {
 	STOCKS *stock = NULL;
 	STOCKS *tmp;
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(arg))
 	{
@@ -2225,23 +2095,7 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 		return FALSE;
 	}
 
-	if(!is_number(arg) && (stock = stock_lookup(arg)) == NULL)
-	{
-		send_to_char("That company doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(stock == NULL)
-	{
-		index = atoi(arg);
-		stock = stock_list;
-		for(i=0; i<index && stock; i++)
-		{
-			stock = stock->next;
-		}
-	}
-
-	if(stock == NULL)
+	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
 		send_to_char("That company doesn't exist.\n\r", ch);
 		return FALSE;
@@ -2253,10 +2107,14 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 	}
 	else
 	{
-		for( tmp = stock_list ; tmp ; tmp = tmp->next )
-			{     if( tmp->next == stock )
-			              tmp->next = stock->next;
+		for( tmp = stock_list; tmp; tmp = tmp->next )
+		{
+			if( tmp->next == stock )
+			{
+				tmp->next = stock->next;
+				break;
 			}
+		}
 	}
 	free_stock(stock);
 	send_to_char("Stock deleted.\n\r", ch);
@@ -2268,8 +2126,6 @@ int smarket_rename(CHAR_DATA *ch, char *argument)
 {
 	STOCKS *stock = NULL;
 	char arg[MIL]={'\0'};
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2279,23 +2135,7 @@ int smarket_rename(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if(!is_number(arg) && (stock = stock_lookup(arg)) == NULL)
-	{
-		send_to_char("That company doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(stock == NULL)
-	{
-		index = atoi(arg);
-		stock = stock_list;
-		for(i=0; i<index && stock; i++)
-		{
-			stock = stock->next;
-		}
-	}
-
-	if(stock == NULL)
+	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
 		send_to_char("That company doesn't exist.\n\r", ch);
 		return FALSE;
@@ -2319,8 +2159,6 @@ int smarket_ticker(CHAR_DATA *ch, char *argument)
 {
 	STOCKS *stock = NULL;
 	char arg[MIL]={'\0'};
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2330,23 +2168,7 @@ int smarket_ticker(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if(!is_number(arg) && (stock = stock_lookup(arg)) == NULL)
-	{
-		send_to_char("That company doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(stock == NULL)
-	{
-		index = atoi(arg);
-		stock = stock_list;
-		for(i=0; i<index && stock; i++)
-		{
-			stock = stock->next;
-		}
-	}
-
-	if(stock == NULL)
+	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
 		send_to_char("That company doesn't exist.\n\r", ch);
 		return FALSE;
@@ -2376,8 +2198,6 @@ int smarket_price(CHAR_DATA *ch, char *argument)
 {
 	STOCKS *stock = NULL;
 	char arg[MIL]={'\0'};
-	int i = 0;
-	int index = 0;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -2387,23 +2207,7 @@ int smarket_price(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if(!is_number(arg) && (stock = stock_lookup(arg)) == NULL)
-	{
-		send_to_char("That company doesn't exist.\n\r", ch);
-		return FALSE;
-	}
-
-	if(stock == NULL)
-	{
-		index = atoi(arg);
-		stock = stock_list;
-		for(i=0; i<index && stock; i++)
-		{
-			stock = stock->next;
-		}
-	}
-
-	if(stock == NULL)
+	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
 		send_to_char("That stock doesn't exist.\n\r", ch);
 		return FALSE;
@@ -2433,4 +2237,3 @@ int smarket_save(CHAR_DATA *ch, char *arg)
 	send_to_char("Stock market saved.\n\r", ch);
 	return TRUE;
 }
-

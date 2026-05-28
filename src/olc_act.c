@@ -6764,22 +6764,25 @@ HEDIT( hedit_show )
 
     EDIT_HELP(ch, help);
 
-    send_to_char( "Essential Fields.\n\r", ch );
+    send_to_char("\tBEssential Fields\tn\n\r", ch);
+    send_to_char("\tY--------------------------------------------------------------------------------\tn\n\r", ch);
+    send_to_char(Format("\tWTrust:\tn    [%d]\n\r",    help->level), ch);
+    send_to_char(Format("\tWKeywords:\tn  %s\n\r",     IS_NULLSTR(help->keyword) ? "(none)" : help->keyword), ch);
+    send_to_char(Format("\tWRaces:\tn     %s\n\r",     IS_NULLSTR(help->races)   ? "(none)" : help->races), ch);
+    send_to_char(Format("\tWClans:\tn     %s\n\r",     IS_NULLSTR(help->clans)   ? "(none)" : help->clans), ch);
 
-    send_to_char( Format("Trust: [%5d]\n\r", help->level), ch );
-    send_to_char( Format("Keywords:  %s\n\r", help->keyword), ch );
-    send_to_char( Format("Races:  %s\n\r", help->races), ch );
-    send_to_char( Format("Clans:  %s\n\r", help->clans), ch );
+    send_to_char("\n\r\tBFormatted Fields\tn\n\r", ch);
+    send_to_char("\tY--------------------------------------------------------------------------------\tn\n\r", ch);
+    send_to_char(Format("\tWTopic:\tn     %s\n\r",     IS_NULLSTR(help->topic)       ? "(none)" : help->topic), ch);
+    send_to_char(Format("\tWSyntax:\tn    %s\n\r",     IS_NULLSTR(help->syntax)      ? "(none)" : help->syntax), ch);
+    send_to_char(Format("\tWSee Also:\tn  %s\n\r",     IS_NULLSTR(help->see_also)    ? "(none)" : help->see_also), ch);
+    send_to_char(Format("\tWWebsite:\tn   %s\n\r",     IS_NULLSTR(help->website)     ? "(none)" : help->website), ch);
+    send_to_char(Format("\tWQuote:\tn\n\r%s\n\r",      IS_NULLSTR(help->quote)       ? "(none)" : help->quote), ch);
+    send_to_char(Format("\tWBody:\tn\n\r%s\n\r",       IS_NULLSTR(help->description) ? "(none)" : help->description), ch);
 
-    send_to_char( "\n\rFormatted fields:\n\r", ch );
-    send_to_char( Format("Topic:  %s\n\r", help->topic), ch );
-    send_to_char( Format("Syntax:  %s\n\r", help->syntax), ch );
-    send_to_char( Format("Body:\n\r%s\n\r", help->description), ch );
-    send_to_char( Format("See also:  %s\n\r", help->see_also), ch );
-    send_to_char( Format("Website:  %s\n\r", help->website), ch );
-
-    send_to_char("\n\rDo not use in conjunction with formatted fields.\n\r", ch);
-    send_to_char( Format("Unformatted:\n\r%s\n\r", help->unformatted), ch );
+    send_to_char("\n\r\tBUnformatted\tn \tY(do not combine with formatted fields)\tn\n\r", ch);
+    send_to_char("\tY--------------------------------------------------------------------------------\tn\n\r", ch);
+    send_to_char(Format("%s\n\r", IS_NULLSTR(help->unformatted) ? "(none)" : help->unformatted), ch);
 
     return FALSE;
 }

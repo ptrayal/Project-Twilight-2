@@ -181,7 +181,6 @@ const	struct	cmd_type	cmd_table	[] =
 		{	"discreet",		do_discreet,	P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
 		{	"dmote",		do_dmote,		P_REST,		0,	L_COM,	1,	B,	0 },
 		{	"donate",		do_donate,		P_REST,		0,	L_NRM,	1,	A|B,	0 },
-		{	"donate",		do_sacrifice,	P_DEAD,		0,	L_NRM,	0,	B|H,	0 },
 		{	"dpmote",		do_dpmote,		P_REST,		0,	L_COM,	1,	B,	0 },
 		{	"drink",		do_drink,		P_REST,		0,	L_NRM,	1,	B|H,	0 },
 		{	"droll",		do_diceroll,	P_DEAD,		0,	L_NRM,	1,	A|B,	0 },
@@ -437,7 +436,6 @@ const	struct	cmd_type	cmd_table	[] =
 	{	"heal",				do_heal,			P_SIT,		0,	L_NRM,	1,	B|E,	HU|WW },
 	{	"instruct",			do_instruct,		P_DEAD,		0,	L_NRM,	1,	A|B|G|H,	WW },
 	{	"learn",			do_learn,			P_DEAD,		0,	L_NRM,	1,	A|B|H,	WW },
-	{	"meditate",			do_meditate,		P_REST,		0,	L_NRM,	1,	A|B,	WW },
 	{	"missingvoice",		do_melpominee1,		P_REST,		0,	L_COM,	1,	A|B|C|E|H,	VA },
 	{	"madrigal",			do_melpominee3,		P_REST,		0,	L_COM,	1,	A|B|C|E|H,	VA },
 	{	"sirenbeckon",		do_melpominee4,		P_REST,		0,	L_COM,	1,	A|B|C|E|H,	VA },
@@ -720,9 +718,12 @@ int command_available(CHAR_DATA *ch, char *command)
 
 	for ( cmd = 0; !IS_NULLSTR(cmd_table[cmd].name); cmd++ )
 	{
-		if ( command[0] == cmd_table[cmd].name[0] &&   !str_prefix( command, cmd_table[cmd].name )
-				&&   (cmd_table[cmd].level <= trust || (IS_SET(cmd_table[cmd].flags, BUILDERMODE_CMD)
-						&& IS_SET(ch->comm, COMM_BUILDER))) )
+		if ( command[0] == cmd_table[cmd].name[0]
+				&& !str_prefix( command, cmd_table[cmd].name )
+				&& (cmd_table[cmd].level <= trust
+					|| (IS_SET(cmd_table[cmd].flags, BUILDERMODE_CMD)
+						&& IS_SET(ch->comm, COMM_BUILDER)))
+				&& CAN_USE_CMD(ch, cmd) )
 		{
 			return cmd;
 		}
@@ -742,17 +743,9 @@ void interpret( CHAR_DATA *ch, char *argument )
 	char command[MIL]={'\0'};
 	char logline[MIL]={'\0'};
 	int cmd = 0;
+	int trust = 0;
 	bool found = FALSE;
 	bool exists = FALSE;
-	time_t rawtime;
-	struct tm *info;
-	char buffer[80]={'\0'};
-
-	time( &rawtime );
-
-	info = localtime( &rawtime );
-
-	strftime(buffer,80,"%x - %I:%M%p", info);
 
 	// assert(ch);
 
@@ -808,60 +801,57 @@ void interpret( CHAR_DATA *ch, char *argument )
 	}
 
 	/*
-	* Look for command in command table.
+	* Look for command in command table — single pass sets both exists and found.
 	*/
-	if((cmd = command_lookup(command)) > -1)
+	trust = get_trust(ch);
+	cmd   = -1;
+	for (cmd = 0; !IS_NULLSTR(cmd_table[cmd].name); cmd++)
 	{
+		if (command[0] != cmd_table[cmd].name[0]
+			|| str_prefix(command, cmd_table[cmd].name))
+			continue;
 		exists = TRUE;
+		if ((cmd_table[cmd].level <= trust
+				|| (IS_SET(cmd_table[cmd].flags, BUILDERMODE_CMD)
+					&& IS_SET(ch->comm, COMM_BUILDER)))
+			&& CAN_USE_CMD(ch, cmd))
+		{
+			found = TRUE;
+			break;
+		}
 	}
+	if (!found)
+		cmd = -1;
 
-	if((cmd = command_available(ch, command)) > -1)
-	{
-		found = TRUE;
-	}
+	/* ────── Snoop and Log Section ────── */
+	if (cmd >= 0 && cmd_table[cmd].log == L_NEV)
+		strncpy(logline, "", MIL);
 
-	/* >>>>>>>>>>>>>>> Snoop and Log Section <<<<<<<<<<<<<<< */	
-	/* --------------- Never Log (L_NEV) --------------- */
-	if ( cmd_table[cmd].log == L_NEV )
-	{
-		strncpy( logline, "", MIL );
-	}
-
-	/* --------------- Security Logs (L_SCOM) --------------- */
-	/********************************************************
-	* This logs everyone who has the player flag (PLR_LOG) *
-	* and all commands set to L_SCOM or L_COM which are    *
-	* Staff communications or normal communications.       *
-	* It also logs commands set to always flag (L_ALL).    *
-	********************************************************/
 	if ( ( !IS_NPC(ch) && IS_SET(ch->plr_flags, PLR_LOG) )
 		|| fLogAll
-		|| cmd_table[cmd].log == L_ALL
-		|| (fLogAllCom && (cmd_table[cmd].log == L_COM || cmd_table[cmd].log == L_SCOM))
-		|| (fLogCom && cmd_table[cmd].log == L_COM) )
+		|| (cmd >= 0 && cmd_table[cmd].log == L_ALL)
+		|| (cmd >= 0 && fLogAllCom && (cmd_table[cmd].log == L_COM || cmd_table[cmd].log == L_SCOM))
+		|| (cmd >= 0 && fLogCom && cmd_table[cmd].log == L_COM) )
 	{
-		char s[2*MIL],*ps;
+		char s[2*MIL], *ps;
 		int i = 0;
 
-		ps=s;
+		ps = s;
 		log_string(LOG_SECURITY, Format("Log %s: %s", ch->name, logline));
 
-	/* Make sure that was is displayed is what is typed */
-		for (i=0;logline[i];i++) 
+		for (i = 0; logline[i]; i++)
 		{
-			*ps++=logline[i];
-			if (logline[i]=='$')
-				*ps++='$';
-			if (logline[i]=='{')
-				*ps++='{';
+			*ps++ = logline[i];
+			if (logline[i] == '$') *ps++ = '$';
+			if (logline[i] == '{') *ps++ = '{';
 		}
-		*ps=0;
-		if(cmd_table[cmd].log == L_COM)
-			wiznet(s,ch,NULL,WIZ_COMM,0,get_trust(ch));
-		else if(cmd_table[cmd].log == L_COM)
-			wiznet(s,ch,NULL,WIZ_STAFF_COMM,0,get_trust(ch));
+		*ps = '\0';
+		if (cmd >= 0 && cmd_table[cmd].log == L_COM)
+			wiznet(s, ch, NULL, WIZ_COMM, 0, trust);
+		else if (cmd >= 0 && cmd_table[cmd].log == L_SCOM)
+			wiznet(s, ch, NULL, WIZ_STAFF_COMM, 0, trust);
 		else
-			wiznet(s,ch,NULL,WIZ_SNOOPS,0,get_trust(ch));
+			wiznet(s, ch, NULL, WIZ_SNOOPS, 0, trust);
 	}
 
 	if ( ch->desc != NULL && ch->desc->snoop_by != NULL )
@@ -873,16 +863,12 @@ void interpret( CHAR_DATA *ch, char *argument )
 
 	if ( !found || !CAN_USE_CMD(ch, cmd))
 	{
-		/*
-		* Look for command in socials table.
-		*/
 		if ( !check_social( ch, command, argument ) )
 		{
-			send_to_char( "Huh?\n\r", ch );
-			if(!exists)
-			{
-				log_string(LOG_BUG, (char *)Format("[%d] %s : Command failure: %s %s - %s", ch->in_room ? ch->in_room->vnum : 0, ch->name, command, argument, buffer));
-			}
+			send_to_char("\tRHuh?\tn  Type \t<send href='commands'>commands\t</send> to see what's available.\n\r", ch);
+			if (!exists)
+				log_string(LOG_GAME, Format("Command failure: %s in room %d: %s",
+					ch->name, ch->in_room ? ch->in_room->vnum : 0, logline));
 		}
 		return;
 	}
@@ -1197,12 +1183,14 @@ int number_argument( char *argument, char *arg )
 			*pdot = '\0';
 			number = atoi( argument );
 			*pdot = '.';
-			strcpy( arg, pdot+1 );
+			strncpy( arg, pdot+1, MIL - 1 );
+			arg[MIL - 1] = '\0';
 			return number;
 		}
 	}
 
-	strcpy( arg, argument );
+	strncpy( arg, argument, MIL - 1 );
+	arg[MIL - 1] = '\0';
 	return 1;
 }
 
@@ -1221,12 +1209,14 @@ int mult_argument(char *argument, char *arg)
 			*pdot = '\0';
 			number = atoi( argument );
 			*pdot = '*';
-			strncpy( arg, pdot+1, sizeof(*arg) );
+			strncpy( arg, pdot+1, MIL - 1 );
+			arg[MIL - 1] = '\0';
 			return number;
 		}
 	}
 
-	strncpy( arg, argument, sizeof(*arg) );
+	strncpy( arg, argument, MIL - 1 );
+	arg[MIL - 1] = '\0';
 	return 1;
 }
 
@@ -1391,16 +1381,27 @@ void do_commands( CHAR_DATA *ch, char *argument )
 	int col = 0;
 	int count = 0;
 	int i = 0;
-	int index[MAX_STRING_LENGTH*4];
+	int *index;
 
 	for ( count = 0; cmd_table[count].name[0] != '\0'; count++ )
-    {
-    	index[count] = count;
-    }
+		;
+
+	index = calloc(count, sizeof(*index));
+	if (!index)
+	{
+		send_to_char("Memory error listing commands.\n\r", ch);
+		return;
+	}
+
+	for (i = 0; i < count; i++)
+		index[i] = i;
 
 	qsort(index, count, sizeof(int), sort_cmd_table);
 
-    for ( i = 0; i < count; i++ )
+	send_to_char("\tBAvailable Commands\tn\n\r", ch);
+	send_to_char("\tY--------------------------------------------------------------------------------\tn\n\r", ch);
+
+	for ( i = 0; i < count; i++ )
 	{
 		cmd = index[i];
 
@@ -1410,7 +1411,7 @@ void do_commands( CHAR_DATA *ch, char *argument )
 				&&   cmd_table[cmd].race == 0
 				&&   CAN_USE_CMD(ch, cmd))
 		{
-			send_to_char( Format("%-15s", cmd_table[cmd].name), ch );
+			send_to_char( Format("\t<send href='%s'>%-15s\t</send>", cmd_table[cmd].name, cmd_table[cmd].name), ch );
 			if ( ++col % 5 == 0 )
 				send_to_char( "\n\r", ch );
 		}
@@ -1418,6 +1419,8 @@ void do_commands( CHAR_DATA *ch, char *argument )
 
 	if ( col % 5 != 0 )
 		send_to_char( "\n\r", ch );
+
+	free(index);
 	return;
 }
 
@@ -1431,7 +1434,7 @@ void do_wizhelp( CHAR_DATA *ch, char *argument )
 	for ( staff_level = LEVEL_IMMORTAL; staff_level <= MAX_LEVEL; staff_level++)
 	{
 		// Show what trust level it is.
-		send_to_char( Format("\n\r<-- %s -->\n\r", staff_status[staff_level].name ), ch);
+		send_to_char( Format("\n\r\tY----\tn \tB%s\tn \tY----\tn\n\r", staff_status[staff_level].name), ch);
 		// Show commands for that trust level.
 		for ( cmd = 0; !IS_NULLSTR(cmd_table[cmd].name); cmd++ )
 		{
@@ -1477,7 +1480,7 @@ void do_buildhelp( CHAR_DATA *ch, char *argument )
 		}
 	}
 
-	if ( col % 5 != 0 )
+	if ( col % 4 != 0 )
 		send_to_char( "\n\r", ch );
 	return;
 }

@@ -2239,6 +2239,44 @@ void do_weather( CHAR_DATA *ch, char *argument )
     return;
 }
 
+/* Render a see_also string as comma-separated clickable help links. */
+static void add_see_also_links(BUFFER *output, const char *see_also)
+{
+    char work[MSL];
+    char *token;
+    bool first = TRUE;
+
+    strncpy(work, see_also, MSL - 1);
+    work[MSL - 1] = '\0';
+
+    add_buf(output, "\tWSee Also:\tn ");
+
+    for (token = strtok(work, ","); token != NULL; token = strtok(NULL, ","))
+    {
+        char *end;
+        const char *href;
+
+        while (*token == ' ' || *token == '\t' || *token == '\n' || *token == '\r')
+            token++;
+        end = token + strlen(token) - 1;
+        while (end > token && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r'))
+            *end-- = '\0';
+
+        if (token[0] == '\0') continue;
+
+        href = token;
+        /* strip leading "HELP " so the href contains only the topic keyword */
+        if (!str_prefix("help ", token))
+            href = token + 5;
+
+        if (!first) add_buf(output, ", ");
+        first = FALSE;
+
+        add_buf(output, Format("\t<send href='help %s'>\tW%s\tn\t</send>", href, token));
+    }
+    add_buf(output, "\n\r");
+}
+
 void do_help( CHAR_DATA *ch, char *argument )
 {
     HELP_DATA *pHelp;
@@ -2247,15 +2285,6 @@ void do_help( CHAR_DATA *ch, char *argument )
     char argone[MIL] = {'\0'};
     int level = 0;
     bool found = FALSE;
-    time_t rawtime;
-    struct tm *info;
-    char buffer[80] = {'\0'};
-
-    time( &rawtime );
-
-    info = localtime( &rawtime );
-
-    strftime(buffer, 80, "%x", info);
 
     CheckCH(ch);
 
@@ -2264,113 +2293,232 @@ void do_help( CHAR_DATA *ch, char *argument )
     if ( IS_NULLSTR(argument) )
         argument = "summary";
 
-    /* this parts handles help a b so that it returns help 'a b' */
-    argall[0] = '\0';
-    while (!IS_NULLSTR(argument) )
+    /* Pull the first word to check for index/search subcommands. */
+    argument = one_argument(argument, argone);
+
+    /* ── help index ── browsable clickable list of all accessible topics ── */
+    if (!str_cmp(argone, "index"))
+    {
+        int col = 0, total = 0;
+
+        for (pHelp = help_list; pHelp != NULL; pHelp = pHelp->next)
+        {
+            if (pHelp->level == -1) level = -1;
+            else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
+            if (level >= get_trust(ch)) continue;
+            total++;
+        }
+
+        add_buf(output, Format("\tBHelp Index\tn \tY(\tn%d topics\tY)\tn\n\r", total));
+        add_buf(output, "\tY--------------------------------------------------------------------------------\tn\n\r");
+
+        for (pHelp = help_list; pHelp != NULL; pHelp = pHelp->next)
+        {
+            char topic_name[64];
+            char *sp;
+
+            if (pHelp->level == -1) level = -1;
+            else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
+            if (level >= get_trust(ch)) continue;
+
+            strncpy(topic_name, IS_NULLSTR(pHelp->keyword) ? "(none)" : pHelp->keyword,
+                    sizeof(topic_name) - 1);
+            topic_name[sizeof(topic_name) - 1] = '\0';
+            if ((sp = strchr(topic_name, ' ')) != NULL) *sp = '\0';
+
+            add_buf(output, Format("\t<send href='help %s'>%-20s\t</send>", topic_name, topic_name));
+            if (++col % 4 == 0)
+                add_buf(output, "\n\r");
+        }
+        if (col % 4 != 0)
+            add_buf(output, "\n\r");
+
+        page_to_char(buf_string(output), ch);
+        free_buf(output);
+        return;
+    }
+
+    /* ── help search <term> ── find topics whose keywords match the term ── */
+    if (!str_cmp(argone, "search"))
+    {
+        int col = 0;
+        bool any = FALSE;
+
+        if (IS_NULLSTR(argument))
+        {
+            send_to_char("Syntax: \tWhelp search <keyword>\tn\n\r", ch);
+            free_buf(output);
+            return;
+        }
+
+        add_buf(output, Format("\tBSearch results for '\tW%s\tB':\tn\n\r", argument));
+        add_buf(output, "\tY--------------------------------------------------------------------------------\tn\n\r");
+
+        for (pHelp = help_list; pHelp != NULL; pHelp = pHelp->next)
+        {
+            char topic_name[64];
+            char *sp;
+
+            if (pHelp->level == -1) level = -1;
+            else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
+            if (level >= get_trust(ch)) continue;
+
+            if (!is_name(argument, pHelp->keyword)) continue;
+
+            strncpy(topic_name, IS_NULLSTR(pHelp->keyword) ? "(none)" : pHelp->keyword,
+                    sizeof(topic_name) - 1);
+            topic_name[sizeof(topic_name) - 1] = '\0';
+            if ((sp = strchr(topic_name, ' ')) != NULL) *sp = '\0';
+
+            add_buf(output, Format("\t<send href='help %s'>%-20s\t</send>", topic_name, topic_name));
+            if (++col % 4 == 0)
+                add_buf(output, "\n\r");
+            any = TRUE;
+        }
+
+        if (any && col % 4 != 0)
+            add_buf(output, "\n\r");
+        if (!any)
+            add_buf(output, "\tRNo matching topics found.\tn\n\r");
+
+        page_to_char(buf_string(output), ch);
+        free_buf(output);
+        return;
+    }
+
+    /* Rebuild argall from argone + any remaining words. */
+    strncat(argall, argone, sizeof(argall) - strlen(argall) - 1);
+    while (!IS_NULLSTR(argument))
     {
         argument = one_argument(argument, argone);
-        if (!IS_NULLSTR(argall))
-            strncat(argall, " ", sizeof(argall) - strlen(argall) - 1 );
-        strncat(argall, argone, sizeof(argall) - strlen(argall) - 1 );
+        strncat(argall, " ", sizeof(argall) - strlen(argall) - 1);
+        strncat(argall, argone, sizeof(argall) - strlen(argall) - 1);
     }
 
-    if ( strlen( argall ) == 1 )
+    /* ── Single-character lookup ── show a topic name list, not full entries ── */
+    if (strlen(argall) == 1)
     {
-        add_buf(output, (char *)Format("Topics beginning with %s:\n\r", argall));
+        int col = 0;
+        bool any = FALSE;
+
+        add_buf(output, Format("\tBTopics beginning with '\tW%s\tB':\tn\n\r", argall));
+        add_buf(output, "\tY--------------------------------------------------------------------------------\tn\n\r");
+
+        for (pHelp = help_list; pHelp != NULL; pHelp = pHelp->next)
+        {
+            char topic_name[64];
+            char *sp;
+
+            if (pHelp->level == -1) level = -1;
+            else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
+            if (level >= get_trust(ch)) continue;
+
+            if (!is_name(argall, pHelp->keyword)) continue;
+
+            strncpy(topic_name, IS_NULLSTR(pHelp->keyword) ? "(none)" : pHelp->keyword,
+                    sizeof(topic_name) - 1);
+            topic_name[sizeof(topic_name) - 1] = '\0';
+            if ((sp = strchr(topic_name, ' ')) != NULL) *sp = '\0';
+
+            add_buf(output, Format("\t<send href='help %s'>%-20s\t</send>", topic_name, topic_name));
+            if (++col % 4 == 0)
+                add_buf(output, "\n\r");
+            any = TRUE;
+        }
+
+        if (any && col % 4 != 0)
+            add_buf(output, "\n\r");
+        if (!any)
+            add_buf(output, "\tRNo topics found.\tn\n\r");
+
+        page_to_char(buf_string(output), ch);
+        free_buf(output);
+        return;
     }
 
+    /* ── Normal help lookup ── */
     for ( pHelp = help_list; pHelp != NULL; pHelp = pHelp->next )
     {
-        if(pHelp->level == -1) level = -1;
+        if (pHelp->level == -1) level = -1;
         else level = (pHelp->level < 0) ? -1 * pHelp->level - 1 : pHelp->level;
 
-        if (level >= get_trust( ch ) )
-            continue;
+        if (level >= get_trust(ch)) continue;
 
-        if ( is_name( argall, pHelp->keyword ) )
+        if (!is_name(argall, pHelp->keyword)) continue;
+
+        /* Yellow border separator between multiple matches on the same query. */
+        if (found && strlen(argall) > 1)
+            add_buf(output, "\n\r\tY--------------------------------------------------------------------------------\tn\n\r\n\r");
+
+        if (pHelp->level >= 0 && str_cmp(argall, "imotd"))
         {
-            /* add seperator if found */
-            if (found && strlen( argall ) > 1 )
-                add_buf(output, "\n\r<================================BREAK===============================>\n\r\n\r");
-            if ( pHelp->level >= 0 && str_cmp( argall, "imotd" ) )
-            {
-                add_buf(output, "\tWKeywords:\tn ");
-                add_buf(output, pHelp->keyword);
-                add_buf(output, "\n\r");
-            }
-
-            if(!IS_NULLSTR(pHelp->topic))
-            {
-                add_buf(output, "\tWTopic:\tn \tM");
-                add_buf(output, pHelp->topic);
-                add_buf(output, "\tn\n\r");
-            }
-
-            if(!IS_NULLSTR(pHelp->quote))
-            {
-                add_buf(output, "Quote:\n\r");
-                add_buf(output, pHelp->quote);
-                add_buf(output, "\n\r");
-            }
-
-            if(!IS_NULLSTR(pHelp->syntax))
-            {
-                add_buf(output, "\tWSyntax:\tn \tC");
-                add_buf(output, pHelp->syntax);
-                add_buf(output, "\tn\n\r");
-            }
-
-            /*
-             * Strip leading '.' to allow initial blanks.
-             */
-            if(!IS_NULLSTR(pHelp->description))
-            {
-                add_buf(output, "\tWDescription:\tn\n\r ");
-                if ( pHelp->description[0] == '.' )
-                    add_buf(output, pHelp->description + 1);
-                else
-                    add_buf(output, pHelp->description);
-            }
-
-            if(!IS_NULLSTR(pHelp->website))
-            {
-                add_buf(output, "\tWWebsite:\tn ");
-                add_buf(output, pHelp->website);
-                add_buf(output, "\n\r");
-            }
-
-            if(!IS_NULLSTR(pHelp->see_also))
-            {
-                add_buf(output, "\tWSee Also:\tn \tC");
-                add_buf(output, pHelp->see_also);
-                add_buf(output, "\tn\n\r");
-            }
-
-            /*
-             * Strip leading '.' to allow initial blanks.
-             */
-            if(!IS_NULLSTR(pHelp->unformatted))
-            {
-                if ( pHelp->unformatted[0] == '.' )
-                    add_buf(output, pHelp->unformatted + 1);
-                else
-                    add_buf(output, pHelp->unformatted);
-            }
-
-            found = TRUE;
-            /* small hack :) */
-            if (ch->desc != NULL && ch->desc->connected != CON_PLAYING)
-                break;
+            add_buf(output, "\tWKeywords:\tn ");
+            add_buf(output, pHelp->keyword);
+            add_buf(output, "\n\r");
         }
+
+        if (!IS_NULLSTR(pHelp->topic))
+        {
+            add_buf(output, "\tWTopic:\tn \tB");
+            add_buf(output, pHelp->topic);
+            add_buf(output, "\tn\n\r");
+        }
+
+        if (!IS_NULLSTR(pHelp->quote))
+        {
+            add_buf(output, "\tWQuote:\tn\n\r");
+            add_buf(output, pHelp->quote);
+            add_buf(output, "\n\r");
+        }
+
+        if (!IS_NULLSTR(pHelp->syntax))
+        {
+            add_buf(output, "\tWSyntax:\tn \tW");
+            add_buf(output, pHelp->syntax);
+            add_buf(output, "\tn\n\r");
+        }
+
+        /* Strip leading '.' to allow initial blanks. */
+        if (!IS_NULLSTR(pHelp->description))
+        {
+            add_buf(output, "\tWDescription:\tn\n\r");
+            add_buf(output, pHelp->description[0] == '.' ? pHelp->description + 1
+                                                         : pHelp->description);
+            add_buf(output, "\n\r");
+        }
+
+        if (!IS_NULLSTR(pHelp->website))
+        {
+            add_buf(output, "\tWWebsite:\tn ");
+            add_buf(output, pHelp->website);
+            add_buf(output, "\n\r");
+        }
+
+        if (!IS_NULLSTR(pHelp->see_also))
+            add_see_also_links(output, pHelp->see_also);
+
+        /* Strip leading '.' to allow initial blanks. */
+        if (!IS_NULLSTR(pHelp->unformatted))
+        {
+            add_buf(output, pHelp->unformatted[0] == '.' ? pHelp->unformatted + 1
+                                                         : pHelp->unformatted);
+            add_buf(output, "\n\r");
+        }
+
+        found = TRUE;
+        if (ch->desc != NULL && ch->desc->connected != CON_PLAYING)
+            break;
     }
 
     if (!found)
     {
-        send_to_char( "\tWNo help on that word. Have you tried investigating or researching that?\tn\n\r", ch );
-        log_string(LOG_BUG, (char *)Format("[*****] HELP: No help for: %s [%s]", argall, buffer));
+        send_to_char("\tRNo help on that word.\tn  Try \t<send href='help search'>help search\t</send>"
+                     " or browse the \t<send href='help index'>help index\t</send>.\n\r", ch);
+        log_string(LOG_GAME, Format("HELP: No match for '%s'", argall));
     }
     else
         page_to_char(buf_string(output), ch);
+
     free_buf(output);
 }
 

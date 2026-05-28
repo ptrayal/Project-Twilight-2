@@ -116,9 +116,10 @@ void do_auspex2 ( CHAR_DATA * ch, char * string )
 		if (success <= 0)
 		{
 			if( IS_WEREWOLF(ch) )
-				act("\tYFailure\tn: You cannot smell $N's aura.", ch, NULL, victim, TO_CHAR, 1);
+				act("\tRFailure\tn: You cannot smell $N's aura.", ch, NULL, victim, TO_CHAR, 1);
 			else
-				act("\tYFailure\tn: You cannot see $N's aura.", ch, NULL, victim, TO_CHAR, 1);
+				act("\tRFailure\tn: You cannot see $N's aura.", ch, NULL, victim, TO_CHAR, 1);
+			act("$n stares at $N intently for a moment.", ch, NULL, victim, TO_ROOM, 1);
 			return;
 		}
 
@@ -138,6 +139,9 @@ void do_auspex2 ( CHAR_DATA * ch, char * string )
 					break;
 				case RACE_HUMAN:
 					len += snprintf(buf + len, sizeof(buf) - len, " a rosy aura");
+					break;
+				default:
+					len += snprintf(buf + len, sizeof(buf) - len, " a hazy, indistinct aura");
 					break;
 			}
 			if(success == 1 && len < sizeof(buf))
@@ -161,7 +165,7 @@ void do_auspex2 ( CHAR_DATA * ch, char * string )
 				&& victim->condition[COND_FRENZY] < 50
 				&& victim->condition[COND_PAIN] < 50
 				&& len < sizeof(buf))
-				len += snprintf(buf + len, sizeof(buf) - len, " that is mild blue color");
+				len += snprintf(buf + len, sizeof(buf) - len, " that is a mild blue color");
 
 			if(len < sizeof(buf))
 				len += snprintf(buf + len, sizeof(buf) - len, ".\n\r");
@@ -229,6 +233,8 @@ void do_auspex2 ( CHAR_DATA * ch, char * string )
 				len += snprintf(buf + len, sizeof(buf) - len, " with golden flecks.\n\r");
 			else if(victim->GHB < 3)
 				len += snprintf(buf + len, sizeof(buf) - len, " with white flecks.\n\r");
+			else
+				len += snprintf(buf + len, sizeof(buf) - len, ".\n\r");
 		}
 
 		send_to_char(buf, ch);
@@ -281,19 +287,17 @@ void do_auspex3 ( CHAR_DATA * ch, char * argument )
 	power_ability = ch->ability[EMPATHY].value;
 	success = dice_rolls(ch, power_stat + power_ability, difficulty);
 
-	if(success<0)
+	if(success < 0)
 	{
-		send_to_char("\tYCritical Failure\tn: You are overwhelmed by the psychic impressions on this object and it gives you a massive headache!\n\r", ch);
+		send_to_char("\tRCritical Failure\tn: You are overwhelmed by the psychic impressions on this object and it gives you a massive headache!\n\r", ch);
 		ch->power_timer = 6;
 	}
-
-	if(success==0)
+	else if(success == 0)
 	{
-		send_to_char("\tYFailure\tn: You get nothing off of this object.\n\r", ch);
+		send_to_char("\tRFailure\tn: You get nothing off of this object.\n\r", ch);
 		ch->power_timer = 3;
 	}
-
-	if(success>0)
+	else
 	{
 		if(obj->owner == NULL || IS_NULLSTR(obj->owner) || IS_BUILDERMODE(obj))
 			send_to_char("No-one has touched this object.\n\r", ch);
@@ -333,6 +337,7 @@ void do_auspex4(CHAR_DATA *ch, char *argument)
 
 	send_to_char( "You focus to listen to thoughts.\n\r", ch );
 	SET_BIT(ch->affected_by, AFF_AUSPEX4);
+	ch->power_timer = 1;
 }
 
 /*
@@ -348,15 +353,9 @@ void do_auspex5(CHAR_DATA *ch, char *argument)
 
 	CheckCH(ch);
 
-	difficulty = 8;
-	power_stat = get_curr_stat(ch, STAT_PER);
-	power_ability = ch->ability[OCCULT].value;
-
-	success = dice_rolls(ch, power_stat + power_ability, difficulty);
-
 	if( !IS_VAMPIRE(ch) || ch->disc[DISC_AUSPEX] < 5)
 	{
-		send_to_char("\tRWARNING: You do not know Psychic Projection\tn.\n\r", ch);
+		send_to_char("\tRWARNING: You do not know Astral Projection\tn.\n\r", ch);
 		return;
 	}
 
@@ -365,6 +364,16 @@ void do_auspex5(CHAR_DATA *ch, char *argument)
 		send_to_char("Your powers have not rejuvenated yet.\n\r", ch);
 		return;
 	}
+
+	/* Power costs blood only when projecting out, not when returning. */
+	if(!IS_SET(ch->act2, ACT2_ASTRAL) && !has_enough_power(ch))
+		return;
+
+	difficulty = 8;
+	power_stat = get_curr_stat(ch, STAT_PER);
+	power_ability = ch->ability[OCCULT].value;
+
+	success = dice_rolls(ch, power_stat + power_ability, difficulty);
 
 	ch->power_timer = 2;
 	if(success > 0 || IS_SET(ch->parts, PART_THREAD))
@@ -413,6 +422,6 @@ void do_auspex5(CHAR_DATA *ch, char *argument)
 	}
 	else if(success <= 0)
 	{
-		send_to_char("\tYFailure\tn: Nothing happens.\n\r", ch);
+		send_to_char("\tRFailure\tn: Nothing happens.\n\r", ch);
 	}
 }
