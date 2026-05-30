@@ -2375,6 +2375,26 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 		return;
 
 	case CON_ACCT_MENU:
+		/* Migration path: character already loaded, skip hub and enter game */
+		if ( d->character && d->character->pcdata
+			&& !IS_NULLSTR(d->character->pcdata->acct_login)
+			&& d->account )
+		{
+			/* Character was linked during this session via migration — enter game */
+			if ( IS_ADMIN(d->character) )
+				do_function(d->character, &do_help, "imotd");
+			do_function(d->character, &do_help, "motd");
+			LINK_SINGLE(d->character, next, char_list);
+			char_to_room( d->character,
+				d->character->in_room
+					? d->character->in_room
+					: get_room_index(ROOM_VNUM_START) );
+			d->connected = CON_PLAYING;
+			reset_char( d->character );
+			do_function( d->character, &do_look, "" );
+			return;
+		}
+
 		if ( IS_NULLSTR(argument) )
 		{
 			write_to_buffer( d, "Enter choice: ", 0 );
@@ -2583,8 +2603,13 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 
 			if ( d->account && d->acct_creating_char )
 			{
-				/* Creating from hub — skip name confirmation, go straight to creation */
+				/* Creating from hub — skip name confirmation, send race prompt directly */
 				write_to_buffer( d, Format("Creating character %s...\n\r", argument), 0 );
+				write_to_buffer( d, "\tWThe following races are available:\tn\n\r", 0 );
+				write_to_buffer( d, "[*] Human - You are a human. [\t<send href='human'> Select Human\t</send> | \t<send href='help human'>help Human\t</send>]\n\r", 0 );
+				write_to_buffer( d, "[*] Vampire - One of the Kindred. [\t<send href='vampire'> Select Vampire\t</send> | \t<send href='help vampire'>help Vampire\t</send>]\n\r", 0 );
+				write_to_buffer( d, "[*] Werewolf - One of the Garou. [\t<send href='werewolf'> Select Werewolf\t</send> | \t<send href='help werewolf'>help Werewolf\t</send>]\n\r", 0 );
+				write_to_buffer( d, "\n\r\tWWhat is your race (\tYhelp for more information\tW)?\tn\n\r", 0 );
 				d->connected = CON_GET_NEW_RACE;
 				return;
 			}
@@ -2722,6 +2747,20 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 
 			log_string( LOG_CONNECT, Format("[WIZNET] %s@%s has connected.", ch->name, d->host) );
 			wiznet(log_buf,NULL,NULL,WIZ_SITES,0,get_trust(ch));
+
+			/* Phase 10: Migration — redirect unlinked characters to account creation */
+			if ( ch->pcdata && IS_NULLSTR(ch->pcdata->acct_login) )
+			{
+				write_to_buffer( d,
+					"\n\r\tY------------------------------------------------------------\tn\n\r"
+					"\tBWelcome to the new account system!\tn\n\r"
+					"All characters now require an account.\n\r"
+					"Please create a new account or log into an existing one.\n\r"
+					"\tY------------------------------------------------------------\tn\n\r"
+					"\n\rAccount name: ", 0 );
+				d->connected = CON_GET_ACCT_NAME;
+				return;
+			}
 
 			if ( IS_ADMIN(ch) )
 			{
@@ -3601,10 +3640,76 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 						break;
 
 					case CON_READ_MOTD:
-						if ( ch->pcdata == NULL || ch->pcdata->pwd[0] == '\0')
+						/* Null password warning — suppress for account-authenticated characters */
+						if ( ch->pcdata != NULL
+							&& IS_NULLSTR(ch->pcdata->pwd)
+							&& !d->account )
 						{
 							write_to_buffer( d, "\tRWarning! Null password!\tn\n\r",0 );
 							write_to_buffer( d,	"\tRType 'password null [new password]' to fix.\tn\n\r",0);
+						}
+
+						/*
+						 * Phase 19 / Phase 10: Account linkage.
+						 *
+						 * If d->account is set and this character has no acct_login,
+						 * link them now (new character just created from hub, or
+						 * an existing character that bypassed the migration prompt).
+						 *
+						 * If d->account is NULL and character has no acct_login,
+						 * this is an unlinked legacy character — redirect to migration.
+						 */
+						if ( d->account && ch->pcdata
+							&& IS_NULLSTR(ch->pcdata->acct_login) )
+						{
+							/* Link character to account */
+							ACCOUNT_CHARACTER *ac_new;
+							ACCOUNT_CHARACTER *ac_tail;
+
+							ch->pcdata->acct_login = str_dup( d->account->name );
+							ch->pcdata->acct_id    = d->account->account_id;
+
+							ac_new               = new_account_char();
+							ac_new->char_name    = str_dup( ch->name );
+							ac_new->char_id      = ch->id;
+							ac_new->last_played  = time( NULL );
+
+							/* Append to account character list */
+							if ( !d->account->characters )
+							{
+								d->account->characters = ac_new;
+							}
+							else
+							{
+								for ( ac_tail = d->account->characters;
+									  ac_tail->next;
+									  ac_tail = ac_tail->next )
+									;
+								ac_tail->next = ac_new;
+							}
+
+							d->account->dirty = TRUE;
+							save_account( d->account );
+							/* Do NOT call save_char_obj here — ch->in_room is NULL
+							 * for new characters at this point. The do_save call at
+							 * the end of CON_READ_MOTD handles the pfile write after
+							 * reset_char() and char_to_room() have run. */
+
+							account_audit_log( "CHAR_LINKED", d->account->account_id,
+								Format("char=%s", ch->name) );
+						}
+						else if ( !d->account && ch->pcdata
+							&& IS_NULLSTR(ch->pcdata->acct_login) )
+						{
+							/* Phase 10: unlinked legacy character — prompt migration */
+							write_to_buffer( d,
+								"\n\r\tY------------------------------------------------------------\tn\n\r"
+								"\tBWelcome to the new account system!\tn\n\r"
+								"Your character needs to be linked to an account.\n\r"
+								"You will be prompted to create or link an account\n\r"
+								"the next time you log in.\n\r"
+								"\tY------------------------------------------------------------\tn\n\r\n\r", 0 );
+							/* Let them play normally this session; migration on next login */
 						}
 
 						LINK_SINGLE(ch, next, char_list);
