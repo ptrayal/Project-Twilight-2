@@ -37,6 +37,7 @@
 #include "twilight.h"
 #include "tables.h"
 #include "recycle.h"
+#include "account.h"
 
 
 BUFFER *buffer_list;
@@ -3097,5 +3098,197 @@ void free_liquid(LIQUID_DATA *liquid)
 {
 	Escape(liquid);
 	PURGE_DATA(liquid);
+}
+
+/* =========================================================================
+ * Account system allocation
+ * ========================================================================= */
+
+ACCOUNT_DATA *new_account(void)
+{
+    ACCOUNT_DATA *acct;
+    ALLOC_DATA(acct, ACCOUNT_DATA, 1);
+    if (!acct)
+    {
+        log_string(LOG_ERR, "new_account: memory allocation failed.");
+        return NULL;
+    }
+    acct->account_id             = 0;
+    acct->name                   = NULL;
+    acct->password_hash          = NULL;
+    acct->email                  = NULL;
+    acct->account_flags          = 0;
+    acct->mod_flags              = 0;
+    acct->trust_ceiling          = MAX_LEVEL;
+    acct->points_earned          = 0;
+    acct->points_spent           = 0;
+    acct->created_on             = 0;
+    acct->last_login             = 0;
+    acct->soft_deleted_on        = 0;
+    acct->reset_token            = NULL;
+    acct->password_reset_pending = FALSE;
+    acct->reset_issued_on        = 0;
+    acct->weekly_active_seconds  = 0;
+    acct->weekly_reset_on        = 0;
+    acct->monthly_grants_used    = 0;
+    acct->grants_reset_on        = 0;
+    acct->dirty                  = FALSE;
+    acct->ip_log                 = NULL;
+    acct->characters             = NULL;
+    acct->unlocks                = NULL;
+    acct->notes                  = NULL;
+    acct->next                   = NULL;
+    return acct;
+}
+
+void free_account(ACCOUNT_DATA *acct)
+{
+    ACCOUNT_CHARACTER *ac, *ac_next;
+    ACCOUNT_UNLOCK    *au, *au_next;
+    ACCOUNT_NOTE      *an, *an_next;
+    ACCOUNT_IP_ENTRY  *ai, *ai_next;
+    ACCOUNT_DATA      *curr;
+
+    if (!acct)
+        return;
+
+    /* Unlink from global account_list */
+    extern ACCOUNT_DATA *account_list;
+    if (account_list == acct)
+    {
+        account_list = acct->next;
+    }
+    else
+    {
+        for (curr = account_list; curr && curr->next != acct; curr = curr->next)
+            ;
+        if (curr)
+            curr->next = acct->next;
+    }
+
+    /* Free sub-lists */
+    for (ac = acct->characters; ac; ac = ac_next)
+    {
+        ac_next = ac->next;
+        free_account_char(ac);
+    }
+    for (au = acct->unlocks; au; au = au_next)
+    {
+        au_next = au->next;
+        free_account_unlock(au);
+    }
+    for (an = acct->notes; an; an = an_next)
+    {
+        an_next = an->next;
+        free_account_note(an);
+    }
+    for (ai = acct->ip_log; ai; ai = ai_next)
+    {
+        ai_next = ai->next;
+        free_account_ip(ai);
+    }
+
+    PURGE_DATA(acct->name);
+    PURGE_DATA(acct->password_hash);
+    PURGE_DATA(acct->email);
+    PURGE_DATA(acct->reset_token);
+    PURGE_DATA(acct);
+}
+
+ACCOUNT_CHARACTER *new_account_char(void)
+{
+    ACCOUNT_CHARACTER *ac;
+    ALLOC_DATA(ac, ACCOUNT_CHARACTER, 1);
+    if (!ac)
+    {
+        log_string(LOG_ERR, "new_account_char: memory allocation failed.");
+        return NULL;
+    }
+    ac->char_name       = NULL;
+    ac->char_id         = 0;
+    ac->last_played     = 0;
+    ac->soft_deleted_on = 0;
+    ac->next            = NULL;
+    return ac;
+}
+
+void free_account_char(ACCOUNT_CHARACTER *ac)
+{
+    if (!ac)
+        return;
+    PURGE_DATA(ac->char_name);
+    PURGE_DATA(ac);
+}
+
+ACCOUNT_UNLOCK *new_account_unlock(void)
+{
+    ACCOUNT_UNLOCK *au;
+    ALLOC_DATA(au, ACCOUNT_UNLOCK, 1);
+    if (!au)
+    {
+        log_string(LOG_ERR, "new_account_unlock: memory allocation failed.");
+        return NULL;
+    }
+    au->unlock_id    = 0;
+    au->quantity     = 0;
+    au->purchased_on = 0;
+    au->next         = NULL;
+    return au;
+}
+
+void free_account_unlock(ACCOUNT_UNLOCK *au)
+{
+    if (!au)
+        return;
+    PURGE_DATA(au);
+}
+
+ACCOUNT_NOTE *new_account_note(void)
+{
+    ACCOUNT_NOTE *an;
+    ALLOC_DATA(an, ACCOUNT_NOTE, 1);
+    if (!an)
+    {
+        log_string(LOG_ERR, "new_account_note: memory allocation failed.");
+        return NULL;
+    }
+    an->author     = NULL;
+    an->body       = NULL;
+    an->written_on = 0;
+    an->visibility = NOTE_VIS_STAFF;
+    an->next       = NULL;
+    return an;
+}
+
+void free_account_note(ACCOUNT_NOTE *an)
+{
+    if (!an)
+        return;
+    PURGE_DATA(an->author);
+    PURGE_DATA(an->body);
+    PURGE_DATA(an);
+}
+
+ACCOUNT_IP_ENTRY *new_account_ip(void)
+{
+    ACCOUNT_IP_ENTRY *ai;
+    ALLOC_DATA(ai, ACCOUNT_IP_ENTRY, 1);
+    if (!ai)
+    {
+        log_string(LOG_ERR, "new_account_ip: memory allocation failed.");
+        return NULL;
+    }
+    ai->ip      = NULL;
+    ai->seen_on = 0;
+    ai->next    = NULL;
+    return ai;
+}
+
+void free_account_ip(ACCOUNT_IP_ENTRY *ai)
+{
+    if (!ai)
+        return;
+    PURGE_DATA(ai->ip);
+    PURGE_DATA(ai);
 }
 

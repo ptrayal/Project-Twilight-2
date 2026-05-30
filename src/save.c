@@ -602,6 +602,14 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     }
     else
     {
+		/* Account linkage — written first so it's easy to find on load */
+		if ( !IS_NULLSTR(ch->pcdata->acct_login) )
+		{
+			char *tmp = strip_trailing_whitespace(ch->pcdata->acct_login);
+			WriteToFile(fp, true, "AcLg", tmp);
+			free(tmp);
+			fprintf( fp, "AcId %ld\n", ch->pcdata->acct_id );
+		}
 		{
 			char *tmp = strip_trailing_whitespace(ch->pcdata->pwd);
 			WriteToFile(fp, true, "Pass", tmp);
@@ -1289,6 +1297,8 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 		case 'A':
 			KEY( "Act",		ch->act,		fread_flag( fp ) );
 			KEY( "Act2",	ch->act2,		fread_flag( fp ) );
+			KEY( "AcId",	ch->pcdata->acct_id,	fread_number( fp ) );
+			KEYS( "AcLg",	ch->pcdata->acct_login,	fread_string( fp ) );
 			KEY( "AfBy",	ch->affected_by,	fread_flag( fp ) );
 			KEY( "AfBy2",	ch->affected_by2,	fread_flag( fp ) );
 			KEY( "Age",		ch->char_age,		fread_number( fp ) );

@@ -148,6 +148,28 @@ MPC	*new_mpcode args( (void) );
 void	free_mpcode args( (MPC *mpcode) );
 #undef MPC
 
+/* account system recycling */
+#define ACCD  ACCOUNT_DATA
+#define ACCCH ACCOUNT_CHARACTER
+#define ACCUL ACCOUNT_UNLOCK
+#define ACCNO ACCOUNT_NOTE
+#define ACCIP ACCOUNT_IP_ENTRY
+ACCD  *new_account      args( (void) );
+void   free_account     args( (ACCD *acct) );
+ACCCH *new_account_char args( (void) );
+void   free_account_char args( (ACCCH *ac) );
+ACCUL *new_account_unlock args( (void) );
+void   free_account_unlock args( (ACCUL *au) );
+ACCNO *new_account_note args( (void) );
+void   free_account_note args( (ACCNO *an) );
+ACCIP *new_account_ip   args( (void) );
+void   free_account_ip  args( (ACCIP *ai) );
+#undef ACCD
+#undef ACCCH
+#undef ACCUL
+#undef ACCNO
+#undef ACCIP
+
 /* research system recycling */
 #define RD RESEARCH_DATA
 #define RT RESEARCH_TIER

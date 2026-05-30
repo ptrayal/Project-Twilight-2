@@ -484,11 +484,6 @@ ACCOUNT_DATA *create_account( const char *name, const char *password_hash )
     return NULL;
 }
 
-void free_account( ACCOUNT_DATA *acct )
-{
-    (void)acct;
-}
-
 void free_account_from_desc( DESCRIPTOR_DATA *d )
 {
     if ( !d || !d->account )

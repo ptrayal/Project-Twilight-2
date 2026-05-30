@@ -3065,12 +3065,17 @@ char *	crypt		args( ( const char *key, const char *salt ) );
 
 
 /*
- * Password hashing is handled by crypt_blowfish (bcrypt) via account.c.
- * The old NOCRYPT / crypt() stub has been removed.
- * Forward-declare the legacy crypt() used by comm.c and act_info.c during
- * the migration window — avoids pulling in <crypt.h> which redefines bool.
+ * Character password handling during migration window.
+ *
+ * Existing pfiles store passwords as plaintext (NOCRYPT was the original
+ * setting). The crypt() passthrough below keeps legacy character login
+ * working in comm.c and act_info.c until all characters are migrated to
+ * accounts and the character password path is removed.
+ *
+ * account.c uses crypt_ra() directly for bcrypt and is unaffected by this
+ * macro. Do NOT remove this until the migration window is closed.
  */
-extern char *crypt( const char *key, const char *salt );
+#define crypt(s1, s2)   (s1)
 
 
 

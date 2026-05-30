@@ -54,6 +54,7 @@
 #include "lookup.h"
 #include "olc.h"
 #include "grid.h"
+#include "account.h"
 
 
 bool logFail = FALSE;           // this can be turned into a global value, it doesn't really need to be true
@@ -249,6 +250,21 @@ void boot_db()
      */
 
     fBootDb = TRUE;
+
+    /*
+     * Ensure account and log directories exist.
+     * mkdir() returns EEXIST if already present — that is safe to ignore.
+     */
+    mkdir( "../account",         0755 );
+    mkdir( "../account/deleted", 0755 );
+    mkdir( "../log/account",     0755 );
+    mkdir( "../player/deleted",  0755 );
+
+    /*
+     * Load account ID counter before any account operations.
+     */
+    load_account_next_id();
+    log_string( LOG_CONNECT, "Account ID counter loaded." );
 
     /*
      * Init random number generator.
