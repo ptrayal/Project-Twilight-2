@@ -8,7 +8,10 @@
 #define ACCOUNT_H
 
 #include <time.h>
-#include <stdbool.h>
+
+// Do not include <stdbool.h> because twilight.h defines bool as unsigned char
+// and must be included before this header everywhere it is used.
+// #include <stdbool.h>
 
 /*
  * Forward declarations — full DESCRIPTOR_DATA/CHAR_DATA types come from twilight.h.

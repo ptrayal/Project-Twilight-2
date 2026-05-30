@@ -396,8 +396,11 @@ extern char logfile[MAX_INPUT_LENGTH];
 #define CON_AIDESC			31
 #define CON_GET_ACCT_NAME		32
 #define CON_GET_ACCT_PASS		33
-#define CON_ACCT_MENUCHOICE		34
-#define MAX_CON_STATE			35
+#define CON_ACCT_MENU			34
+#define CON_ACCT_NEW_PASS		35
+#define CON_ACCT_CONFIRM_PASS		36
+#define CON_ACCT_TOKEN			37
+#define MAX_CON_STATE			38
 
 /*
  * Stuff for race availability functions.
@@ -415,6 +418,16 @@ extern char logfile[MAX_INPUT_LENGTH];
 #define CEED_FEED		(C)
 #define CEED_GHOUL		(D)
 #define CEED_ARREST		(E)
+
+/*
+ * Account system forward declarations.
+ * Full definitions are in include/account.h.
+ */
+typedef struct account_data       ACCOUNT_DATA;
+typedef struct account_character  ACCOUNT_CHARACTER;
+typedef struct account_unlock     ACCOUNT_UNLOCK;
+typedef struct account_note       ACCOUNT_NOTE;
+typedef struct account_ip_entry   ACCOUNT_IP_ENTRY;
 
 /*
  * Descriptor (channel) structure.
@@ -442,6 +455,12 @@ struct	descriptor_data
     char **		pString; /*OLC*/
     int			editor; /*OLC*/
     protocol_t *        pProtocol;
+
+    /* Account system */
+    ACCOUNT_DATA *	account;            /* NULL until CON_GET_ACCT_PASS succeeds */
+    char *		acct_temp_pass;     /* temp storage across CON_ACCT_NEW/CONFIRM_PASS */
+    bool		acct_is_reset;      /* TRUE = password reset flow; FALSE = new account */
+    bool		acct_creating_char; /* TRUE = creating char from hub, skip pwd states */
 };
 
 
@@ -2124,7 +2143,8 @@ struct	pc_data
 {
     PC_DATA *		next;
     BUFFER * 		buffer;
-    char *		acct_login;
+    char *		acct_login;         /* account name this character is linked to */
+    long		acct_id;            /* account_id for ownership verification */
     char *		pwd;
     char *		bamfin;
     char *		bamfout;
@@ -3045,15 +3065,12 @@ char *	crypt		args( ( const char *key, const char *salt ) );
 
 
 /*
- * The crypt(3) function is not available on some operating systems.
- * In particular, the U.S. Government prohibits its export from the
- *   United States to foreign countries.
- * Turn on NOCRYPT to keep passwords in plain text.
+ * Password hashing is handled by crypt_blowfish (bcrypt) via account.c.
+ * The old NOCRYPT / crypt() stub has been removed.
+ * Forward-declare the legacy crypt() used by comm.c and act_info.c during
+ * the migration window — avoids pulling in <crypt.h> which redefines bool.
  */
-#define NOCRYPT
-#if	defined(NOCRYPT)
-#define crypt(s1, s2)	(s1)
-#endif
+extern char *crypt( const char *key, const char *salt );
 
 
 
