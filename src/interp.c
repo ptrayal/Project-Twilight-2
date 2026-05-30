@@ -39,6 +39,7 @@
 #include "twilight.h"
 #include "tables.h"
 #include "interp.h"
+#include "account.h"
 
 
 bool	check_social	args( ( CHAR_DATA *ch, char *command,
@@ -109,6 +110,7 @@ const	struct	cmd_type	cmd_table	[] =
 		{	">",			do_oocchan,		P_DEAD,		0,	L_COM,	0,	A|B|E,	0 },
 		{	"abilities",	do_abilities,	P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
 		{	"accept",		do_accept,		P_REST,		0,	L_NRM,	1,	0,	0 },
+		{	"account",		do_account,		P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
 		{	"address",		do_addy,		P_DEAD,		0,	L_ALL,	1,	A|B|E,	0 },
 		{	"advance",		do_train_power,	P_STAND,	0,	L_NRM,	1,	B|H,	0 },
 		{	"advantages",	do_advantages,	P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },

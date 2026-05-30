@@ -52,7 +52,7 @@ INCLUDE	= include
 pt: $(O_FILES)
 	rm -f $(ENGINE)
 	rm -f $(ENGINE).exe
-	$(COMPILER) $(LIBRARY_FLAGS) -o $(ENGINE) $(O_FILES) -lm
+	$(COMPILER) $(LIBRARY_FLAGS) -o $(ENGINE) $(O_FILES) -lm -lcrypt
 	@if ! test -f $(BVERSION_FILE); then echo 0 > $(BVERSION_FILE); fi
 	@$(ECHOCMD) -e $$(($$(cat $(BVERSION_FILE)) + 1)) > $(BVERSION_FILE)
 	@$(ECHOCMD) -e "#ifndef __Version_H" > ./include/version.h
@@ -65,7 +65,7 @@ pt: $(O_FILES)
 ptdev: $(O_TESTFILES)
 	rm -f projectdev
 	rm -f projectdev.exe
-	$(COMPILER) $(C_FLAGS) -o projectdev $(O_TESTFILES) -lm
+	$(COMPILER) $(C_FLAGS) -o projectdev $(O_TESTFILES) -lm -lcrypt
 	@if ! test -f $(BVERSION_FILE); then echo 0 > $(BVERSION_FILE); fi
 	@echo $$(($$(cat $(BVERSION_FILE)) + 1)) > $(BVERSION_FILE)
 	@echo "#ifndef __Version_H" > ./include/version.h

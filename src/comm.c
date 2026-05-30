@@ -63,6 +63,7 @@
 #include "tables.h"
 #include "lookup.h"
 #include "interp.h"
+#include "account.h"
 
 
 /*
@@ -1974,13 +1975,30 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 		return;
 
 	case CON_GET_ACCT_PASS:
-		write_to_buffer( d, "Menu:\n\r", 0 );
-		write_to_buffer( d, "OPTIONS...", 0 ); /* i@@@@@ replace with options from table.*/
-		d->connected = CON_ACCT_MENUCHOICE;
+		/* Phase 9 — stub: drop through to name prompt until auth is implemented */
+		write_to_buffer( d, "\n\rAccount system login coming soon.\n\rName: ", 0 );
+		d->connected = CON_GET_NAME;
 		return;
 
-	case CON_ACCT_MENUCHOICE:
-		write_to_buffer( d, "Nice one bright spark. Accounts are coming in a bit.\n\rName: ", 0 );
+	case CON_ACCT_MENU:
+		/* Phase 8 — stub */
+		show_account_hub( d );
+		return;
+
+	case CON_ACCT_NEW_PASS:
+		/* Phase 9 — stub */
+		write_to_buffer( d, "New password system coming soon.\n\r", 0 );
+		d->connected = CON_GET_NAME;
+		return;
+
+	case CON_ACCT_CONFIRM_PASS:
+		/* Phase 9 — stub */
+		d->connected = CON_GET_NAME;
+		return;
+
+	case CON_ACCT_TOKEN:
+		/* Phase 9 — stub */
+		write_to_buffer( d, "Token entry coming soon.\n\r", 0 );
 		d->connected = CON_GET_NAME;
 		return;
 

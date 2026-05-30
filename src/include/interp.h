@@ -127,6 +127,7 @@ DECLARE_DO_FUN(	do_chimerstry1	);
 DECLARE_DO_FUN(	do_chimerstry2	);
 DECLARE_DO_FUN(	do_chimerstry3	);
 DECLARE_DO_FUN(	do_chimerstry4	);
+DECLARE_DO_FUN( do_account	);
 DECLARE_DO_FUN( do_changes	);
 DECLARE_DO_FUN( do_channels	);
 DECLARE_DO_FUN( do_chase	);
