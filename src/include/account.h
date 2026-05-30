@@ -220,6 +220,8 @@ bool               account_cmd_is_whitelisted( const char *cmd );
  * ========================================================================= */
 bool               check_account_name( const char *name );
 bool               check_account_password( const char *pwd );
+char              *account_hash_password( const char *plaintext );
+bool               account_verify_password( const char *plaintext, const char *hash );
 void               generate_reset_token( char *buf, int len );
 bool               account_token_verify( ACCOUNT_DATA *acct, const char *token );
 

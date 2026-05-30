@@ -43,6 +43,7 @@
 #include "tables.h"
 #include "lookup.h"
 #include "interp.h"
+#include "account.h"
 
 /* RT code to delete yourself */
 void do_delete( CHAR_DATA *ch, char *argument)
@@ -2116,12 +2117,40 @@ void do_quit( CHAR_DATA *ch, char *argument )
 	/*
 	 * After extract_char the ch is no longer valid!
 	 */
+
+	/* Update last_played before saving */
+	if ( ch->desc && ch->desc->account )
+	{
+		ACCOUNT_CHARACTER *ac;
+		for ( ac = ch->desc->account->characters; ac; ac = ac->next )
+		{
+			if ( !str_cmp(ac->char_name, ch->name) )
+			{
+				ac->last_played           = time( NULL );
+				ch->desc->account->dirty  = TRUE;
+				save_account( ch->desc->account );
+				break;
+			}
+		}
+	}
+
 	save_char_obj( ch );
 	id = ch->id;
 	d = ch->desc;
 	extract_char( ch, TRUE );
 	if ( d != NULL )
-		close_socket( d );
+	{
+		if ( d->account )
+		{
+			/* Account session — return to hub instead of disconnecting */
+			d->connected = CON_ACCT_MENU;
+			show_account_hub( d );
+		}
+		else
+		{
+			close_socket( d );
+		}
+	}
 
 	/* toast evil cheating bastards */
 	for (d = descriptor_list; d != NULL; d = d_next)

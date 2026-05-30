@@ -1271,6 +1271,76 @@ void init_descriptor( int control )
 #endif
 
 
+/*
+ * account_enter_game — complete character login after load_char_obj() succeeds
+ * when the player selected a character from the account hub.
+ * Bypasses CON_READ_MOTD (which requires player input) and goes directly to
+ * CON_PLAYING, showing the MOTD inline.
+ */
+static void account_enter_game( DESCRIPTOR_DATA *d )
+{
+    CHAR_DATA *ch = d->character;
+
+    if ( !ch )
+        return;
+
+    log_string( LOG_CONNECT, Format("[WIZNET] %s@%s has connected via account.",
+        ch->name, d->host) );
+    wiznet(log_buf, NULL, NULL, WIZ_SITES, 0, get_trust(ch));
+
+    if ( check_reconnect( d, ch->name, TRUE ) )
+        return;
+
+    /* Show MOTD inline — no key required */
+    if ( IS_ADMIN(ch) )
+        do_function(ch, &do_help, "imotd");
+    do_function(ch, &do_help, "motd");
+
+    /* Suppress null-password warning for account-authenticated characters */
+    /* (character passwords are deprecated under the account system) */
+
+    /* Update last_played on the account character entry */
+    if ( d->account )
+    {
+        ACCOUNT_CHARACTER *ac;
+        for ( ac = d->account->characters; ac; ac = ac->next )
+        {
+            if ( !str_cmp(ac->char_name, ch->name) )
+            {
+                ac->last_played  = time( NULL );
+                d->account->dirty = TRUE;
+                save_account( d->account );
+                break;
+            }
+        }
+    }
+
+    LINK_SINGLE(ch, next, char_list);
+
+    /* Place character in their room before reset_char() calls char_from_room() */
+    if ( !ch->in_room )
+        ch->in_room = get_room_index( ROOM_VNUM_START );
+    char_to_room( ch, ch->in_room );
+
+    d->connected = CON_PLAYING;
+    reset_char(ch);
+
+    if ( IS_SET(ch->act, ACT_REINCARNATE) )
+    {
+        ch->position            = P_STAND;
+        ch->health              = 7;
+        ch->agghealth           = 7;
+        ch->home                = -1;
+        ch->condition[COND_HUNGER] = 48;
+        ch->condition[COND_FULL]   = 48;
+        ch->condition[COND_THIRST] = 48;
+        REMOVE_BIT(ch->act, ACT_REINCARNATE);
+    }
+
+    do_function(ch, &do_look, "");
+    write_to_buffer(d, "\n\r", 0);
+}
+
 void close_socket( DESCRIPTOR_DATA *dclose )
 {
 	CHAR_DATA *ch;
@@ -1328,6 +1398,9 @@ void close_socket( DESCRIPTOR_DATA *dclose )
 		else
 			log_string(LOG_BUG, "Close_socket: dclose not found.");
 	}
+
+	/* Release account before freeing descriptor */
+	free_account_from_desc( dclose );
 
 	ProtocolDestroy( dclose->pProtocol );
 
@@ -1956,55 +2029,478 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 			return;
 		}
 
-		argument[0] = UPPER(argument[0]);
-		if ( !check_parse_name( argument ) )
+		/* Account names are stored lowercase */
 		{
-			write_to_buffer( d, "\tRIllegal name, try another.\tn\n\rName: ", 0 );
+			int i;
+			for ( i = 0; argument[i]; i++ )
+				argument[i] = LOWER(argument[i]);
+		}
+
+		if ( !check_account_name( argument ) )
+		{
+			write_to_buffer( d,
+				"\tRAccount names must be 3-12 letters/digits and may not be reserved words.\tn\n\r"
+				"Account name: ", 0 );
 			return;
 		}
 
-		/*  @@@@@
-		if ( (d->account = get_acct(argument)) == NULL )
+		d->account = load_account( argument );
+		if ( d->account == NULL )
 		{
-			write_to_buffer( d, "Do you want to create an account"
+			/* New account */
+			write_to_buffer( d,
+				"No account with that name exists.\n\r"
+				"Create a new account? (Y/N): ", 0 );
+			/* Stash name temporarily in acct_temp_pass field for re-use */
+			PURGE_DATA( d->acct_temp_pass );
+			d->acct_temp_pass = str_dup( argument );
+			d->acct_is_reset  = FALSE;   /* flag: FALSE = new account path */
+			d->connected      = CON_ACCT_NEW_PASS;
 		}
-		*/
-
-		write_to_buffer( d, "Password: ", 0 );
-		d->connected = CON_GET_ACCT_PASS;
+		else
+		{
+			/* Existing account — check for pending reset */
+			if ( d->account->password_reset_pending
+				&& (time(NULL) <= d->account->reset_issued_on + ACCT_RESET_TOKEN_EXPIRY) )
+			{
+				write_to_buffer( d, "A password reset has been issued for this account.\n\r", 0 );
+				write_to_buffer( d, Format("Enter your reset token: %s", echo_off_str), 0 );
+				d->connected = CON_ACCT_TOKEN;
+			}
+			else
+			{
+				if ( d->account->password_reset_pending )
+				{
+					/* Expired token — clear it */
+					PURGE_DATA( d->account->reset_token );
+					d->account->password_reset_pending = FALSE;
+					d->account->reset_issued_on        = 0;
+					d->account->dirty                  = TRUE;
+					write_to_buffer( d,
+						"\tYYour password reset token has expired. Please contact staff.\tn\n\r", 0 );
+				}
+				write_to_buffer( d, Format("Password: %s", echo_off_str), 0 );
+				d->connected = CON_GET_ACCT_PASS;
+			}
+			d->repeat = 0;
+		}
 		return;
 
 	case CON_GET_ACCT_PASS:
-		/* Phase 9 — stub: drop through to name prompt until auth is implemented */
-		write_to_buffer( d, "\n\rAccount system login coming soon.\n\rName: ", 0 );
-		d->connected = CON_GET_NAME;
-		return;
+#if defined(__unix__)
+		write_to_buffer( d, "\n\r", 2 );
+#endif
+		if ( !d->account )
+		{
+			close_socket( d );
+			return;
+		}
 
-	case CON_ACCT_MENU:
-		/* Phase 8 — stub */
+		/* Soft-delete Y/N response — must be checked before password verify */
+		if ( d->repeat == -1 )
+		{
+			if ( argument[0] == 'y' || argument[0] == 'Y' )
+			{
+				d->account->soft_deleted_on = 0;
+				d->account->dirty           = TRUE;
+				save_account( d->account );
+				account_audit_log( "ACCOUNT_RESTORED", d->account->account_id,
+					Format("ip=%s", d->host) );
+				write_to_buffer( d, "Account restored.\n\r", 0 );
+				d->repeat = 0;
+				/* Fall through to login tracking below */
+			}
+			else
+			{
+				write_to_buffer( d, "Your account will continue to be deleted. Goodbye.\n\r", 0 );
+				close_socket( d );
+				return;
+			}
+		}
+		else
+		{
+			/* Normal password verification */
+			if ( !account_verify_password( argument, d->account->password_hash ) )
+			{
+				d->repeat++;
+				if ( d->repeat >= 3 )
+				{
+					write_to_buffer( d, "Too many wrong passwords.\n\r", 0 );
+					account_audit_log( "LOGIN_FAILED", d->account->account_id,
+						Format("ip=%s attempts=3", d->host) );
+					close_socket( d );
+					return;
+				}
+				write_to_buffer( d, Format("Wrong password.\n\rPassword: %s", echo_off_str), 0 );
+				return;
+			}
+
+			/* Correct password — check moderation flags */
+			if ( IS_SET(d->account->mod_flags, MOD_BANNED) )
+			{
+				account_audit_log( "LOGIN_BANNED", d->account->account_id,
+					Format("ip=%s", d->host) );
+				write_to_buffer( d,
+					"\n\r\tRThis account has been suspended.\tn\n\r"
+					ACCT_BAN_CONTACT "\n\r", 0 );
+				close_socket( d );
+				return;
+			}
+
+			/* Soft-delete — prompt Y/N and stay in this state */
+			if ( d->account->soft_deleted_on != 0 )
+			{
+				long days_left = (long)( ACCT_RETENTION_SECONDS
+					- (time(NULL) - d->account->soft_deleted_on) ) / 86400;
+				if ( days_left < 0 ) days_left = 0;
+				write_to_buffer( d,
+					Format("\n\rThis account is scheduled for deletion in %ld day%s.\n\r"
+					"Restore it? (Y/N): ", days_left, days_left == 1 ? "" : "s"), 0 );
+				d->repeat = -1;
+				return;
+			}
+		}
+
+		/* Update login tracking */
+		{
+			ACCOUNT_IP_ENTRY *ai = new_account_ip();
+			ACCOUNT_IP_ENTRY *tail;
+			int               ip_count = 0;
+
+			ai->ip      = str_dup( d->host );
+			ai->seen_on = time( NULL );
+			ai->next    = d->account->ip_log;
+			d->account->ip_log = ai;
+
+			/* Cap at ACCT_IP_LOG_MAX */
+			for ( tail = d->account->ip_log; tail->next; tail = tail->next )
+			{
+				if ( ++ip_count >= ACCT_IP_LOG_MAX )
+				{
+					free_account_ip( tail->next );
+					tail->next = NULL;
+					break;
+				}
+			}
+		}
+
+		d->account->last_login = time( NULL );
+		d->account->dirty      = TRUE;
+		save_account( d->account );
+		d->repeat = 0;
+
+		account_check_weekly_reward( d->account );
+
+		d->connected = CON_ACCT_MENU;
 		show_account_hub( d );
 		return;
 
+	case CON_ACCT_TOKEN:
+#if defined(__unix__)
+		write_to_buffer( d, "\n\r", 2 );
+#endif
+		if ( !d->account )
+		{
+			close_socket( d );
+			return;
+		}
+
+		if ( !account_token_verify( d->account, argument ) )
+		{
+			d->repeat++;
+			if ( d->repeat >= 3 )
+			{
+				account_audit_log( "TOKEN_FAILED", d->account->account_id,
+					Format("ip=%s attempts=3", d->host) );
+				write_to_buffer( d, "Too many failed attempts.\n\r", 0 );
+				close_socket( d );
+				return;
+			}
+			write_to_buffer( d,
+				Format("Invalid token.\n\rEnter your reset token: %s", echo_off_str), 0 );
+			return;
+		}
+
+		account_audit_log( "TOKEN_USED", d->account->account_id, "" );
+		d->acct_is_reset = TRUE;
+		write_to_buffer( d, "\n\rToken accepted. Please set a new password.\n\r", 0 );
+		write_to_buffer( d, Format("New password: %s", echo_off_str), 0 );
+		d->connected = CON_ACCT_NEW_PASS;
+		return;
+
 	case CON_ACCT_NEW_PASS:
-		/* Phase 9 — stub */
-		write_to_buffer( d, "New password system coming soon.\n\r", 0 );
-		d->connected = CON_GET_NAME;
+		/*
+		 * State machine:
+		 *   acct_is_reset == TRUE  : password reset — skip Y/N, go straight to password
+		 *   acct_is_reset == FALSE, d->account == NULL : waiting for Y/N
+		 *   acct_is_reset == FALSE, d->account != NULL : Y was already answered, collecting password
+		 */
+		if ( d->acct_is_reset || d->account != NULL )
+		{
+			/* Password input stage */
+#if defined(__unix__)
+			write_to_buffer( d, "\n\r", 2 );
+#endif
+			if ( !check_account_password( argument ) )
+			{
+				write_to_buffer( d, "\tRPassword must be at least 8 characters with at least one letter and one digit.\tn\n\r", 0 );
+				write_to_buffer( d, Format("Password: %s", echo_off_str), 0 );
+				return;
+			}
+
+			/* Save password for confirm step */
+			PURGE_DATA( d->acct_temp_pass );
+			d->acct_temp_pass = str_dup( argument );
+			write_to_buffer( d, Format("Confirm password: %s", echo_off_str), 0 );
+			d->connected = CON_ACCT_CONFIRM_PASS;
+			return;
+		}
+
+		/* Y/N response to "Create new account?" */
+		if ( argument[0] != 'y' && argument[0] != 'Y' )
+		{
+			PURGE_DATA( d->acct_temp_pass );
+			write_to_buffer( d, "Okay.\n\rAccount name: ", 0 );
+			d->connected = CON_GET_ACCT_NAME;
+			return;
+		}
+
+		/* Y — allocate account shell to hold the name, then prompt for password */
+		{
+			char name_save[MAX_INPUT_LENGTH] = {'\0'};
+			strncpy( name_save, d->acct_temp_pass, sizeof(name_save) - 1 );
+			PURGE_DATA( d->acct_temp_pass );
+
+			d->account = new_account();
+			if ( !d->account )
+			{
+				write_to_buffer( d, "Error allocating account. Please reconnect.\n\r", 0 );
+				close_socket( d );
+				return;
+			}
+			d->account->name = str_dup( name_save );
+			d->account->next = account_list;
+			account_list     = d->account;
+		}
+
+		write_to_buffer( d,
+			Format("Choose a password for account \tW%s\tn.\n\r"
+				"At least 8 characters, one letter and one digit.\n\r"
+				"Password: %s", d->account->name, echo_off_str), 0 );
 		return;
 
 	case CON_ACCT_CONFIRM_PASS:
-		/* Phase 9 — stub */
-		d->connected = CON_GET_NAME;
+#if defined(__unix__)
+		write_to_buffer( d, "\n\r", 2 );
+#endif
+		if ( str_cmp(argument, d->acct_temp_pass) )
+		{
+			PURGE_DATA( d->acct_temp_pass );
+			write_to_buffer( d, "Passwords do not match.\n\r", 0 );
+			write_to_buffer( d, Format("Password: %s", echo_off_str), 0 );
+			d->connected = CON_ACCT_NEW_PASS;
+			return;
+		}
+
+		/* Hash with bcrypt */
+		{
+			char *hash = account_hash_password( argument );
+
+			PURGE_DATA( d->acct_temp_pass );
+
+			if ( !hash )
+			{
+				write_to_buffer( d, "Password hashing failed. Please try again.\n\r", 0 );
+				d->connected = CON_GET_ACCT_NAME;
+				return;
+			}
+
+			if ( d->acct_is_reset )
+			{
+				/* Password reset path — account already loaded in d->account */
+				PURGE_DATA( d->account->password_hash );
+				d->account->password_hash = hash;
+				d->account->dirty         = TRUE;
+				save_account( d->account );
+				account_audit_log( "PASSWORD_CHANGED", d->account->account_id,
+					Format("ip=%s", d->host) );
+				d->acct_is_reset = FALSE;
+				write_to_buffer( d, "Password updated.\n\r", 0 );
+			}
+			else
+			{
+				/* New account creation — account shell already created in
+				 * CON_ACCT_NEW_PASS with name set. Finish it here. */
+				if ( !d->account )
+				{
+					free( hash );
+					write_to_buffer( d,
+						"Error creating account. Please reconnect.\n\r", 0 );
+					close_socket( d );
+					return;
+				}
+				d->account->account_id    = assign_account_id();
+				d->account->password_hash = hash;
+				d->account->created_on    = time( NULL );
+				d->account->last_login    = time( NULL );
+				d->account->trust_ceiling = MAX_LEVEL;
+				d->account->weekly_reset_on  = time( NULL );
+				d->account->grants_reset_on  = time( NULL );
+				d->account->dirty            = TRUE;
+
+				account_grant_points( d->account, ACCT_NEW_ACCOUNT_BONUS,
+					"SYSTEM", "New account bonus" );
+
+				{
+					ACCOUNT_NOTE *an = new_account_note();
+					an->author     = str_dup( "SYSTEM" );
+					an->body       = str_dup( "Account created." );
+					an->written_on = time( NULL );
+					an->visibility = NOTE_VIS_SYSTEM;
+					an->next       = d->account->notes;
+					d->account->notes = an;
+				}
+
+				save_account( d->account );
+				account_audit_log( "ACCOUNT_CREATED", d->account->account_id,
+					Format("ip=%s", d->host) );
+				write_to_buffer( d,
+					Format("\n\rWelcome, \tW%s\tn! Your account has been created.\n\r",
+					d->account->name), 0 );
+			}
+		}
+
+		d->connected = CON_ACCT_MENU;
+		show_account_hub( d );
 		return;
 
-	case CON_ACCT_TOKEN:
-		/* Phase 9 — stub */
-		write_to_buffer( d, "Token entry coming soon.\n\r", 0 );
-		d->connected = CON_GET_NAME;
-		return;
+	case CON_ACCT_MENU:
+		if ( IS_NULLSTR(argument) )
+		{
+			write_to_buffer( d, "Enter choice: ", 0 );
+			return;
+		}
+
+		switch ( UPPER(argument[0]) )
+		{
+		case 'Q':
+			write_to_buffer( d, "Goodbye.\n\r", 0 );
+			close_socket( d );
+			return;
+
+		case 'C':
+			if ( !d->account )
+			{
+				show_account_hub( d );
+				return;
+			}
+			if ( account_char_count(d->account) >= account_max_slots(d->account) )
+			{
+				write_to_buffer( d,
+					"All character slots are in use. Purchase more from [U] Unlocks.\n\r", 0 );
+				show_account_hub( d );
+				return;
+			}
+			d->acct_creating_char = TRUE;
+			write_to_buffer( d, "Character name: ", 0 );
+			d->connected = CON_GET_NAME;
+			return;
+
+		case 'P':
+			if ( !d->account || !d->account->characters )
+			{
+				write_to_buffer( d, "You have no characters. Use [C] to create one.\n\r", 0 );
+				show_account_hub( d );
+				return;
+			}
+			if ( account_char_count(d->account) == 1 )
+			{
+				/* Only one character — load it directly without going through CON_GET_NAME */
+				ACCOUNT_CHARACTER *ac;
+				for ( ac = d->account->characters; ac; ac = ac->next )
+					if ( ac->soft_deleted_on == 0 )
+						break;
+				if ( ac )
+				{
+					bool fOld_p;
+					write_to_buffer( d, Format("Loading %s...\n\r", ac->char_name), 0 );
+					d->acct_creating_char = FALSE;
+					fOld_p = load_char_obj( d, ac->char_name, TRUE, FALSE, FALSE );
+					if ( !fOld_p || !d->character )
+					{
+						write_to_buffer( d, "Character file not found.\n\r", 0 );
+						show_account_hub( d );
+						return;
+					}
+					account_enter_game( d );
+				}
+				else
+				{
+					write_to_buffer( d, "No active characters found.\n\r", 0 );
+					show_account_hub( d );
+				}
+				return;
+			}
+			/* Multiple characters — show list and prompt */
+			{
+				ACCOUNT_CHARACTER *ac;
+				int n = 1;
+				write_to_buffer( d, "Which character?\n\r", 0 );
+				for ( ac = d->account->characters; ac; ac = ac->next )
+					if ( ac->soft_deleted_on == 0 )
+						write_to_buffer( d, Format("  [%d] %s\n\r", n++, ac->char_name), 0 );
+				write_to_buffer( d, "Enter number: ", 0 );
+				/* Stay in CON_ACCT_MENU — next input will be numeric */
+				/* Store "choosing" state in repeat field */
+				d->repeat = -2;
+			}
+			return;
+
+		default:
+			if ( d->repeat == -2 && isdigit((unsigned char)argument[0]) )
+			{
+				/* Numeric character selection */
+				int choice = atoi(argument);
+				ACCOUNT_CHARACTER *ac;
+				int n = 1;
+				for ( ac = d->account->characters; ac; ac = ac->next )
+				{
+					if ( ac->soft_deleted_on == 0 )
+					{
+						if ( n == choice )
+						{
+							bool fOld_m;
+							d->acct_creating_char = FALSE;
+							d->repeat             = 0;
+							write_to_buffer( d, Format("Loading %s...\n\r", ac->char_name), 0 );
+							fOld_m = load_char_obj( d, ac->char_name, TRUE, FALSE, FALSE );
+							if ( !fOld_m || !d->character )
+							{
+								write_to_buffer( d, "Character file not found.\n\r", 0 );
+								show_account_hub( d );
+								return;
+							}
+							account_enter_game( d );
+							return;
+						}
+						n++;
+					}
+				}
+				write_to_buffer( d, "Invalid selection.\n\r", 0 );
+			}
+			show_account_hub( d );
+			return;
+		}
 
 	case CON_GET_NAME:
 		if ( IS_NULLSTR(argument) )
 		{
+			/* If coming from hub character creation, re-prompt rather than disconnect */
+			if ( d->account && d->acct_creating_char )
+			{
+				write_to_buffer( d, "Character name: ", 0 );
+				return;
+			}
 			close_socket( d );
 			return;
 		}
@@ -2013,14 +2509,6 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 		if ( !check_parse_name( argument ) )
 		{
 			write_to_buffer( d, "\tRIllegal name, try another.\tn\n\rName: ", 0 );
-			return;
-		}
-
-		if(!str_cmp(argument, "accountsystem"))
-		{
-			/* Run account test system */
-			d->connected = CON_GET_ACCT_NAME;
-			write_to_buffer( d, "Account Login: ", 0 );
 			return;
 		}
 
@@ -2063,9 +2551,17 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 		if ( fOld )
 		{
 			/* Old player */
-			write_to_buffer( d, "Password: ", 0 );
-			ProtocolNoEcho( d, true );
-			d->connected = CON_GET_OLD_PASSWORD;
+			if ( d->account )
+			{
+				/* Account already authenticated — enter game directly */
+				account_enter_game( d );
+			}
+			else
+			{
+				write_to_buffer( d, "Password: ", 0 );
+				ProtocolNoEcho( d, true );
+				d->connected = CON_GET_OLD_PASSWORD;
+			}
 			return;
 		}
 		else
@@ -2082,6 +2578,14 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 			{
 				write_to_buffer(d, "New players are not allowed from your site.\n\r",0);
 				close_socket(d);
+				return;
+			}
+
+			if ( d->account && d->acct_creating_char )
+			{
+				/* Creating from hub — skip name confirmation, go straight to creation */
+				write_to_buffer( d, Format("Creating character %s...\n\r", argument), 0 );
+				d->connected = CON_GET_NEW_RACE;
 				return;
 			}
 

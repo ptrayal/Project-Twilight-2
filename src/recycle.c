@@ -383,19 +383,23 @@ DESCRIPTOR_DATA *new_descriptor(void)
     }
 
     // Initialize fields with default values
-    d->connected = CON_GET_NAME;
-    d->host = NULL;
-    d->pEdit = NULL;
-    d->pString = NULL;
-    d->showstr_head = NULL;
-    d->showstr_point = NULL;
-    d->outsize = 2000;
-    d->editor = 0;
-    d->descriptor = -1; // -1 to indicate invalid/unused descriptor
-    d->fcommand = FALSE;
-    d->repeat = 0;
-    d->outtop = 0;
-    d->pProtocol = NULL;
+    d->connected        = CON_GET_ACCT_NAME;
+    d->host             = NULL;
+    d->pEdit            = NULL;
+    d->pString          = NULL;
+    d->showstr_head     = NULL;
+    d->showstr_point    = NULL;
+    d->outsize          = 2000;
+    d->editor           = 0;
+    d->descriptor       = -1;
+    d->fcommand         = FALSE;
+    d->repeat           = 0;
+    d->outtop           = 0;
+    d->pProtocol        = NULL;
+    d->account          = NULL;
+    d->acct_temp_pass   = NULL;
+    d->acct_is_reset    = FALSE;
+    d->acct_creating_char = FALSE;
     memset(d->inbuf, 0, sizeof(d->inbuf));
     memset(d->incomm, 0, sizeof(d->incomm));
     memset(d->inlast, 0, sizeof(d->inlast));

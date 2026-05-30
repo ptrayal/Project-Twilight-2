@@ -17,16 +17,11 @@
 #include "account.h"
 
 /*
- * Direct declarations for the two crypt_blowfish functions we use.
- * These match the signatures in crypt_blowfish.c / crypt_gensalt.c exactly.
- * We declare them here rather than including ow-crypt.h because ow-crypt.h
- * tries to include <gnu-crypt.h> on glibc systems, which doesn't exist on
- * modern Ubuntu / Debian.
+ * Use the internal crypt_blowfish functions directly.
+ * These take fixed stack buffers and have no null-pointer issues unlike crypt_ra.
+ * Declarations match crypt_blowfish.h exactly.
  */
-extern char *crypt_ra(const char *key, const char *setting,
-                      void **data, int *size);
-extern char *crypt_gensalt_ra(const char *prefix, unsigned long count,
-                              const char *input, int size);
+#include "crypt_blowfish.h"
 
 /* =========================================================================
  * Globals
@@ -122,55 +117,73 @@ bool check_account_password( const char *pwd )
  * ========================================================================= */
 
 /*
- * account_hash_password — hash a plaintext password with bcrypt.
- * Returns a str_dup'd bcrypt hash string the caller must PURGE_DATA when done.
+ * account_hash_password — hash a plaintext password with bcrypt cost 12.
+ * Uses _crypt_gensalt_blowfish_rn and _crypt_blowfish_rn directly so we
+ * never pass NULL pointers into crypt_ra.
+ * Returns a str_dup'd hash string; caller must PURGE_DATA it when done.
  * Returns NULL on failure.
  */
 char *account_hash_password( const char *plaintext )
 {
-    /* crypt_gensalt_ra generates a random $2b$12$ salt */
-    char *salt   = NULL;
-    char *hash   = NULL;
-    char *result = NULL;
-    unsigned long rnd[2];
+    char salt_buf[64];
+    char hash_buf[64];
+    char rnd_buf[16];
+    int  i;
+    char *result;
 
-    /* Seed from time — not cryptographic but adequate for
-     * a staff-mediated password reset flow. */
-    rnd[0] = (unsigned long)time(NULL) ^ (unsigned long)(size_t)plaintext;
-    rnd[1] = (unsigned long)rand();
-
-    salt = crypt_gensalt_ra( "$2b$", 12, (const char *)rnd, sizeof(rnd) );
-    if ( !salt )
+    if ( !plaintext )
         return NULL;
 
-    hash = crypt_ra( plaintext, salt, NULL, NULL );
-    if ( hash )
-        result = str_dup( hash );
+    /* Build 16 bytes of pseudo-random input for the salt */
+    {
+        unsigned long t = (unsigned long)time(NULL);
+        unsigned long r = (unsigned long)rand();
+        for ( i = 0; i < 8; i++ )
+            rnd_buf[i]   = (char)((t >> (i * 8)) & 0xFF);
+        for ( i = 0; i < 8; i++ )
+            rnd_buf[8+i] = (char)((r >> (i * 8)) & 0xFF);
+    }
 
-    free( salt );
-    /* crypt_ra allocates internally; it is freed by the library on next call
-     * or process exit — we only need to str_dup the result string. */
+    /* Generate a $2b$12$ salt into salt_buf */
+    if ( !_crypt_gensalt_blowfish_rn( "$2b$", 12,
+                                      rnd_buf, sizeof(rnd_buf),
+                                      salt_buf, sizeof(salt_buf) ) )
+        return NULL;
 
+    /* Hash into hash_buf */
+    if ( !_crypt_blowfish_rn( plaintext, salt_buf,
+                              hash_buf, sizeof(hash_buf) ) )
+        return NULL;
+
+    result = str_dup( hash_buf );
     return result;
 }
 
 /*
- * account_verify_password — check plaintext against a bcrypt hash.
+ * account_verify_password — verify plaintext against a stored bcrypt hash.
  * Returns TRUE if the password matches.
  */
 bool account_verify_password( const char *plaintext, const char *hash )
 {
-    char *result = NULL;
+    char result_buf[64];
 
     if ( !plaintext || !hash || hash[0] == '\0' )
         return FALSE;
 
-    result = crypt_ra( plaintext, hash, NULL, NULL );
-    if ( !result )
+    /* Re-hash plaintext using the stored hash as the setting (contains the salt) */
+    if ( !_crypt_blowfish_rn( plaintext, hash, result_buf, sizeof(result_buf) ) )
         return FALSE;
 
-    /* Use a length-constant comparison to resist timing attacks */
-    return ( strcmp( result, hash ) == 0 );
+    /* Constant-time compare to resist timing attacks */
+    {
+        int diff = 0, i;
+        int len  = strlen( hash );
+        for ( i = 0; i < len; i++ )
+            diff |= (unsigned char)result_buf[i] ^ (unsigned char)hash[i];
+        if ( result_buf[len] != '\0' )
+            diff |= 1;
+        return ( diff == 0 );
+    }
 }
 
 /* =========================================================================
@@ -460,39 +473,370 @@ long assign_account_id( void )
 }
 
 /* =========================================================================
- * Section 9: Stubs — implemented in Phase 4
- *
- * These exist so the file compiles cleanly today. Each will be replaced
- * with a full implementation during Phase 4.
+ * Section 9: Account file I/O
  * ========================================================================= */
 
-ACCOUNT_DATA *load_account( const char *name )
-{
-    (void)name;
-    return NULL;
-}
-
+/*
+ * save_account — write an account file to account/[name].
+ * Follows the same text keyword/value pattern as character pfiles.
+ */
 void save_account( ACCOUNT_DATA *acct )
 {
-    (void)acct;
+    FILE              *fp;
+    char               path[256];
+    ACCOUNT_CHARACTER *ac;
+    ACCOUNT_UNLOCK    *au;
+    ACCOUNT_NOTE      *an;
+    ACCOUNT_IP_ENTRY  *ai;
+    int                ip_count = 0;
+
+    if ( !acct || IS_NULLSTR(acct->name) )
+        return;
+
+    snprintf( path, sizeof(path), "../account/%s", acct->name );
+
+    fp = fopen( path, "w" );
+    if ( !fp )
+    {
+        log_string( LOG_BUG, Format("save_account: cannot open %s for writing.", path) );
+        return;
+    }
+
+    fprintf( fp, "#ACCOUNT\n" );
+    fprintf( fp, "Id        %ld\n",  acct->account_id );
+    WriteToFile( fp, true, "Name",     acct->name );
+    WriteToFile( fp, true, "PassHash", IS_NULLSTR(acct->password_hash) ? "" : acct->password_hash );
+    WriteToFile( fp, true, "Email",    IS_NULLSTR(acct->email) ? "" : acct->email );
+    fprintf( fp, "Flags     %ld\n",  acct->account_flags );
+    fprintf( fp, "ModFlags  %ld\n",  acct->mod_flags );
+    fprintf( fp, "TrustCeil %d\n",   acct->trust_ceiling );
+    fprintf( fp, "Earned    %ld\n",  acct->points_earned );
+    fprintf( fp, "Spent     %ld\n",  acct->points_spent );
+    fprintf( fp, "CreatedOn %ld\n",  (long)acct->created_on );
+    fprintf( fp, "LastLogin %ld\n",  (long)acct->last_login );
+    fprintf( fp, "SoftDel   %ld\n",  (long)acct->soft_deleted_on );
+    WriteToFile( fp, true, "RstTok", IS_NULLSTR(acct->reset_token) ? "" : acct->reset_token );
+    fprintf( fp, "RstPend   %d\n",   acct->password_reset_pending ? 1 : 0 );
+    fprintf( fp, "RstIssd   %ld\n",  (long)acct->reset_issued_on );
+    fprintf( fp, "WeekSec   %d\n",   acct->weekly_active_seconds );
+    fprintf( fp, "WeekRst   %ld\n",  (long)acct->weekly_reset_on );
+    fprintf( fp, "MonGrants %d\n",   acct->monthly_grants_used );
+    fprintf( fp, "GrantsRst %ld\n",  (long)acct->grants_reset_on );
+
+    /* IP log — most recent first, cap at ACCT_IP_LOG_MAX */
+    fprintf( fp, "IpLog\n" );
+    for ( ai = acct->ip_log; ai && ip_count < ACCT_IP_LOG_MAX; ai = ai->next, ip_count++ )
+        fprintf( fp, "  %ld %s~\n", (long)ai->seen_on, IS_NULLSTR(ai->ip) ? "" : ai->ip );
+    fprintf( fp, "EndIpLog\n" );
+
+    /* Characters */
+    fprintf( fp, "Characters\n" );
+    for ( ac = acct->characters; ac; ac = ac->next )
+        fprintf( fp, "  %s~ %ld %ld %ld\n",
+                 IS_NULLSTR(ac->char_name) ? "" : ac->char_name,
+                 ac->char_id,
+                 (long)ac->last_played,
+                 (long)ac->soft_deleted_on );
+    fprintf( fp, "EndCharacters\n" );
+
+    /* Unlocks */
+    fprintf( fp, "Unlocks\n" );
+    for ( au = acct->unlocks; au; au = au->next )
+        fprintf( fp, "  %d %d %ld\n", au->unlock_id, au->quantity, (long)au->purchased_on );
+    fprintf( fp, "EndUnlocks\n" );
+
+    /* Notes */
+    fprintf( fp, "Notes\n" );
+    for ( an = acct->notes; an; an = an->next )
+        fprintf( fp, "  %s~ %d %ld %s~\n",
+                 IS_NULLSTR(an->author) ? "" : an->author,
+                 an->visibility,
+                 (long)an->written_on,
+                 IS_NULLSTR(an->body) ? "" : an->body );
+    fprintf( fp, "EndNotes\n" );
+
+    fprintf( fp, "#END\n" );
+    fclose( fp );
+
+    acct->dirty = FALSE;
 }
 
+/*
+ * load_account — load an account from disk into memory.
+ * Searches account_list first to avoid duplicate structs.
+ * Returns NULL if the file does not exist.
+ */
+ACCOUNT_DATA *load_account( const char *name )
+{
+    FILE              *fp;
+    ACCOUNT_DATA      *acct;
+    char               path[256];
+    const char        *word;
+    bool               fMatch;
+
+    if ( IS_NULLSTR(name) )
+        return NULL;
+
+    /* Search in-memory list first */
+    for ( acct = account_list; acct; acct = acct->next )
+        if ( !str_cmp(acct->name, name) )
+            return acct;
+
+    snprintf( path, sizeof(path), "../account/%s", name );
+    fp = fopen( path, "r" );
+    if ( !fp )
+        return NULL;
+
+    acct = new_account();
+    if ( !acct )
+    {
+        fclose( fp );
+        return NULL;
+    }
+
+    /* Read header */
+    {
+        const char *section = fread_word( fp );
+        if ( str_cmp(section, "#ACCOUNT") )
+        {
+            log_string( LOG_BUG, Format("load_account: bad header in %s", path) );
+            free_account( acct );
+            fclose( fp );
+            return NULL;
+        }
+    }
+
+    for ( ; ; )
+    {
+        word   = feof(fp) ? "#END" : fread_word( fp );
+        fMatch = FALSE;
+
+        if ( !str_cmp(word, "#END") )
+            break;
+
+        /* Single-value fields */
+        if ( !str_cmp(word, "Id") )       { acct->account_id            = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "Name") )     { PURGE_DATA(acct->name);
+                                             acct->name                  = fread_string(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "PassHash") ) { PURGE_DATA(acct->password_hash);
+                                             acct->password_hash         = fread_string(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "Email") )    { PURGE_DATA(acct->email);
+                                             acct->email                 = fread_string(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "Flags") )    { acct->account_flags          = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "ModFlags") ) { acct->mod_flags              = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "TrustCeil")) { acct->trust_ceiling          = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "Earned") )   { acct->points_earned          = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "Spent") )    { acct->points_spent           = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "CreatedOn")) { acct->created_on             = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "LastLogin")) { acct->last_login             = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "SoftDel") )  { acct->soft_deleted_on        = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "RstTok") )   { PURGE_DATA(acct->reset_token);
+                                             acct->reset_token           = fread_string(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "RstPend") )  { acct->password_reset_pending = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "RstIssd") )  { acct->reset_issued_on        = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "WeekSec") )  { acct->weekly_active_seconds  = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "WeekRst") )  { acct->weekly_reset_on        = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "MonGrants")) { acct->monthly_grants_used    = fread_number(fp); fMatch = TRUE; }
+        if ( !str_cmp(word, "GrantsRst")) { acct->grants_reset_on        = fread_number(fp); fMatch = TRUE; }
+
+        /* IP log block */
+        if ( !str_cmp(word, "IpLog") )
+        {
+            fMatch = TRUE;
+            for ( ; ; )
+            {
+                const char *ip_word = feof(fp) ? "EndIpLog" : fread_word(fp);
+                if ( !str_cmp(ip_word, "EndIpLog") )
+                    break;
+                {
+                    ACCOUNT_IP_ENTRY *ai = new_account_ip();
+                    ai->seen_on = atol(ip_word);
+                    ai->ip      = fread_string(fp);
+                    ai->next        = acct->ip_log;
+                    acct->ip_log    = ai;
+                }
+            }
+        }
+
+        /* Characters block */
+        if ( !str_cmp(word, "Characters") )
+        {
+            fMatch = TRUE;
+            for ( ; ; )
+            {
+                const char *cw = feof(fp) ? "EndCharacters" : fread_word(fp);
+                if ( !str_cmp(cw, "EndCharacters") )
+                    break;
+                {
+                    ACCOUNT_CHARACTER *ac = new_account_char();
+                    /* fread_word includes the trailing ~ — strip it */
+                    {
+                        char cw_clean[MAX_INPUT_LENGTH];
+                        int  cw_len = strlen(cw);
+                        strncpy( cw_clean, cw, sizeof(cw_clean) - 1 );
+                        cw_clean[sizeof(cw_clean)-1] = '\0';
+                        if ( cw_len > 0 && cw_clean[cw_len-1] == '~' )
+                            cw_clean[cw_len-1] = '\0';
+                        ac->char_name = str_dup( cw_clean );
+                    }
+                    ac->char_id         = fread_number(fp);
+                    ac->last_played     = fread_number(fp);
+                    ac->soft_deleted_on = fread_number(fp);
+                    if ( !acct->characters )
+                    {
+                        acct->characters = ac;
+                    }
+                    else
+                    {
+                        ACCOUNT_CHARACTER *tail = acct->characters;
+                        while ( tail->next ) tail = tail->next;
+                        tail->next = ac;
+                    }
+                }
+            }
+        }
+
+        /* Unlocks block */
+        if ( !str_cmp(word, "Unlocks") )
+        {
+            fMatch = TRUE;
+            for ( ; ; )
+            {
+                const char *uw = feof(fp) ? "EndUnlocks" : fread_word(fp);
+                if ( !str_cmp(uw, "EndUnlocks") )
+                    break;
+                {
+                    ACCOUNT_UNLOCK *au = new_account_unlock();
+                    au->unlock_id    = atoi(uw);
+                    au->quantity     = fread_number(fp);
+                    au->purchased_on = fread_number(fp);
+                    au->next         = acct->unlocks;
+                    acct->unlocks    = au;
+                }
+            }
+        }
+
+        /* Notes block */
+        if ( !str_cmp(word, "Notes") )
+        {
+            fMatch = TRUE;
+            for ( ; ; )
+            {
+                const char *nw = feof(fp) ? "EndNotes" : fread_word(fp);
+                if ( !str_cmp(nw, "EndNotes") )
+                    break;
+                {
+                    ACCOUNT_NOTE *an = new_account_note();
+                    {
+                        char nw_clean[MAX_INPUT_LENGTH];
+                        int  nw_len = strlen(nw);
+                        strncpy( nw_clean, nw, sizeof(nw_clean) - 1 );
+                        nw_clean[sizeof(nw_clean)-1] = '\0';
+                        if ( nw_len > 0 && nw_clean[nw_len-1] == '~' )
+                            nw_clean[nw_len-1] = '\0';
+                        an->author = str_dup( nw_clean );
+                    }
+                    an->visibility = fread_number(fp);
+                    an->written_on = fread_number(fp);
+                    an->body       = fread_string(fp);
+                    an->next       = acct->notes;
+                    acct->notes    = an;
+                }
+            }
+        }
+
+        if ( !fMatch )
+        {
+            log_string( LOG_BUG, Format("load_account: unknown keyword '%s' in %s", word, path) );
+            fread_to_eol( fp );
+        }
+    }
+
+    fclose( fp );
+
+    /* Link into global list */
+    acct->next   = account_list;
+    account_list = acct;
+
+    return acct;
+}
+
+/*
+ * create_account — allocate, assign ID, grant new-account bonus, save.
+ * password_hash must already be a bcrypt hash string.
+ */
 ACCOUNT_DATA *create_account( const char *name, const char *password_hash )
 {
-    (void)name;
-    (void)password_hash;
-    return NULL;
+    ACCOUNT_DATA *acct;
+
+    acct = new_account();
+    if ( !acct )
+        return NULL;
+
+    acct->account_id    = assign_account_id();
+    acct->name          = str_dup( name );
+    acct->password_hash = str_dup( IS_NULLSTR(password_hash) ? "" : password_hash );
+    acct->created_on    = time( NULL );
+    acct->last_login    = time( NULL );
+    acct->trust_ceiling = MAX_LEVEL;
+    acct->weekly_reset_on = time( NULL );
+    acct->grants_reset_on = time( NULL );
+    acct->dirty         = TRUE;
+
+    /* Link into global list before granting points (grant calls save) */
+    acct->next   = account_list;
+    account_list = acct;
+
+    /* New account bonus — writes to ledger log */
+    account_grant_points( acct, ACCT_NEW_ACCOUNT_BONUS, "SYSTEM", "New account bonus" );
+
+    /* System note */
+    {
+        ACCOUNT_NOTE *an = new_account_note();
+        an->author     = str_dup( "SYSTEM" );
+        an->body       = str_dup( "Account created." );
+        an->written_on = time( NULL );
+        an->visibility = NOTE_VIS_SYSTEM;
+        an->next       = acct->notes;
+        acct->notes    = an;
+    }
+
+    account_audit_log( "ACCOUNT_CREATED", acct->account_id, "" );
+    save_account( acct );
+
+    return acct;
 }
 
 void free_account_from_desc( DESCRIPTOR_DATA *d )
 {
-    if ( !d || !d->account )
+    DESCRIPTOR_DATA *d2;
+    bool             still_referenced;
+
+    if ( !d )
         return;
 
     PURGE_DATA( d->acct_temp_pass );
     d->acct_is_reset      = FALSE;
     d->acct_creating_char = FALSE;
-    d->account            = NULL;
+
+    if ( !d->account )
+        return;
+
+    /* Only free the account struct if no other descriptor references it */
+    still_referenced = FALSE;
+    for ( d2 = descriptor_list; d2; d2 = d2->next )
+    {
+        if ( d2 != d && d2->account == d->account )
+        {
+            still_referenced = TRUE;
+            break;
+        }
+    }
+
+    if ( !still_referenced )
+        free_account( d->account );
+
+    d->account = NULL;
 }
 
 void detach_account( DESCRIPTOR_DATA *d )

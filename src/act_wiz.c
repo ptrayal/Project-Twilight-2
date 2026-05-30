@@ -45,6 +45,7 @@
 #include "olc.h"
 #include "interp.h"
 #include "grid.h"
+#include "account.h"
 
 bool timestop;
 int close	args( ( int fd ) );
@@ -4613,7 +4614,8 @@ void do_copyover (CHAR_DATA *ch, char * argument)
 		}
 		else
 		{
-			fprintf (fp, "%d %s %s\n", d->descriptor, och->name, d->host);
+			fprintf (fp, "%d %s %s %s\n", d->descriptor, och->name, d->host,
+				(d->account && !IS_NULLSTR(d->account->name)) ? d->account->name : "");
 
 			save_char_obj (och);
 			write_to_descriptor (d->descriptor, buf, 0);
@@ -4650,6 +4652,7 @@ void copyover_recover ()
 	FILE *fp;
 	char name [100]={'\0'};
 	char host[MSL]={'\0'};
+	char acct_name[MAX_INPUT_LENGTH]={'\0'};
 	int desc = 0;
 	bool fOld = FALSE;
 
@@ -4679,8 +4682,8 @@ void copyover_recover ()
 		if (desc == -1)
 			break;
 
-		/* Now read name and host for this descriptor */
-		if (fscanf (fp, "%s %s\n", name, host) != 2)
+		/* Now read name, host, and account name for this descriptor */
+		if (fscanf (fp, "%s %s %s\n", name, host, acct_name) < 2)
         {
             log_string(LOG_ERR,"copyover_recover: fscanf error reading name/host");
             fclose(fp);
@@ -4717,6 +4720,10 @@ void copyover_recover ()
 		}
 		else  //ok!
 		{
+			/* Reload account if one was active before the copyover */
+			if ( acct_name[0] != '\0' )
+				d->account = load_account( acct_name );
+
 			write_to_descriptor (desc, "\n\rWarm boot completed.\n\rSystem functioning normally.\n\r\n\r",0);
 
 			// Just In Case
