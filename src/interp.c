@@ -875,6 +875,17 @@ void interpret( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
+	/* MOD_RESTRICTED: whitelist enforcement for restricted accounts */
+	if ( !IS_NPC(ch)
+		&& ch->desc
+		&& ch->desc->account
+		&& IS_SET(ch->desc->account->mod_flags, MOD_RESTRICTED)
+		&& !account_cmd_is_whitelisted(command) )
+	{
+		send_to_char( "Your account is restricted. Contact staff.\n\r", ch );
+		return;
+	}
+
 	if(IS_SET(ch->act2, ACT2_ASTRAL) && !IS_SET(cmd_table[cmd].flags, ASTRAL_OK))
 	{
 		send_to_char("You can't do that while wandering the astral plane!\n\r", ch);
