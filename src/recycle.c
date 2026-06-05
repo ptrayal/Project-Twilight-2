@@ -397,9 +397,12 @@ DESCRIPTOR_DATA *new_descriptor(void)
     d->outtop           = 0;
     d->pProtocol        = NULL;
     d->account          = NULL;
-    d->acct_temp_pass   = NULL;
-    d->acct_is_reset    = FALSE;
+    d->acct_temp_pass     = NULL;
+    d->acct_is_reset      = FALSE;
     d->acct_creating_char = FALSE;
+    d->acct_delete_select  = FALSE;
+    d->acct_delete_confirm = FALSE;
+    d->acct_store_browsing = FALSE;
     memset(d->inbuf, 0, sizeof(d->inbuf));
     memset(d->incomm, 0, sizeof(d->incomm));
     memset(d->inlast, 0, sizeof(d->inlast));

@@ -134,7 +134,7 @@ struct account_data
  * Unlock IDs and categories
  * ========================================================================= */
 #define UNLOCK_CHAR_SLOT        1
-#define UNLOCK_CLAN_BASE        100
+#define UNLOCK_CLAN_BASE        100     /* Clan unlock IDs: 100 + clan_table index */
 
 #define UNLOCK_CAT_SLOT         0
 #define UNLOCK_CAT_CLAN         1
@@ -143,6 +143,25 @@ struct account_data
 #define UNLOCK_CAT_BLOODLINE    4   /* future */
 #define UNLOCK_CAT_PRESTIGE     5   /* future */
 #define UNLOCK_CAT_COSMETIC     6   /* future */
+
+/* =========================================================================
+ * Unlock definition table — one entry per purchasable item.
+ * To add a new unlock: add a row to unlock_defs[] in account.c, no other
+ * file needs to change.  Clan unlocks use unlock_id = UNLOCK_CLAN_BASE + clan index.
+ * ========================================================================= */
+struct unlock_def
+{
+    int         unlock_id;      /* matches ACCOUNT_UNLOCK.unlock_id */
+    int         category;       /* UNLOCK_CAT_* */
+    int         cost;           /* point cost */
+    bool        repeatable;     /* TRUE = can buy more than once (e.g. char slots) */
+    const char *name;           /* short display name */
+    const char *description;    /* one-line description shown in store */
+};
+typedef struct unlock_def UNLOCK_DEF;
+
+extern const UNLOCK_DEF unlock_defs[];  /* defined in account.c, NULL-terminated */
+extern const int         num_unlock_defs;
 
 /* =========================================================================
  * Configurable economy constants
@@ -203,6 +222,15 @@ void               account_grant_points( ACCOUNT_DATA *acct, long amount,
 void               account_spend_points( ACCOUNT_DATA *acct, long amount,
                        const char *actor, const char *reason );
 void               account_check_weekly_reward( ACCOUNT_DATA *acct );
+
+/* =========================================================================
+ * Unlock store (account.c)
+ * ========================================================================= */
+const UNLOCK_DEF  *unlock_def_by_id( int unlock_id );
+bool               account_can_purchase( ACCOUNT_DATA *acct, int unlock_id );
+bool               account_purchase_unlock( ACCOUNT_DATA *acct, int unlock_id );
+bool               account_clan_requires_unlock( int clan_index );
+bool               account_clan_unlocked( ACCOUNT_DATA *acct, int clan_index );
 
 /* =========================================================================
  * Audit logging (account.c)

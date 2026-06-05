@@ -6,6 +6,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -436,6 +437,126 @@ ACCOUNT_DATA *account_by_id( long account_id )
 }
 
 /* =========================================================================
+ * Section 7b: Unlock definition table and purchase functions
+ *
+ * To change a cost or add a new unlock: edit unlock_defs[] below and
+ * recompile.  No other file needs to change.
+ *
+ * Clan unlock IDs = UNLOCK_CLAN_BASE (100) + clan_table[] index.
+ * The 7 Camarilla clans + Caitiff ("none") are available by default and
+ * are NOT in this table.  All others require a purchase.
+ *   Camarilla defaults: brujah(6), gangrel(7), malkavian(10), nosferatu(11),
+ *                       toreador(14), tremere(15), ventrue(17), none/Caitiff(1)
+ * ========================================================================= */
+const UNLOCK_DEF unlock_defs[] =
+{
+    /* id                        cat              cost  rpt  name            description */
+    { UNLOCK_CHAR_SLOT,          UNLOCK_CAT_SLOT,  50,  TRUE, "Character Slot",
+        "Add one additional character slot (max 6 total)." },
+
+    /* Vampire clans — paid */
+    { UNLOCK_CLAN_BASE +  5,     UNLOCK_CAT_CLAN, 100, FALSE, "Clan: Assamite",
+        "Unlock the Assamite clan for character creation." },
+    { UNLOCK_CLAN_BASE +  8,     UNLOCK_CAT_CLAN, 100, FALSE, "Clan: Giovanni",
+        "Unlock the Giovanni clan for character creation." },
+    { UNLOCK_CLAN_BASE +  9,     UNLOCK_CAT_CLAN, 200, FALSE, "Clan: Lasombra",
+        "Unlock the Lasombra clan for character creation." },
+    { UNLOCK_CLAN_BASE + 12,     UNLOCK_CAT_CLAN, 200, FALSE, "Clan: Ravnos",
+        "Unlock the Ravnos clan for character creation." },
+    { UNLOCK_CLAN_BASE + 13,     UNLOCK_CAT_CLAN, 100, FALSE, "Clan: Settite",
+        "Unlock the Settite clan for character creation." },
+    { UNLOCK_CLAN_BASE + 16,     UNLOCK_CAT_CLAN, 200, FALSE, "Clan: Tzimisce",
+        "Unlock the Tzimisce clan for character creation." },
+
+    { 0, 0, 0, FALSE, NULL, NULL }  /* terminator */
+};
+
+const int num_unlock_defs = (int)(sizeof(unlock_defs) / sizeof(unlock_defs[0])) - 1;
+
+const UNLOCK_DEF *unlock_def_by_id( int unlock_id )
+{
+    int i;
+    for ( i = 0; unlock_defs[i].name != NULL; i++ )
+        if ( unlock_defs[i].unlock_id == unlock_id )
+            return &unlock_defs[i];
+    return NULL;
+}
+
+bool account_clan_requires_unlock( int clan_index )
+{
+    return unlock_def_by_id( UNLOCK_CLAN_BASE + clan_index ) != NULL;
+}
+
+bool account_clan_unlocked( ACCOUNT_DATA *acct, int clan_index )
+{
+    if ( !account_clan_requires_unlock(clan_index) )
+        return TRUE;    /* free clan — no unlock needed */
+    if ( !acct )
+        return FALSE;
+    return account_has_unlock( acct, UNLOCK_CLAN_BASE + clan_index );
+}
+
+bool account_can_purchase( ACCOUNT_DATA *acct, int unlock_id )
+{
+    const UNLOCK_DEF *def;
+    long balance;
+
+    if ( !acct )
+        return FALSE;
+
+    def = unlock_def_by_id( unlock_id );
+    if ( !def )
+        return FALSE;
+
+    /* Non-repeatable unlocks can only be bought once */
+    if ( !def->repeatable && account_has_unlock(acct, unlock_id) )
+        return FALSE;
+
+    balance = acct->points_earned - acct->points_spent;
+    return ( balance >= (long)def->cost );
+}
+
+bool account_purchase_unlock( ACCOUNT_DATA *acct, int unlock_id )
+{
+    const UNLOCK_DEF *def;
+    ACCOUNT_UNLOCK   *au;
+
+    if ( !account_can_purchase(acct, unlock_id) )
+        return FALSE;
+
+    def = unlock_def_by_id( unlock_id );
+
+    /* Deduct points */
+    account_spend_points( acct, (long)def->cost, acct->name,
+        Format("purchased unlock %d (%s)", unlock_id, def->name) );
+
+    /* Find existing entry (for repeatable unlocks) or create new */
+    for ( au = acct->unlocks; au; au = au->next )
+        if ( au->unlock_id == unlock_id )
+            break;
+
+    if ( au )
+    {
+        au->quantity++;
+    }
+    else
+    {
+        au              = new_account_unlock();
+        au->unlock_id   = unlock_id;
+        au->quantity    = 1;
+        au->purchased_on = time( NULL );
+        au->next        = acct->unlocks;
+        acct->unlocks   = au;
+    }
+
+    acct->dirty = TRUE;
+    save_account( acct );
+    account_audit_log( "UNLOCK_PURCHASED", acct->account_id,
+        Format("unlock_id=%d name=%s cost=%d", unlock_id, def->name, def->cost) );
+    return TRUE;
+}
+
+/* =========================================================================
  * Section 8: Account ID counter
  * ========================================================================= */
 
@@ -855,7 +976,251 @@ void detach_character( DESCRIPTOR_DATA *d )
     (void)d;
 }
 
+/* =========================================================================
+ * account_boot_scan — Phase 16: Orphan scanner + Phase 17: Hard-delete scan
+ *
+ * Orphan scanner: reads every pfile in ../player/, checks AcLg/AcId fields,
+ * and verifies the named account file exists and contains that character.
+ * Any mismatch is logged to ../log/account/orphan.log.
+ *
+ * Hard-delete scan: reads every account file in ../account/, checks whether
+ * soft_deleted_on is set for any character entry and whether 60 days have
+ * elapsed. If so, moves the pfile to ../player/deleted/ and logs the action.
+ * Also checks whether the account itself has been soft-deleted for 60+ days
+ * and moves its file to ../account/deleted/.
+ * ========================================================================= */
 void account_boot_scan( void )
 {
-    /* Phase 19 — orphan detection. Stub for now. */
+    DIR           *dir;
+    struct dirent *ent;
+    FILE          *fp_orphan;
+    FILE          *fp;
+    time_t         now = time( NULL );
+    int            orphans     = 0;
+    int            hard_chars  = 0;
+    int            hard_accts  = 0;
+
+    fp_orphan = fopen( "../log/account/orphan.log", "a" );
+
+    /* ── Phase 16: Orphan scan — walk ../player/ ─────────────────────────── */
+    dir = opendir( "../player" );
+    if ( dir )
+    {
+        while ( (ent = readdir(dir)) != NULL )
+        {
+            char   ppath[256];
+            char   acct_login[64];
+            long   acct_id;
+            bool   found_aclg, found_acid;
+            char   line[512];
+
+            /* Skip hidden files, 'deleted' subdir entries, and backup files */
+            if ( ent->d_name[0] == '.' )
+                continue;
+            if ( !str_cmp(ent->d_name, "deleted") || !str_cmp(ent->d_name, "backup") )
+                continue;
+            /* Skip files with extensions (backup files are Name.bak etc.) */
+            if ( strchr(ent->d_name, '.') )
+                continue;
+
+            snprintf( ppath, sizeof(ppath), "../player/%s", ent->d_name );
+            fp = fopen( ppath, "r" );
+            if ( !fp )
+                continue;
+
+            acct_login[0] = '\0';
+            acct_id       = 0;
+            found_aclg    = FALSE;
+            found_acid    = FALSE;
+
+            while ( fgets(line, sizeof(line), fp) )
+            {
+                if ( strncmp(line, "AcLg ", 5) == 0 )
+                {
+                    char *p = line + 5;
+                    int   len;
+                    while ( *p == ' ' ) p++;
+                    len = strlen(p);
+                    while ( len > 0 && (p[len-1] == '\n' || p[len-1] == '\r'
+                                        || p[len-1] == '~' || p[len-1] == ' ') )
+                        len--;
+                    if ( len > 0 && len < (int)sizeof(acct_login) )
+                    {
+                        strncpy( acct_login, p, len );
+                        acct_login[len] = '\0';
+                    }
+                    found_aclg = TRUE;
+                }
+                else if ( strncmp(line, "AcId ", 5) == 0 )
+                {
+                    acct_id    = atol( line + 5 );
+                    found_acid = TRUE;
+                }
+                if ( found_aclg && found_acid )
+                    break;
+            }
+            fclose( fp );
+
+            /* No account linkage in this pfile — skip (pre-migration character) */
+            if ( !found_aclg && !found_acid )
+                continue;
+
+            /* Has AcLg but no matching account file */
+            if ( found_aclg && acct_login[0] != '\0' )
+            {
+                char acct_path[256];
+                FILE *ftest;
+                snprintf( acct_path, sizeof(acct_path), "../account/%s", acct_login );
+                ftest = fopen( acct_path, "r" );
+                if ( !ftest )
+                {
+                    /* Account file missing */
+                    if ( fp_orphan )
+                        fprintf( fp_orphan,
+                            "[%ld] ORPHAN char=%s acct=%s acct_id=%ld: account file not found\n",
+                            (long)now, ent->d_name, acct_login, acct_id );
+                    log_string( LOG_BUG,
+                        Format("account_boot_scan: orphan pfile %s links to missing account '%s'",
+                            ent->d_name, acct_login) );
+                    orphans++;
+                }
+                else
+                {
+                    /* Account file exists — verify this character is listed in it */
+                    bool listed = FALSE;
+                    char aline[512];
+                    rewind( ftest );
+                    while ( fgets(aline, sizeof(aline), ftest) )
+                    {
+                        /* Character lines look like:  Charname~ id last_played soft_del */
+                        char cname[64];
+                        if ( sscanf(aline, " %63s", cname) == 1 )
+                        {
+                            int clen = strlen(cname);
+                            if ( clen > 0 && cname[clen-1] == '~' )
+                                cname[clen-1] = '\0';
+                            if ( !str_cmp(cname, ent->d_name) )
+                            {
+                                listed = TRUE;
+                                break;
+                            }
+                        }
+                    }
+                    fclose( ftest );
+
+                    if ( !listed )
+                    {
+                        if ( fp_orphan )
+                            fprintf( fp_orphan,
+                                "[%ld] ORPHAN char=%s acct=%s acct_id=%ld: character not listed in account\n",
+                                (long)now, ent->d_name, acct_login, acct_id );
+                        log_string( LOG_BUG,
+                            Format("account_boot_scan: orphan pfile %s not listed in account '%s'",
+                                ent->d_name, acct_login) );
+                        orphans++;
+                    }
+                }
+            }
+            else if ( found_aclg && acct_login[0] == '\0' )
+            {
+                /* AcLg line present but empty */
+                if ( fp_orphan )
+                    fprintf( fp_orphan,
+                        "[%ld] ORPHAN char=%s: AcLg present but empty\n",
+                        (long)now, ent->d_name );
+                orphans++;
+            }
+        }
+        closedir( dir );
+    }
+    else
+    {
+        log_string( LOG_BUG, "account_boot_scan: could not open ../player/" );
+    }
+
+    /* ── Phase 17: Hard-delete scan — walk ../account/ ──────────────────── */
+    dir = opendir( "../account" );
+    if ( dir )
+    {
+        while ( (ent = readdir(dir)) != NULL )
+        {
+            ACCOUNT_DATA      *acct;
+            ACCOUNT_CHARACTER *ac;
+            char               acct_path[256];
+
+            if ( ent->d_name[0] == '.' )
+                continue;
+            /* Skip subdirectories and the next_id file */
+            if ( !str_cmp(ent->d_name, "deleted") || !str_cmp(ent->d_name, "next_id") )
+                continue;
+
+            acct = load_account( ent->d_name );
+            if ( !acct )
+                continue;
+
+            /* Check each soft-deleted character — 60 days = 5184000 seconds */
+            for ( ac = acct->characters; ac; ac = ac->next )
+            {
+                if ( ac->soft_deleted_on != 0
+                    && (now - ac->soft_deleted_on) >= 5184000 )
+                {
+                    char src[256], dst[256];
+                    snprintf( src, sizeof(src), "../player/%s", ac->char_name );
+                    snprintf( dst, sizeof(dst), "../player/deleted/%s", ac->char_name );
+
+                    if ( rename(src, dst) == 0 )
+                    {
+                        account_audit_log( "CHAR_HARD_DELETE", acct->account_id,
+                            Format("char=%s moved to player/deleted/", ac->char_name) );
+                        if ( fp_orphan )
+                            fprintf( fp_orphan,
+                                "[%ld] HARD_DELETE char=%s acct=%s: moved to player/deleted/\n",
+                                (long)now, ac->char_name, acct->name );
+                        hard_chars++;
+                    }
+                    else
+                    {
+                        /* Pfile already gone or permission error — just log it */
+                        account_audit_log( "CHAR_HARD_DELETE_SKIP", acct->account_id,
+                            Format("char=%s pfile not found or not movable", ac->char_name) );
+                    }
+                }
+            }
+
+            /* Check whether the account itself is soft-deleted for 60+ days */
+            if ( acct->soft_deleted_on != 0
+                && (now - acct->soft_deleted_on) >= 5184000 )
+            {
+                snprintf( acct_path, sizeof(acct_path),
+                    "../account/deleted/%s", acct->name );
+                {
+                    char src[256];
+                    snprintf( src, sizeof(src), "../account/%s", acct->name );
+                    if ( rename(src, acct_path) == 0 )
+                    {
+                        account_audit_log( "ACCOUNT_HARD_DELETE", acct->account_id,
+                            Format("account=%s moved to account/deleted/", acct->name) );
+                        if ( fp_orphan )
+                            fprintf( fp_orphan,
+                                "[%ld] HARD_DELETE acct=%s: moved to account/deleted/\n",
+                                (long)now, acct->name );
+                        hard_accts++;
+                    }
+                }
+            }
+        }
+        closedir( dir );
+    }
+    else
+    {
+        log_string( LOG_BUG, "account_boot_scan: could not open ../account/" );
+    }
+
+    if ( fp_orphan )
+        fclose( fp_orphan );
+
+    log_string( LOG_CONNECT,
+        Format("account_boot_scan: %d orphan(s), %d character(s) hard-deleted, "
+               "%d account(s) hard-deleted",
+               orphans, hard_chars, hard_accts) );
 }

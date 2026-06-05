@@ -14,6 +14,7 @@
 #include "twilight.h"
 #include "tables.h"
 #include "interp.h"
+#include "account.h"
 
 void run_election();
 bool check_social(CHAR_DATA *ch, char *command, char *argument);
@@ -855,6 +856,19 @@ void char_update( void )
 		{
 			raw_kill(ch, FALSE);
 			continue;
+		}
+
+		/* Phase 12: Accumulate non-idle play time for weekly reward.
+		 * char_update fires every PULSE_TICK (15 real seconds).
+		 * ch->timer == 0 means the character has sent input recently (not idle). */
+		if ( !IS_NPC(ch)
+			&& ch->desc
+			&& ch->desc->connected == CON_PLAYING
+			&& ch->timer == 0
+			&& ch->desc->account )
+		{
+			ch->desc->account->weekly_active_seconds += (PULSE_TICK / PULSE_PER_SECOND);
+			ch->desc->account->dirty = TRUE;
 		}
 
 		if(ch->pospts < 100)

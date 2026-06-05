@@ -458,9 +458,12 @@ struct	descriptor_data
 
     /* Account system */
     ACCOUNT_DATA *	account;            /* NULL until CON_GET_ACCT_PASS succeeds */
-    char *		acct_temp_pass;     /* temp storage across CON_ACCT_NEW/CONFIRM_PASS */
-    bool		acct_is_reset;      /* TRUE = password reset flow; FALSE = new account */
-    bool		acct_creating_char; /* TRUE = creating char from hub, skip pwd states */
+    char *		acct_temp_pass;       /* temp storage across CON_ACCT_NEW/CONFIRM_PASS */
+    bool		acct_is_reset;        /* TRUE = password reset flow; FALSE = new account */
+    bool		acct_creating_char;   /* TRUE = creating char from hub, skip pwd states */
+    bool		acct_delete_select;   /* TRUE = awaiting numeric char selection for delete */
+    bool		acct_delete_confirm;  /* TRUE = awaiting name confirmation for delete */
+    bool		acct_store_browsing;  /* TRUE = in unlock store, awaiting numeric purchase */
 };
 
 

@@ -618,6 +618,9 @@ void boot_db()
         load_papers();
         log_string( LOG_CONNECT, "Load Papers run successfully." );
 
+        account_boot_scan();
+        log_string( LOG_CONNECT, "Account boot scan complete." );
+
         load_bans();
         load_changes();
         //load_votes();

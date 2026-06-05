@@ -2395,6 +2395,155 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 			return;
 		}
 
+		/* Handle delete-flow states before switch — d->repeat is owned by the
+		 * input loop and gets zeroed on every new command, so we use dedicated
+		 * boolean flags instead to survive across multiple nanny() calls. */
+		if ( d->acct_delete_select )
+		{
+			int choice;
+			ACCOUNT_CHARACTER *ac;
+			int n = 1;
+
+			if ( argument[0] == '0' || IS_NULLSTR(argument) )
+			{
+				d->acct_delete_select = FALSE;
+				write_to_buffer( d, "Deletion cancelled.\n\r", 0 );
+				show_account_hub( d );
+				return;
+			}
+
+			choice = atoi(argument);
+			for ( ac = d->account->characters; ac; ac = ac->next )
+			{
+				if ( ac->soft_deleted_on == 0 )
+				{
+					if ( n == choice )
+					{
+						PURGE_DATA( d->acct_temp_pass );
+						d->acct_temp_pass = str_dup( ac->char_name );
+						write_to_buffer( d, Format(
+							"\n\rYou have selected: \tR%s\tn\n\r"
+							"Type the character's name to confirm deletion,\n\r"
+							"or press Enter to cancel: ", ac->char_name), 0 );
+						d->acct_delete_select  = FALSE;
+						d->acct_delete_confirm = TRUE;
+						return;
+					}
+					n++;
+				}
+			}
+			write_to_buffer( d, "Invalid selection.\n\r", 0 );
+			show_account_hub( d );
+			d->acct_delete_select = FALSE;
+			return;
+		}
+
+		if ( d->acct_delete_confirm )
+		{
+			const char *selected = d->acct_temp_pass;
+
+			if ( IS_NULLSTR(argument) )
+			{
+				PURGE_DATA( d->acct_temp_pass );
+				d->acct_delete_confirm = FALSE;
+				write_to_buffer( d, "Deletion cancelled.\n\r", 0 );
+				show_account_hub( d );
+				return;
+			}
+
+			if ( str_cmp(argument, selected) )
+			{
+				PURGE_DATA( d->acct_temp_pass );
+				d->acct_delete_confirm = FALSE;
+				write_to_buffer( d, "Name did not match. Deletion cancelled.\n\r", 0 );
+				show_account_hub( d );
+				return;
+			}
+
+			{
+				ACCOUNT_CHARACTER *ac;
+				for ( ac = d->account->characters; ac; ac = ac->next )
+				{
+					if ( !str_cmp(ac->char_name, selected)
+						&& ac->soft_deleted_on == 0 )
+					{
+						ac->soft_deleted_on = time( NULL );
+						d->account->dirty   = TRUE;
+						save_account( d->account );
+						account_audit_log( "CHAR_SOFT_DELETE",
+							d->account->account_id,
+							Format("char=%s", selected) );
+						write_to_buffer( d, Format(
+							"\n\r\tR%s\tn has been deleted.\n\r"
+							"The character can be recovered by staff "
+							"within 60 days.\n\r"
+							"The character slot has been freed.\n\r",
+							selected), 0 );
+						break;
+					}
+				}
+			}
+
+			PURGE_DATA( d->acct_temp_pass );
+			d->acct_delete_confirm = FALSE;
+			show_account_hub( d );
+			return;
+		}
+
+		/* Handle unlock store purchase input before switch */
+		if ( d->acct_store_browsing )
+		{
+			int choice = atoi(argument);
+			int n      = 1;
+			int i;
+
+			if ( choice == 0 || IS_NULLSTR(argument) )
+			{
+				d->acct_store_browsing = FALSE;
+				show_account_hub( d );
+				return;
+			}
+
+			/* Map choice number back to unlock_defs[] entry */
+			for ( i = 0; unlock_defs[i].name != NULL; i++ )
+			{
+				if ( n == choice )
+				{
+					const UNLOCK_DEF *def = &unlock_defs[i];
+					if ( !account_can_purchase(d->account, def->unlock_id) )
+					{
+						if ( account_has_unlock(d->account, def->unlock_id)
+							&& !def->repeatable )
+							write_to_buffer( d,
+								"You already own that unlock.\n\r", 0 );
+						else if ( account_count_unlock(d->account, UNLOCK_CHAR_SLOT)
+							&& def->unlock_id == UNLOCK_CHAR_SLOT
+							&& account_max_slots(d->account) >= ACCT_MAX_SLOTS )
+							write_to_buffer( d,
+								"You have reached the maximum number of character slots.\n\r", 0 );
+						else
+							write_to_buffer( d, Format(
+								"You need %d points for that. Your balance: %ld.\n\r",
+								def->cost,
+								d->account->points_earned - d->account->points_spent), 0 );
+					}
+					else
+					{
+						account_purchase_unlock( d->account, def->unlock_id );
+						write_to_buffer( d, Format(
+							"\tG%s\tn purchased for \tY%d\tn points.\n\r",
+							def->name, def->cost), 0 );
+					}
+					show_account_unlocks( d );
+					return;
+				}
+				n++;
+			}
+			write_to_buffer( d, "Invalid selection.\n\r", 0 );
+			show_account_unlocks( d );
+			return;
+		}
+
 		if ( IS_NULLSTR(argument) )
 		{
 			write_to_buffer( d, "Enter choice: ", 0 );
@@ -2473,6 +2622,43 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 				/* Stay in CON_ACCT_MENU — next input will be numeric */
 				/* Store "choosing" state in repeat field */
 				d->repeat = -2;
+			}
+			return;
+
+		case 'U':
+			/* Unlock store */
+			if ( !d->account )
+			{
+				show_account_hub( d );
+				return;
+			}
+			d->acct_store_browsing = TRUE;
+			show_account_unlocks( d );
+			return;
+
+		case 'D':
+			/* Delete a character — show list and ask which one */
+			if ( !d->account || !d->account->characters
+				|| account_char_count(d->account) == 0 )
+			{
+				write_to_buffer( d, "You have no characters to delete.\n\r", 0 );
+				show_account_hub( d );
+				return;
+			}
+			{
+				ACCOUNT_CHARACTER *ac;
+				int n = 1;
+				write_to_buffer( d,
+					"\n\r\tRDelete a Character\tn\n\r"
+					"\tY--------------------------------------------------------------------\tn\n\r"
+					"This cannot be undone by you. The character can be recovered\n\r"
+					"by staff for up to 60 days. The slot is freed immediately.\n\r"
+					"\tY--------------------------------------------------------------------\tn\n\r", 0 );
+				for ( ac = d->account->characters; ac; ac = ac->next )
+					if ( ac->soft_deleted_on == 0 )
+						write_to_buffer( d, Format("  [%d] %s\n\r", n++, ac->char_name), 0 );
+				write_to_buffer( d, "Enter number to delete, or 0 to cancel: ", 0 );
+				d->acct_delete_select = TRUE;
 			}
 			return;
 
@@ -2997,11 +3183,21 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 					write_to_buffer( d, "\tWPlease note that if you click the select button, there is no undo.\tn\n\r", 0);
 					for ( iClass = 1; iClass < MAX_CLAN; iClass++ )
 					{
-						if (IS_CLASS_AVAILABLE(ch->race,iClass)) 
+						if ( !IS_CLASS_AVAILABLE(ch->race, iClass) )
+							continue;
+						if ( account_clan_requires_unlock(iClass)
+							&& !account_clan_unlocked(d->account, iClass) )
 						{
-							// strncat( buf, capitalize(clan_table[iClass].name), sizeof(buf) - strlen(buf) - 1 );
-							// strncat( buf, ", ", sizeof(buf) - strlen(buf) - 1 );
-							write_to_buffer(d, Format("%-20s [ \t<send href='%s'>Select\t</send> ]\n\r", capitalize(clan_table[iClass].name), clan_table[iClass].name ), 0);
+							/* Show locked clans grayed out so players know they exist */
+							write_to_buffer(d, Format(
+								"\tD%-20s [ Locked — purchase from [U] Unlocks ]\tn\n\r",
+								capitalize(clan_table[iClass].name)), 0);
+						}
+						else
+						{
+							write_to_buffer(d, Format(
+								"%-20s [ \t<send href='%s'>Select\t</send> ]\n\r",
+								capitalize(clan_table[iClass].name), clan_table[iClass].name), 0);
 						}
 					}
 					strncat( buf, "\n\r\n\r", sizeof(buf) - strlen(buf) - 1 );
@@ -3020,15 +3216,30 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							write_to_buffer( d, "\tWPlease note that if you click the select button, there is no undo.\tn\n\r", 0);
 							for ( iClass = 1; iClass < MAX_CLAN; iClass++ )
 							{
-								if (IS_CLASS_AVAILABLE(ch->race,iClass)) 
-								{
-									write_to_buffer(d, Format("%-20s [ \t<send href='%s'>Select\t</send> ]\n\r", capitalize(clan_table[iClass].name), clan_table[iClass].name ), 0);
-									// strncat( buf, capitalize(clan_table[iClass].name), sizeof(buf) - strlen(buf) - 1 );
-									// strncat( buf, ", ", sizeof(buf) - strlen(buf) - 1 );
-								}
+								if ( !IS_CLASS_AVAILABLE(ch->race, iClass) )
+									continue;
+								if ( account_clan_requires_unlock(iClass)
+									&& !account_clan_unlocked(d->account, iClass) )
+									write_to_buffer(d, Format(
+										"\tD%-20s [ Locked — purchase from [U] Unlocks ]\tn\n\r",
+										capitalize(clan_table[iClass].name)), 0);
+								else
+									write_to_buffer(d, Format(
+										"%-20s [ \t<send href='%s'>Select\t</send> ]\n\r",
+										capitalize(clan_table[iClass].name), clan_table[iClass].name), 0);
 							}
-							strncat( buf, "]: \n\r\n\r\tWPlease select a clan.\tn", sizeof(buf) - strlen(buf) - 1 );
-							write_to_buffer( d, buf, 0 );
+							write_to_buffer( d, "Please select a clan.\n\r", 0 );
+							return;
+						}
+
+						/* Reject locked clans even if typed directly */
+						if ( account_clan_requires_unlock(iClass)
+							&& !account_clan_unlocked(d->account, iClass) )
+						{
+							write_to_buffer( d,
+								"\tRThat clan is locked. Purchase it from [U] Unlocks "
+								"on the account hub.\tn\n\r", 0 );
+							write_to_buffer( d, "Please select a clan.\n\r", 0 );
 							return;
 						}
 
