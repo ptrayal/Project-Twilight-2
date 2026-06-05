@@ -88,7 +88,6 @@ extern  int _filbuf     args( (FILE *) );
 #endif
 
 void new_reset          args(( ROOM_INDEX_DATA *pR, RESET_DATA *pReset ));
-static void skip_helps_section  args(( FILE *fp ));
 void load_helps_xml             args(( FILE *fp, int type ));
 void load_rituals_xml           args(( FILE *fp ));
 void load_rituals_bootstrap     args(( void ));
@@ -425,33 +424,31 @@ void boot_db()
                 }
                 else if ( !str_cmp( word, "HELPS"    ) )
                 {
-                    FILE *fxml = fopen("area/help.xml", "r");
+                    load_helps(fpArea, 0);
+                    FILE *fxml = fopen("help.xml", "r");
                     if (fxml)
                     {
                         load_helps_xml(fxml, 0);
                         fclose(fxml);
-                        skip_helps_section(fpArea);
                         log_string(LOG_CONNECT, "Help files loaded from XML.");
                     }
                     else
                     {
-                        load_helps(fpArea, 0);
                         log_string(LOG_CONNECT, "Help files loaded from .are (no XML found).");
                     }
                 }
                 else if ( !str_cmp( word, "TIPS"     ) )
                 {
-                    FILE *fxml = fopen("area/tips.xml", "r");
+                    load_helps(fpArea, 1);
+                    FILE *fxml = fopen("tips.xml", "r");
                     if (fxml)
                     {
                         load_helps_xml(fxml, 1);
                         fclose(fxml);
-                        skip_helps_section(fpArea);
                         log_string(LOG_CONNECT, "Tips loaded from XML.");
                     }
                     else
                     {
-                        load_helps(fpArea, 1);
                         log_string(LOG_CONNECT, "Tips loaded from .are (no XML found).");
                     }
                 }
@@ -1217,20 +1214,6 @@ static int xml_get_field(FILE *fp, const char *line, const char *tag,
         if (n > 0) { strncat(out, extra, n); len += n; }
     }
     return 1;
-}
-
-/*
- * Skips the rest of a legacy #HELPS or #TIPS section so the area file parser
- * stays in sync when help data is loaded from XML instead.
- */
-static void skip_helps_section(FILE *fp)
-{
-    char line[MSL];
-    while (fgets(line, sizeof(line), fp))
-    {
-        if (line[0] == '$')
-            break;
-    }
 }
 
 /*
