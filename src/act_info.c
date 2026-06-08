@@ -5331,7 +5331,8 @@ void do_www(CHAR_DATA *ch, char *argument)
 void do_stocks(CHAR_DATA *ch, char *argument)
 {
     STOCKS *stock, *chst;
-    int count = 0;
+    int owned = 0;
+    long portfolio = 0;
 
     CheckCH(ch);
 
@@ -5341,21 +5342,35 @@ void do_stocks(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    send_to_char("\tWTicker | Name                      | Price          | Owned\tn\n\r", ch);
-    send_to_char("\tW-----------------------------------------------------------\tn\n\r", ch);
+    send_to_char("\tBStock Market\tn\n\r", ch);
+    send_to_char(Format("\tY|\tn \tB%-6s\tn \tY|\tn \tB%-24s\tn \tY|\tn \tB%-9s\tn \tY|\tn \tB%-5s\tn \tY|\tn\n\r",
+                        "Ticker", "Company", "Price", "Owned"), ch);
+    send_to_char("\tY|--------+--------------------------+-----------+-------|\tn\n\r", ch);
     for(stock = stock_list; stock; stock = stock->next)
     {
+        char price[16];
+        chst = NULL;
         for(chst = ch->stocks; chst != NULL; chst = chst->next)
         {
             if(!str_cmp(chst->ticker, stock->ticker)) break;
         }
 
-        count++;
-        send_to_char(Format("\tY[%4s] \tW|\tY %-25s \tW|\tY ($%5d.%.2d)    \tW|\tY %d\tn",
-                            stock->ticker, stock->name, stock->cost / 100, stock->cost % 100,
-                            chst == NULL ? 0 : chst->cost), ch);
-        send_to_char("\n\r", ch);
+        owned = chst ? chst->cost : 0;
+        portfolio += (long)stock->cost * owned;
+        snprintf(price, sizeof(price), "$%d.%.2d", stock->cost / 100, stock->cost % 100);
+
+        send_to_char(Format("\tY|\tn \tW%-6s\tn \tY|\tn \tW%-24s\tn \tY|\tn %s%-9s\tn \tY|\tn \tW%5d\tn \tY|\tn\n\r",
+                            stock->ticker, stock->name,
+                            stock->upordown > 0 ? "\tG" : stock->upordown < 0 ? "\tR" : "\tW",
+                            price, owned), ch);
     }
+    send_to_char("\tY|--------+--------------------------+-----------+-------|\tn\n\r", ch);
+    {
+        char val[32];
+        snprintf(val, sizeof(val), "$%ld.%.2ld", portfolio / 100, portfolio % 100);
+        send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%-36s\tn \tY|\tn\n\r", val), ch);
+    }
+    send_to_char("\tY|--------+--------------------------+-----------+-------|\tn\n\r", ch);
 }
 
 void do_use(CHAR_DATA *ch, char *argument)

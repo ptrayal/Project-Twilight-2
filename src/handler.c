@@ -4478,7 +4478,7 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 
 	if(num < 1)
 	{
-		send_to_char("You can't buy or sell negative stocks.\n\r", ch);
+		send_to_char("\tRYou can't trade zero or fewer shares.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -4501,7 +4501,7 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 
 		if(cost > cash)
 		{
-			send_to_char("You don't have enough money.\n\r", ch);
+			send_to_char("\tRYou don't have enough money.\tn\n\r", ch);
 			return FALSE;
 		}
 
@@ -4528,19 +4528,19 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 
 		chst->cost += num;
 
-		send_to_char(Format("You buy %d shares of %s for $%d.%.2d.\n\r", num, st->name, cost/100, cost%100), ch);
+		send_to_char(Format("\tGYou buy %d shares of \tW%s\tG for \tW$%d.%.2d\tG.\tn\n\r", num, st->name, cost/100, cost%100), ch);
 	}
 	else
 	{
 		if(!found)
 		{
-			send_to_char("You don't own any of those shares.\n\r", ch);
+			send_to_char("\tRYou don't own any of those shares.\tn\n\r", ch);
 			return FALSE;
 		}
 
 		if(chst->cost < num)
 		{
-			send_to_char("You don't have that many of those shares.\n\r", ch);
+			send_to_char("\tRYou don't have that many of those shares.\tn\n\r", ch);
 			return FALSE;
 		}
 
@@ -4573,12 +4573,12 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 		ch->dollars += cost/100;
 		ch->cents   += cost%100;
 
-		send_to_char(Format("You sell %d shares of %s for $%d.%.2d.\n\r", num, st->name, cost/100, cost%100), ch);
+		send_to_char(Format("\tGYou sell %d shares of \tW%s\tG for \tW$%d.%.2d\tG.\tn\n\r", num, st->name, cost/100, cost%100), ch);
 	}
 
-	send_to_char(Format("You now have %d shares of %s.\n\r", chst?chst->cost:0, st->name), ch);
+	send_to_char(Format("You now have \tW%d\tn shares of \tW%s\tn.\n\r", chst?chst->cost:0, st->name), ch);
 
-	return FALSE;
+	return TRUE;
 }
 
 int factorial (int n)

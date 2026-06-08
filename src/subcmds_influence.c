@@ -1116,7 +1116,7 @@ int economic_market(CHAR_DATA *ch, char *argument)
 
 	if((st = stock_lookup(argument)) == NULL)
 	{
-		send_to_char("There is no such company.\n\r", ch);
+		send_to_char("\tRThere is no such company.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -1126,7 +1126,7 @@ int economic_market(CHAR_DATA *ch, char *argument)
 		st->upordown = UpOrDown;
 		st->phase = 1;
 		save_stocks();
-		act(Format("\tGSuccess\tn: The value of a share of %s is now: $$%d.%.2d\n\r", st->name, st->cost/100?st->cost/100:0, st->cost%100), ch, NULL, NULL, TO_CHAR, 1);
+		act(Format("\tGSuccess\tn: The value of a share of \tW%s\tn is now: \tW$%d.%.2d\tn\n\r", st->name, st->cost/100, st->cost%100), ch, NULL, NULL, TO_CHAR, 1);
 	}
 	else if(success == 0)
 	{
@@ -1149,6 +1149,7 @@ int economic_trade(CHAR_DATA *ch, char *argument)
 	char buf[MSL]={'\0'};
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[FINANCE].value, 7);
 	bool Buy = FALSE;
+	bool fees = FALSE;
 
 	if(IS_NULLSTR(argument))
 	{
@@ -1171,41 +1172,41 @@ int economic_trade(CHAR_DATA *ch, char *argument)
 	argument = one_argument(argument, buf);
 	if((st = stock_lookup(argument)) == NULL)
 	{
-		send_to_char("There is no such company.\n\r", ch);
+		send_to_char("\tRThere is no such company.\tn\n\r", ch);
 		return FALSE;
 	}
 
 	if(IS_NULLSTR(buf) || !is_number(buf))
 	{
-		send_to_char("How many shares do you want to buy?\n\r", ch);
+		send_to_char(Format("How many shares do you want to %s?\n\r", Buy ? "buy" : "sell"), ch);
 		return FALSE;
 	}
 
 	if(fail > 0)
 	{
-		send_to_char("\tGSuccess\tn: You manage to avoid paying trade fees.\n\r", ch);
-		if(!trade_stocks(ch, st, atoi(buf), FALSE, Buy))
-		{
-			return FALSE;
-		}
+		fees = FALSE;
 	}
 	else if(fail == 0)
 	{
-		send_to_char("\tRFailure\tn: You fail to avoid the trade fees.\n\r", ch);
-		if(!trade_stocks(ch, st, atoi(buf), TRUE, Buy))
-		{
-			return FALSE;
-		}
+		fees = TRUE;
 	}
 	else
 	{
-		send_to_char("\tRBOTCH\tn: You damage your credibility in the market.\n\r", ch);
+		fees = TRUE;
 		ch->influences[INFL_ECONOMIC] = UMAX(0, ch->influences[INFL_ECONOMIC] - 1);
-		if(!trade_stocks(ch, st, atoi(buf), TRUE, Buy))
-		{
-			return FALSE;
-		}
 	}
+
+	if(!trade_stocks(ch, st, atoi(buf), fees, Buy))
+	{
+		return FALSE;
+	}
+
+	if(fail > 0)
+		send_to_char("\tGSuccess\tn: You managed to avoid paying trade fees.\n\r", ch);
+	else if(fail == 0)
+		send_to_char("\tRFailure\tn: You failed to avoid the trade fees.\n\r", ch);
+	else
+		send_to_char("\tRBOTCH\tn: You damage your credibility in the market.\n\r", ch);
 
 	ch->infl_timer = 2;
 	return TRUE;
@@ -2026,14 +2027,14 @@ int smarket_create(CHAR_DATA *ch, char *argument)
 	argument = one_argument(argument, arg2);
 	if(strlen(arg2) > 4)
 	{
-		send_to_char("A ticker tag cannot have more than four characters.\n\r",	ch);
+		send_to_char("\tRA ticker tag cannot have more than four characters.\tn\n\r", ch);
 		return FALSE;
 	}
 
 	stock = new_stock();
 	if(!stock)
 	{
-		send_to_char("Error: Failed to create stock entry. Memory allocation failed.\n\r", ch);
+		send_to_char("\tRError: Failed to create stock entry. Memory allocation failed.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -2042,7 +2043,7 @@ int smarket_create(CHAR_DATA *ch, char *argument)
 	stock->ticker = str_dup(arg2);
 	stock->next   = stock_list;
 	stock_list    = stock;
-	send_to_char(Format("Company '%s' created.\n\r", stock->name), ch);
+	send_to_char(Format("\tGSuccess\tn: Company '\tW%s\tn' created.\n\r", stock->name), ch);
 	return TRUE;
 }
 
@@ -2051,13 +2052,18 @@ int smarket_list(CHAR_DATA *ch, char *argument)
 	STOCKS *stock;
 	int count = 0;
 
-	send_to_char("\tBNum  | Company                   | Price\tn\n\r", ch);
-	send_to_char("\tY-----+---------------------------+--------\tn\n\r", ch);
+	send_to_char(Format("\tY|\tn \tB%-4s\tn \tY|\tn \tB%-6s\tn \tY|\tn \tB%-24s\tn \tY|\tn \tB%-9s\tn \tY|\tn\n\r",
+		"Num", "Ticker", "Company", "Price"), ch);
+	send_to_char("\tY|------+--------+--------------------------+-----------|\tn\n\r", ch);
 	for(stock = stock_list; stock; stock = stock->next)
 	{
-		send_to_char(Format("\tY[\tn%4d\tY]\tn %-25s $%d.%.2d\n\r", count, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
+		char price[16];
+		snprintf(price, sizeof(price), "$%d.%.2d", stock->cost/100, stock->cost%100);
+		send_to_char(Format("\tY|\tn \tW%4d\tn \tY|\tn \tW%-6s\tn \tY|\tn \tW%-24s\tn \tY|\tn \tW%-9s\tn \tY|\tn\n\r",
+			count, stock->ticker, stock->name, price), ch);
 		count++;
 	}
+	send_to_char("\tY|------+--------+--------------------------+-----------|\tn\n\r", ch);
 
 	return TRUE;
 }
@@ -2076,11 +2082,10 @@ int smarket_show (CHAR_DATA *ch, char *arg)
 
 	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
-		send_to_char("That company doesn't exist.\n\r", ch);
+		send_to_char("\tRThat company doesn't exist.\tn\n\r", ch);
 		return FALSE;
 	}
 
-	/* Compute display index (position in list) */
 	if(is_number(arg))
 	{
 		i = atoi(arg);
@@ -2095,7 +2100,16 @@ int smarket_show (CHAR_DATA *ch, char *arg)
 		}
 	}
 
-	send_to_char(Format("\tY[\tn%4d\tY]\tn %-25s $%d.%.2d\n\r", i, stock->name, stock->cost/100, (stock->cost - (stock->cost/100)*100)), ch);
+	send_to_char(Format("\tBStock Detail\tn\n\r"), ch);
+	send_to_char(Format("\tY|=====================================|\tn\n\r"), ch);
+	send_to_char(Format("\tY|\tn \tBIndex:\tn    \tW%4d\tn                  \tY|\tn\n\r", i), ch);
+	send_to_char(Format("\tY|\tn \tBCompany:\tn  \tW%-24s\tn \tY|\tn\n\r", stock->name), ch);
+	send_to_char(Format("\tY|\tn \tBTicker:\tn   \tW%-6s\tn                \tY|\tn\n\r", stock->ticker), ch);
+	send_to_char(Format("\tY|\tn \tBPrice:\tn    \tW$%d.%.2d\tn                \tY|\tn\n\r", stock->cost/100, stock->cost%100), ch);
+	send_to_char(Format("\tY|\tn \tBTrend:\tn    \tW%s\tn        \tY|\tn\n\r",
+		stock->upordown > 0 ? "\tGRising\tn " : stock->upordown < 0 ? "\tRFalling\tn" : "Stable  "), ch);
+	send_to_char(Format("\tY|\tn \tBPhase:\tn    \tW%d\tn                    \tY|\tn\n\r", stock->phase), ch);
+	send_to_char(Format("\tY|=====================================|\tn\n\r"), ch);
 
 	return TRUE;
 }
@@ -2113,7 +2127,7 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 
 	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
-		send_to_char("That company doesn't exist.\n\r", ch);
+		send_to_char("\tRThat company doesn't exist.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -2133,7 +2147,7 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 		}
 	}
 	free_stock(stock);
-	send_to_char("Stock deleted.\n\r", ch);
+	send_to_char("\tGSuccess\tn: Stock deleted.\n\r", ch);
 
 	return TRUE;
 }
@@ -2153,7 +2167,7 @@ int smarket_rename(CHAR_DATA *ch, char *argument)
 
 	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
-		send_to_char("That company doesn't exist.\n\r", ch);
+		send_to_char("\tRThat company doesn't exist.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -2163,7 +2177,7 @@ int smarket_rename(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
-	send_to_char(Format("%s renamed to %s.\n\r", stock->name, argument), ch);
+	send_to_char(Format("\tGSuccess\tn: \tW%s\tn renamed to \tW%s\tn.\n\r", stock->name, argument), ch);
 
 	PURGE_DATA(stock->name);
 	stock->name = str_dup(argument);
@@ -2186,7 +2200,7 @@ int smarket_ticker(CHAR_DATA *ch, char *argument)
 
 	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
-		send_to_char("That company doesn't exist.\n\r", ch);
+		send_to_char("\tRThat company doesn't exist.\tn\n\r", ch);
 		return FALSE;
 	}
 
@@ -2198,11 +2212,11 @@ int smarket_ticker(CHAR_DATA *ch, char *argument)
 
 	if(strlen(argument) > 4)
 	{
-		send_to_char("A ticker tag cannot have more than four characters.\n\r", ch);
+		send_to_char("\tRA ticker tag cannot have more than four characters.\tn\n\r", ch);
 		return FALSE;
 	}
 
-	send_to_char(Format("%s ticker renamed to %s.\n\r", stock->name, argument), ch);
+	send_to_char(Format("\tGSuccess\tn: \tW%s\tn ticker changed to \tW%s\tn.\n\r", stock->name, argument), ch);
 
 	PURGE_DATA(stock->ticker);
 	stock->ticker = str_dup(argument);
@@ -2225,24 +2239,24 @@ int smarket_price(CHAR_DATA *ch, char *argument)
 
 	if((stock = find_stock_by_arg(arg)) == NULL)
 	{
-		send_to_char("That stock doesn't exist.\n\r", ch);
+		send_to_char("\tRThat stock doesn't exist.\tn\n\r", ch);
 		return FALSE;
 	}
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char(Format("The cost of a share of %s is $%d.%.2d.\n\r", stock->name, stock->cost/100, stock->cost%100), ch);
+		send_to_char(Format("The cost of a share of \tW%s\tn is \tW$%d.%.2d\tn.\n\r", stock->name, stock->cost/100, stock->cost%100), ch);
 		return TRUE;
 	}
 
 	if(!is_number(argument))
 	{
-		send_to_char("You must supply a number for the cost.\n\r", ch);
+		send_to_char("\tRYou must supply a number for the cost.\tn\n\r", ch);
 		return FALSE;
 	}
 
 	stock->cost = atoi(argument);
-	send_to_char(Format("The price of a share of %s set to $%d.%.2d.\n\r", stock->name, stock->cost/100, stock->cost%100), ch);
+	send_to_char(Format("\tGSuccess\tn: The price of a share of \tW%s\tn set to \tW$%d.%.2d\tn.\n\r", stock->name, stock->cost/100, stock->cost%100), ch);
 
 	return TRUE;
 }
@@ -2250,6 +2264,6 @@ int smarket_price(CHAR_DATA *ch, char *argument)
 int smarket_save(CHAR_DATA *ch, char *arg)
 {
 	save_stocks();
-	send_to_char("Stock market saved.\n\r", ch);
+	send_to_char("\tGSuccess\tn: Stock market saved.\n\r", ch);
 	return TRUE;
 }
