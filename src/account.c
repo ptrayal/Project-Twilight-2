@@ -597,6 +597,75 @@ long assign_account_id( void )
  * Section 9: Account file I/O
  * ========================================================================= */
 
+/* ── Email validation ─────────────────────────────────────────────────────── */
+
+static char *email_blocklist[512];
+static int   email_blocklist_count = 0;
+
+bool is_valid_email( const char *email )
+{
+    const char *at, *dot;
+    int len;
+
+    if ( !email )
+        return FALSE;
+    len = (int)strlen(email);
+    if ( len < 3 || len > 254 )
+        return FALSE;
+    if ( strchr(email, ' ') )
+        return FALSE;
+    at = strchr(email, '@');
+    if ( !at || at == email )       /* no @ or empty local part */
+        return FALSE;
+    if ( strchr(at + 1, '@') )      /* more than one @ */
+        return FALSE;
+    dot = strchr(at + 1, '.');
+    if ( !dot || dot == at + 1 )    /* no dot or dot immediately after @ */
+        return FALSE;
+    if ( dot[1] == '\0' || dot[1] == '.' ) /* nothing after dot, or double dot */
+        return FALSE;
+    return TRUE;
+}
+
+void load_email_blocklist( void )
+{
+    FILE *fp;
+    char  line[256];
+
+    fp = fopen("../data/email_blocklist.txt", "r");
+    if ( !fp )
+    {
+        log_string(LOG_CONNECT, "load_email_blocklist: file not found, no domain blocking active.");
+        return;
+    }
+    while ( fgets(line, sizeof(line), fp) && email_blocklist_count < 512 )
+    {
+        line[strcspn(line, "\r\n")] = '\0';
+        if ( line[0] == '\0' || line[0] == '#' )
+            continue;
+        email_blocklist[email_blocklist_count++] = str_dup(line);
+    }
+    fclose(fp);
+    log_string(LOG_CONNECT, Format("load_email_blocklist: %d domains loaded.", email_blocklist_count));
+}
+
+bool is_blocked_domain( const char *email )
+{
+    const char *at;
+    int i;
+
+    at = strchr(email, '@');
+    if ( !at )
+        return FALSE;
+    at++;   /* domain starts after @ */
+    for ( i = 0; i < email_blocklist_count; i++ )
+        if ( !str_cmp(email_blocklist[i], at) )
+            return TRUE;
+    return FALSE;
+}
+
+/* ── Account file I/O ─────────────────────────────────────────────────────── */
+
 /*
  * save_account — write an account file to account/[name].
  * Follows the same text keyword/value pattern as character pfiles.

@@ -338,6 +338,97 @@ void do_account( CHAR_DATA *ch, char *argument )
         return;
     }
 
+    /* ── email ──────────────────────────────────────────────────────────── */
+    if ( !str_cmp(arg1, "email") )
+    {
+        ACCOUNT_DATA *target = acct;
+        const char   *action = arg2;   /* "set", "clear", or account name for staff */
+        const char   *value  = arg3;   /* email address (self) or "set"/"clear" (staff) */
+
+        /*
+         * Staff: account email <name> set <address>
+         *                       arg2   arg3  argument
+         *        account email <name> clear
+         * If arg2 looks like an account name (not "set"/"clear") and trust qualifies,
+         * shift so target=<name>, action=arg3, value=remaining argument.
+         */
+        if ( trust >= STORYTELLER && !IS_NULLSTR(arg2)
+             && str_cmp(arg2, "set") && str_cmp(arg2, "clear") )
+        {
+            ACCOUNT_DATA *found = acct_lookup_msg(ch, arg2);
+            if ( found )
+            {
+                target = found;
+                action = arg3;
+                value  = argument;  /* remainder after arg1+arg2+arg3 */
+            }
+        }
+
+        /* account email — view */
+        if ( IS_NULLSTR(action) )
+        {
+            send_to_char( Format(
+                "\tWEmail address\tn on account \tW%s\tn: %s\n\r",
+                target->name,
+                IS_NULLSTR(target->email) ? "\tD(not set)\tn"
+                                           : Format("\tW%s\tn", target->email) ), ch );
+            if ( target == acct )
+                send_to_char( "  Use \tWaccount email set <address>\tn to update.\n\r", ch );
+            return;
+        }
+
+        /* account email clear */
+        if ( !str_cmp(action, "clear") )
+        {
+            PURGE_DATA(target->email);
+            target->email = NULL;
+            target->dirty = TRUE;
+            save_account(target);
+            account_audit_log("EMAIL_CLEAR", target->account_id,
+                Format("actor=%s", ch->name));
+            send_to_char( Format(
+                "\tGEmail address cleared\tn on account \tW%s\tn.\n\r",
+                target->name ), ch );
+            return;
+        }
+
+        /* account email set <address> */
+        if ( !str_cmp(action, "set") )
+        {
+            if ( IS_NULLSTR(value) )
+            {
+                send_to_char( "\tRSyntax:\tn account email set <address>\n\r", ch );
+                return;
+            }
+            if ( !is_valid_email(value) )
+            {
+                send_to_char( "\tRInvalid email format.\tn Please use a real address (e.g. you@domain.com).\n\r", ch );
+                return;
+            }
+            if ( is_blocked_domain(value) )
+            {
+                send_to_char( "\tRThat email domain is not accepted.\tn Please use a permanent email address.\n\r", ch );
+                return;
+            }
+            PURGE_DATA(target->email);
+            target->email = str_dup(value);
+            target->dirty = TRUE;
+            save_account(target);
+            account_audit_log("EMAIL_SET", target->account_id,
+                Format("email=%s actor=%s", value, ch->name));
+            send_to_char( Format(
+                "\tGEmail address set\tn on account \tW%s\tn: \tW%s\tn\n\r",
+                target->name, value ), ch );
+            return;
+        }
+
+        /* Unknown sub-action */
+        send_to_char( "Syntax: account email\n\r"
+                      "        account email set <address>\n\r"
+                      "        account email clear\n\r", ch );
+        return;
+    }
+
     /* ── points ─────────────────────────────────────────────────────────── */
     if ( !str_cmp(arg1, "points") )
     {
@@ -988,12 +1079,16 @@ void do_account( CHAR_DATA *ch, char *argument )
         "\tWPlayer:\tn\n\r"
         "  account info          account points\n\r"
         "  account ledger        account unlocks\n\r"
+        "  account email                        (view email address)\n\r"
+        "  account email set <address>          (set/update email address)\n\r"
+        "  account email clear                  (remove email address)\n\r"
         "\tWStoryteller+:\tn\n\r"
         "  account info <name>   account note list <name>\n\r"
         "  account note add <name> <vis> <text>\n\r"
         "  account grant <name> <amount> <reason>\n\r"
         "  account freeze <name> / unfreeze <name>\n\r"
         "  account restrict <name> / unrestrict <name>\n\r"
+        "  account email <name> [set <address>|clear]\n\r"
         "  account scan\n\r"
         "\tWMaster+:\tn\n\r"
         "  account ban <name> [reason]   account unban <name>\n\r"

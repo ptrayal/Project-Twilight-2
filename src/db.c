@@ -618,6 +618,7 @@ void boot_db()
         account_boot_scan();
         log_string( LOG_CONNECT, "Account boot scan complete." );
 
+        load_email_blocklist();
         load_bans();
         load_changes();
         //load_votes();

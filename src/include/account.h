@@ -259,6 +259,13 @@ bool               account_token_verify( ACCOUNT_DATA *acct, const char *token )
 void               account_boot_scan( void );
 
 /* =========================================================================
+ * Email validation (account.c)
+ * ========================================================================= */
+bool               is_valid_email( const char *email );
+void               load_email_blocklist( void );
+bool               is_blocked_domain( const char *email );
+
+/* =========================================================================
  * Hub display (account_cmd.c)
  * ========================================================================= */
 void               show_account_hub( DESCRIPTOR_DATA *d );
