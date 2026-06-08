@@ -289,6 +289,7 @@ bool		    merc_down;		/* Shutdown			*/
 bool		    wizlock;		/* Game is wizlocked		*/
 bool		    newlock;		/* Game is newlocked		*/
 char		    str_boot_time[MIL];
+time_t		    boot_time;		/* time process started */
 time_t		    current_time;	/* time of this pulse */
 bool		    MOBtrigger = TRUE;	/* act() switch			*/
 
@@ -903,6 +904,7 @@ int main( int argc, char **argv )
 	 */
 	gettimeofday( &now_time, NULL );
 	current_time 	= (time_t) now_time.tv_sec;
+	boot_time	= current_time;
 	strncpy( str_boot_time, ctime( &current_time ), sizeof(str_boot_time));
 
 	/*

@@ -6567,7 +6567,7 @@ void do_timeset(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	argument = one_argument(arg, argument);
+	argument = one_argument(argument, arg);
 
 	if(IS_NULLSTR(argument))
 	{
@@ -6578,7 +6578,7 @@ void do_timeset(CHAR_DATA *ch, char *argument)
 	if(!str_prefix(arg, "date"))
 	{
 		/* Set the day. */
-		argument = one_chunk(arg, argument, '/');
+		argument = one_chunk(argument, arg, '/');
 		if(!is_number(arg))
 		{
 			do_function(ch, &do_timeset, "" );
@@ -6590,10 +6590,10 @@ void do_timeset(CHAR_DATA *ch, char *argument)
 			send_to_char("The day must be between 1 and 31.\n\r", ch);
 			return;
 		}
-		time_info.day = i;
+		time_info.day = i -1;
 
 		/* Set the month. */
-		argument = one_chunk(arg, argument, '/');
+		argument = one_chunk(argument, arg, '/');
 		if(!is_number(arg))
 		{
 			do_function(ch, &do_timeset, "" );
@@ -6605,7 +6605,7 @@ void do_timeset(CHAR_DATA *ch, char *argument)
 			send_to_char("The month must be between 1 and 12.\n\r", ch);
 			return;
 		}
-		time_info.month = i;
+		time_info.month = i -1;
 
 		/* Set the year. */
 		if(!is_number(argument))

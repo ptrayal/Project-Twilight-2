@@ -2140,59 +2140,126 @@ char   *const   month_name  [] =
 
 void do_time( CHAR_DATA *ch, char *argument )
 {
-    extern char str_boot_time[];
+    extern time_t boot_time;
     char *suf;
     int day = time_info.day + 1;
-    time_t rawtime;
-    struct tm *info;
-    char buffer[80] = {'\0'};
+    struct tm *tinfo;
+    char timebuf[64];
+
+    /* ordinal suffix for in-game day */
+    if ( day > 4 && day < 20 )   suf = "th";
+    else if ( day % 10 == 1 )    suf = "st";
+    else if ( day % 10 == 2 )    suf = "nd";
+    else if ( day % 10 == 3 )    suf = "rd";
+    else                          suf = "th";
 
     CheckCH(ch);
 
-    if ( day > 4 && day <  20 ) suf = "th";
-    else if ( day % 10 ==  1       ) suf = "st";
-    else if ( day % 10 ==  2       ) suf = "nd";
-    else if ( day % 10 ==  3       ) suf = "rd";
-    else                             suf = "th";
+/* Column widths: left=28, right=45. Border: +---28---+---45---+  = 80 visible */
+#define TW_SEP  "\tY+------------------------------+-----------------------------------------------+\tn\n\r"
+#define TW_ROW(lbl, val) \
+    send_to_char(Format("\tY|\tn \tW%-28s\tn \tY|\tn \tW%-45s\tn \tY|\tn\n\r", (lbl), (val)), ch)
+#define TW_HDR(lbl, rhs) \
+    send_to_char(Format("\tY|\tn \tB%-28s\tn \tY|\tn \tB%-45s\tn \tY|\tn\n\r", (lbl), (rhs)), ch)
 
-    send_to_char(Format("It is %d o'clock %s, %d%s %s.\n\r", (time_info.hour % 12 == 0) ? 12 : time_info.hour % 12,
-                        time_info.hour >= 12 ? "pm" : "am", day, suf, month_name[time_info.month]), ch);
-    if(time_info.hour < 7 || time_info.hour > 18)
+    /* ── Server time section ─────────────────────────────────── */
+    send_to_char(TW_SEP, ch);
+    TW_HDR("Server time", "");
+
+    send_to_char(TW_SEP, ch);
+
+    /* Current uptime */
     {
+        long up = (long)(current_time - boot_time);
+        int  ud = (int)(up / 86400);
+        int  uh = (int)((up % 86400) / 3600);
+        int  um = (int)((up % 3600)  / 60);
+        int  us = (int)(up % 60);
+        char upstr[64];
+        if (ud > 0)
+            snprintf(upstr, sizeof(upstr), "%d days, %d hours, %d min %d sec", ud, uh, um, us);
+        else if (uh > 0)
+            snprintf(upstr, sizeof(upstr), "%d hours, %d minutes %d seconds", uh, um, us);
+        else
+            snprintf(upstr, sizeof(upstr), "%d minutes %d seconds", um, us);
+        TW_ROW("Current uptime", upstr);
+    }
+
+    /* Process started */
+    tinfo = localtime(&boot_time);
+    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tinfo);
+    TW_ROW("Process started", timebuf);
+
+    /* Current real time */
+    tinfo = localtime(&current_time);
+    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S %Z", tinfo);
+    TW_ROW("Current time", timebuf);
+
+    send_to_char(TW_SEP, ch);
+
+    /* ── In-Game time section ────────────────────────────────── */
+    TW_HDR("In-Game time", "1 real min = 1 in-game hour (x60)");
+    send_to_char(TW_SEP, ch);
+
+    /* Epoch (in-game base) */
+    {
+        time_t epoch = (time_t)650336715;
+        tinfo = localtime(&epoch);
+        strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tinfo);
+        TW_ROW("Epoch (server start)", timebuf);
+    }
+
+    /* Total in-game time elapsed: each real second = 1/60 in-game hour */
+    {
+        long ig_hours  = (long)(current_time - 650336715) / 60;
+        long ig_days   = ig_hours / 24;
+        long ig_months = ig_days  / 35;
+        long ig_years  = ig_months / 17;
+        char igstr[64];
+        snprintf(igstr, sizeof(igstr), "Year %ld, month %ld, day %ld, %ld hours",
+            ig_years, ig_months % 17 + 1, ig_days % 35 + 1, ig_hours % 24);
+        TW_ROW("Total time passed", igstr);
+    }
+
+    /* Current in-game date/time */
+    {
+        char igtime[64];
+        snprintf(igtime, sizeof(igtime), "%d o'clock %s, %d%s %s (Year %d)",
+            (time_info.hour % 12 == 0) ? 12 : time_info.hour % 12,
+            time_info.hour >= 12 ? "pm" : "am",
+            day, suf, month_name[time_info.month], time_info.year);
+        TW_ROW("Current time", igtime);
+    }
+
+    send_to_char(TW_SEP, ch);
+
+    /* Moon phase (night only) */
+    if (time_info.hour < 7 || time_info.hour > 18)
+    {
+        const char *moon_desc;
         switch(time_info.moon_phase)
         {
-        case MOON_FULL:
-            send_to_char("A full moon hangs in the sky.\n\r", ch);
-            send_to_char("   _____\n  /     \\\n | () () |\n  \\  ^  /\n   |||||\n", ch);
-            break;
-        case MOON_GIBBOUS:
-            send_to_char("A fat gibbous moon ambles across the sky.\n\r", ch);
-            send_to_char("   _____\n  /     \\\n |  () ()|\n  \\     /\n   |||||\n", ch);
-            break;
-        case MOON_NEW:
-            send_to_char("The moon is absent from the night sky.\n\r", ch);
-            send_to_char("   _____\n  /     \\\n |       |\n  \\     /\n   |||||\n", ch);
-            break;
-        case MOON_CRESCENT:
-            send_to_char("A mere sliver of moon peers down from the sky.\n\r", ch);
-            send_to_char("   _____\n  /     \\\n |)      |\n  \\     /\n   |||||\n", ch);
-            break;
-        case MOON_HALF:
-            send_to_char("The moon shines with a balance of light and dark.\n\r", ch);
-            send_to_char("   _____\n  /     \\\n | )     |\n  \\     /\n   |||||\n", ch);
-            break;
+        case MOON_FULL:     moon_desc = "A full moon hangs in the sky.";               break;
+        case MOON_GIBBOUS:  moon_desc = "A fat gibbous moon ambles across the sky.";   break;
+        case MOON_NEW:      moon_desc = "The moon is absent from the night sky.";       break;
+        case MOON_CRESCENT: moon_desc = "A mere sliver of moon peers down.";            break;
+        case MOON_HALF:     moon_desc = "The moon shines with a balance of light and dark."; break;
+        default:            moon_desc = "";                                              break;
+        }
+        if (moon_desc[0])
+        {
+            send_to_char(Format("\tY|\tn \tW%-76s\tn \tY|\tn\n\r", moon_desc), ch);
+            send_to_char(TW_SEP, ch);
         }
     }
-    if(timestop)
-    {
-        send_to_char("Game time has been stopped.\n\r", ch);
-    }
 
-    time( &rawtime );
-    info = localtime( &rawtime );
-    strftime(buffer, 80, "%a %b-%d-%Y (%H:%M%p %Z)", info);
+    if (timestop)
+        send_to_char("\tRGame time has been stopped.\tn\n\r", ch);
 
-    send_to_char( Format("Process started: %sSystem time: %s\n\r", str_boot_time, buffer), ch );
+#undef TW_SEP
+#undef TW_ROW
+#undef TW_HDR
+
     return;
 }
 
