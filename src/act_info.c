@@ -1030,35 +1030,76 @@ void do_nofollow(CHAR_DATA *ch, char *argument)
  * Handles:
  *   - MUD color codes (\t + letter) as zero-width characters
  *   - Word-boundary wrapping (won't split mid-word)
- *   - Existing newlines (\n, \r) in the input as forced line breaks
- *   - Lines shorter than 73 chars are right-padded with spaces
+ *   - Single newlines treated as spaces (re-flows pre-wrapped text)
+ *   - Double newlines (blank lines) treated as paragraph breaks
+ *   - Lines shorter than the width are right-padded with spaces
  *
  * width: visible character width of the content area (73 for standard card)
  */
 void send_wrapped_card_text(const char *text, CHAR_DATA *ch, int width)
 {
+    char buf[MSL * 2];
+    const char *src;
+    char *dst;
     char line[MSL];
-    int lpos;
-    int vcol;
-    const char *p = text;
+    int lpos, vcol;
+    const char *p;
     const char *word_start;
     int word_raw_len, word_vis_len;
+
+    /*
+     * Pre-process: collapse single newlines into spaces.
+     * Double newlines (paragraph breaks) become a single \n.
+     * This re-flows text that was pre-formatted for wider displays.
+     */
+    src = text;
+    dst = buf;
+    while(*src && dst < buf + sizeof(buf) - 2)
+    {
+        if(*src == '\r') { src++; continue; }
+
+        if(*src == '\n')
+        {
+            src++;
+            if(*src == '\r') src++;
+
+            if(*src == '\n' || *src == '\0')
+            {
+                if(*src == '\n') src++;
+                if(*src == '\r') src++;
+                *dst++ = '\n';
+            }
+            else
+            {
+                if(dst > buf && *(dst-1) != ' ')
+                    *dst++ = ' ';
+            }
+            continue;
+        }
+
+        *dst++ = *src++;
+    }
+    *dst = '\0';
+
+    /* Word-wrap the re-flowed text into bordered lines. */
+    p = buf;
 
     while(*p)
     {
         lpos = 0;
         vcol = 0;
 
-        while(*p && vcol < width)
-        {
-            if(*p == '\n' || *p == '\r')
-            {
-                if(*p == '\r' && *(p+1) == '\n') p++;
-                else if(*p == '\n' && *(p+1) == '\r') p++;
-                p++;
-                break;
-            }
+        while(*p == ' ') p++;
 
+        if(*p == '\n')
+        {
+            p++;
+            send_to_char(Format("\tY|\tn %-*s \tY|\tn\n\r", width, ""), ch);
+            continue;
+        }
+
+        while(*p && *p != '\n' && vcol < width)
+        {
             if(*p == '\t' && *(p+1) != '\0')
             {
                 line[lpos++] = *p++;
@@ -1076,7 +1117,7 @@ void send_wrapped_card_text(const char *text, CHAR_DATA *ch, int width)
             word_start = p;
             word_raw_len = 0;
             word_vis_len = 0;
-            while(*p && *p != ' ' && *p != '\n' && *p != '\r')
+            while(*p && *p != ' ' && *p != '\n')
             {
                 if(*p == '\t' && *(p+1) != '\0')
                 {
@@ -1109,6 +1150,7 @@ void send_wrapped_card_text(const char *text, CHAR_DATA *ch, int width)
         }
         line[lpos] = '\0';
 
+        if(lpos > 0 || vcol > 0)
         {
             int pad = width - vcol;
             if(pad < 0) pad = 0;
