@@ -583,7 +583,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     {
     	if(stock->cost > 0)
     	{
-    		fprintf( fp, "STOCK %s~ %d\n", stock->ticker, stock->cost );
+    		fprintf( fp, "STOCK %s~ %d %ld\n", stock->ticker, stock->cost, stock->cost_basis );
     	}
     }
 
@@ -1786,9 +1786,24 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 
 				if((spot = stock_lookup(fread_string(fp))) != NULL)
 				{
+					int c;
+
 					st		= new_stock();
 					st->ticker	= spot->ticker;
 					st->cost	= fread_number( fp );
+
+					do { c = getc(fp); } while(c == ' ' || c == '\t');
+					if(c != EOF && (isdigit(c) || c == '-' || c == '+'))
+					{
+						ungetc(c, fp);
+						st->cost_basis = fread_number( fp );
+					}
+					else
+					{
+						if(c != EOF) ungetc(c, fp);
+						st->cost_basis = (long)st->cost * spot->cost;
+					}
+
 					st->next	= ch->stocks;
 					ch->stocks	= st;
 				}

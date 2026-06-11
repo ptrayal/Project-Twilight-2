@@ -4878,6 +4878,39 @@ void load_stocks()
 			break;
 		pstock->upordown =fread_number( fp );
 
+		{
+			long fpos = ftell( fp );
+			char *word = fread_word( fp );
+			if ( !str_cmp( word, "Price_High" ))
+			{
+				pstock->price_high = fread_number( fp );
+
+				if ( str_cmp( fread_word( fp ), "Price_Low" ))
+					break;
+				pstock->price_low = fread_number( fp );
+			}
+			else
+			{
+				pstock->price_high = pstock->cost;
+				pstock->price_low  = pstock->cost;
+				fseek( fp, fpos, SEEK_SET );
+			}
+		}
+
+		{
+			long fpos = ftell( fp );
+			char *word = fread_word( fp );
+			if ( !str_cmp( word, "Last_Dividend" ))
+			{
+				pstock->last_dividend = fread_number( fp );
+			}
+			else
+			{
+				pstock->last_dividend = time(NULL);
+				fseek( fp, fpos, SEEK_SET );
+			}
+		}
+
 		if (stock_list == NULL)
 			stock_list           = pstock;
 		else
@@ -4919,6 +4952,9 @@ void save_stocks()
 			fprintf( fp, "Stock_Price  %d\n", pstock->cost);
 			fprintf( fp, "Stock_Phase  %d\n", pstock->phase);
 			fprintf( fp, "UporDown  %d\n", pstock->upordown);
+			fprintf( fp, "Price_High  %d\n", pstock->price_high);
+			fprintf( fp, "Price_Low  %d\n", pstock->price_low);
+			fprintf( fp, "Last_Dividend  %ld\n", pstock->last_dividend);
 		}
 		fclose( fp );
 		openReserve();

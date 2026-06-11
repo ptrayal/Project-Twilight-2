@@ -653,6 +653,24 @@ extern SURVEY_DATA *survey_list;
 extern SURVEY_DATA *survey_last;
 
 /*
+ * Stock Market — Tunable Parameters
+ *
+ * STOCK_DIVIDEND_INTERVAL: Real-time seconds between dividend payouts.
+ *   Default: 86400 (24 real hours). Lower = more frequent payouts.
+ *
+ * STOCK_DIVIDEND_PCT: Percentage of share value paid as dividend (x100).
+ *   100 = 1%, 50 = 0.5%, 200 = 2%. Applied per share owned.
+ *   Formula: payout = (stock_price * shares_owned * PCT) / 10000
+ *
+ * STOCK_DIVIDEND_PHASE: Which market phase qualifies for dividends.
+ *   0 = Bull Market only (default), 1 = Volatile, 2 = Bear Market.
+ *   Only stocks in this phase pay dividends.
+ */
+#define STOCK_DIVIDEND_INTERVAL     86400
+#define STOCK_DIVIDEND_PCT          100
+#define STOCK_DIVIDEND_PHASE        0
+
+/*
  * Structure for the stock market.
  */
 struct stocks
@@ -660,7 +678,11 @@ struct stocks
     char    *name;
     char    *ticker;
     long    last_change;
+    long    last_dividend;
     int     cost;
+    long    cost_basis;
+    int     price_high;
+    int     price_low;
     int     phase;
     int     upordown;
     STOCKS  *next;
@@ -2981,6 +3003,7 @@ extern		RESEARCH_DATA	  *	research_list;
 
 extern		char			bug_buf		[];
 extern		time_t			current_time;
+extern		time_t			boot_time;
 extern		bool			fLogAll;
 extern		FILE *			fpReserve;
 extern		char			log_buf		[];

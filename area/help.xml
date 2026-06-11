@@ -8353,4 +8353,1454 @@
 punishment.
 </Desc>
 </Help>
+<Help>
+<level>-1</level>
+<keyword>account</keyword>
+<Topic>Account System</Topic>
+<Syntax>account
+account info
+account points
+</Syntax>
+<Desc>Project Twilight uses an account system that lets you manage multiple
+characters under a single login identity.
+
+\tBLOGGING IN\tn
+When you connect, you will be asked for your account name and password.
+Your account name is separate from any character name and stored
+in lowercase (e.g. "nyx", not "Nyx").
+
+\tBACCOUNT HUB\tn
+After logging in you are taken to the Account Hub where you can:
+
+  \tW[P]\tn  Play one of your existing characters
+  \tW[C]\tn  Create a new character (uses one character slot)
+  \tW[U]\tn  Browse and purchase unlocks with account points
+  \tW[A]\tn  View account information
+  \tW[L]\tn  View your point ledger history
+  \tW[Q]\tn  Quit and disconnect
+
+\tBACCOUNT POINTS\tn
+Points are earned through activity and can be spent on unlocks such
+as additional character slots and clan access. New accounts receive
+a 100-point welcome bonus. Active play awards 10 points per week
+(minimum 60 minutes of non-idle play required).
+
+\tBIN-GAME COMMANDS\tn
+  \tWaccount info\tn    - Shows your account name, ID, and creation date.
+  \tWaccount points\tn  - Shows your current point balance.
+
+\tBQUITTING\tn
+Typing \tWquit\tn while playing returns you to the Account Hub rather
+than disconnecting. From there you can switch characters or log off.
+
+\tWSee Also:\tn  account hub
+</Desc>
+</Help>
+<Help>
+<level>-1</level>
+<keyword>account hub hub account-hub</keyword>
+<Topic>Account Hub</Topic>
+<Desc>The Account Hub is displayed after you log in. It shows your account
+name, available points, character slot usage, and a list of your
+characters along with when they were last played.
+
+\tBOPTIONS\tn
+  \tW[P] Play a Character\tn
+      If you have one character it loads immediately. If you have
+      multiple you will be prompted to choose by number.
+
+  \tW[C] Create New Character\tn
+      Begins the character creation process. Uses one character slot.
+      Accounts start with 2 slots and more can be purchased via [U].
+
+  \tW[U] Unlock Features\tn
+      Opens the unlock store where points can be spent on additional
+      character slots, clan access, and future features.
+
+  \tW[A] Account Information\tn
+      Displays your account details and point totals.
+
+  \tW[L] Point Ledger\tn
+      Shows a history of all point transactions on your account.
+
+  \tW[Q] Quit\tn
+      Disconnects from the game cleanly.
+
+\tWSee Also:\tn  account
+</Desc>
+</Help>
+<Help>
+<level>3</level>
+<keyword>account commands staff-account account-staff</keyword>
+<Topic>Admin: Account Commands</Topic>
+<Syntax>account info &lt;name&gt;
+account grant &lt;name&gt; &lt;amount&gt; &lt;reason&gt;
+account note add &lt;name&gt; &lt;vis&gt; &lt;text&gt;
+account note list &lt;name&gt;
+account freeze &lt;name&gt;
+account unfreeze &lt;name&gt;
+account restrict &lt;name&gt;
+account unrestrict &lt;name&gt;
+account ban &lt;name&gt; &lt;reason&gt;
+account unban &lt;name&gt;
+account transfer &lt;char&gt; &lt;from&gt; &lt;to&gt;
+account reset password &lt;name&gt;
+account scan
+account purge
+</Syntax>
+<Desc>\tBACCOUNT STAFF COMMANDS\tn
+
+All account commands are accessed via the \tWaccount\tn command. Staff
+actions are fully logged to the audit log and visible to appropriate
+trust levels.
+
+\tBMODERATION FLAGS\tn
+  \tWfreeze\tn    - Account can log into the hub but cannot play.
+  \tWrestrict\tn  - Account is limited to a whitelist of basic commands.
+  \tWban\tn       - Account cannot log in at all.
+
+\tBNOTE VISIBILITY\tn
+  \tWsystem\tn  - IMPLEMENTOR only      \tWadmin\tn - MASTER and above
+  \tWstaff\tn   - STORYTELLER and above  \tWowner\tn - Account holder only
+
+\tBGRANT LIMITS\tn
+Points granted per month are capped by trust level:
+STORYTELLER = 30, MASTER = 40, IMPLEMENTOR = 50.
+
+\tBPASSWORD RESET\tn
+Generates a 12-character single-use token that expires after 24 hours.
+Deliver the token to the player out-of-band (tell, Discord, etc.).
+The player enters the token in place of their password at next login.
+
+\tBCHARACTER TRANSFER\tn
+Moves a character between accounts. Requires MASTER trust. The
+destination account must have a free character slot. Both account
+files and the character pfile are updated immediately and logged.
+
+\tBORPHAN SCAN\tn
+\tWaccount scan\tn checks all character files against account records
+and reports discrepancies. Run after any manual file editing.
+
+\tWSee Also:\tn  account, account hub
+</Desc>
+</Help>
+
+<Help>
+<level>-1</level>
+<keyword>STRING EDITOR</keyword>
+<Topic>The String Editor</Topic>
+<Syntax>.r &apos;old&apos; &apos;new&apos;   - replace a substring (requires &apos;&apos;, &quot;&quot;)
+.n &apos;location&apos;    - insert a return after substring (requires &apos;&apos;, &quot;&quot;)
+.h               - get help (this info)
+.s               - show string so far
+.l               - show string so far with line numbers
+.f               - word wrap string
+.w               - word wrap without reducing blank lines
+.c               - clear string so far
+@                - end string and exit the editor
+</Syntax>
+<Desc>The string editor is used whenever you need to write or edit multi-line text in the game, such as descriptions, notes, or any other long-form text fields.\n\nAll commands must be entered on a blank line by themselves. The most commonly used commands are:\n\n  \tW.r &apos;old text&apos; &apos;new text&apos;\tn - Replaces a substring within the current text.\n  \tW.n &apos;text&apos;\tn              - Inserts a line break after the specified text.\n  \tW.h\tn                      - Displays the help information.\n  \tW.s\tn                      - Shows the string as it currently looks.\n  \tW.l\tn                      - Shows the string with line numbers.\n  \tW.f\tn                      - Applies word wrapping to the string.\n  \tW.w\tn                      - Applies word wrapping without reducing blank lines.\n  \tW.c\tn                      - Clears the entire string.\n  \tW@\tn                       - Exits the editor and saves the string.\n\nRemember, if you get stuck, typing \tW.c\tn on a new line clears the string, \tW.h\tn displays the commands, and \tW@\tn will exit the editor.
+</Desc>
+<See>HELP DESCRIPTION
+</See>
+</Help>
+
+<Help>
+<level>-1</level>
+<keyword>EXTRADESC EDESC EXTRA DESCRIPTIONS</keyword>
+<Topic>Extra Descriptions</Topic>
+<Syntax>edesc [keyword]
+edesc delete [keyword]
+</Syntax>
+<Desc>On top of having a description for your character -- which you by all means should, for others to be able to see what you look like -- you may also have descriptions for things, items worn, or features of yourself.\n\nFor example, you can merely mention having a gun tucked in your belt in the main description, but also have a keyword &apos;gun&apos;; that would allow others to type &apos;look [your name] gun&apos;, and see what you wrote specifically for your weapon.\n\nExtra descriptions are also used within the room and object editors (REDIT and OEDIT) to add detailed descriptions to specific keywords within rooms and objects.
+</Desc>
+<See>HELP DESCRIPTION
+</See>
+</Help>
+
+<Help>
+<level>-1</level>
+<keyword>GREETING</keyword>
+<Topic>Greeting</Topic>
+<Desc>                                               Bal Harbor Awakens...\n  .  .  .    .  .     .   . .  .  .  . .   . .  . .   .    .  . .  .\n . . . .  . .  _   .  . .  . .. .  .. . . . . ..  .  .   |   . .  ..\n.. .. .. .. . | | .. .. .. .. ..           . .. .. ..  --*-- . .. ..\n... ... ...  _| |_  ... ... ... . |------|  ... ... ..   |   .. ... .\n            |^^ ^^| ... ..... ... |      | .... ..... ..    ..... ...\n|---| |-----|[] []|        ...    |      | ...... ..... ..... ..... .\n|   | |     |     |------|     |------|  | .......  ..... ..... .....\n|   |-----| |^^ ^^|     |--------|    |  |      . ..... ..... ..... .\n|   |     | |[] []|     |  .-.   |    |-------| ..... ...... ........\n|   |     | |     |     |  |||   |    |       | ... ...... ...... ...\n---------------------------------------------------------------------\n       Original DikuMUD by Hans Staerfeldt, Katja Nyboe,\n       Tom Madsen, Michael Seifert, and Sebastian Hammer\n       Based on MERC 2.1 code by Hatchet, Furey, and Kahn\n         ROM 2.4 copyright (c) 1993-1996 Russ Taylor\n       The World of Darkness and All related concepts are\n              copyrights of White-Wolf Studios.\n           Comments: ptrayal@gmail.com\n---------------------------------------------------------------------\n\nPlease enter Character Name: 
+</Desc>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>AEDIT</keyword>
+<Topic>Area Editor</Topic>
+<Syntax>aedit [area_vnum]
+aedit create &lt;vnum&gt;
+edit area
+edit area [vnum]
+</Syntax>
+<Desc>The area editor (AEDIT) is used to create and modify areas within the game world. You can enter the editor by typing \tWaedit\tn with an area vnum, or \tWedit area\tn.\n\nThe following commands are available from within the area editor:\n\n  \tWage [number]\tn        - set the age of the area\n  \tWbuilder [player]\tn    - toggle that builder&apos;s access\n  \tWcommands\tn            - prints a list of possible commands\n  \tWcreate\tn              - create a brand new area and switch to it\n  \tWdone\tn                - exits the area editor and returns to normal play\n  \tWfilename [filename]\tn - change the file name for the area (be careful)\n  \tWname [name]\tn         - change the &apos;AREAS&apos; name of this area\n  \tWreset\tn               - resets the current area\n  \tWsecurity [rating]\tn   - set the security rating for this area\n  \tWshow\tn                - hitting return, or &apos;show&apos; shows the area stats\n  \tWvnum [lower] [upper]\tn - set the lower and upper vnums\n  \tWlvnum [lower]\tn       - set the lower vnum\n  \tWuvnum [upper]\tn       - set the upper vnum\n  \tW[flags]\tn             - area flags, type ? AREA for a list
+</Desc>
+<See>HELP OLC, HELP REDIT, HELP MEDIT, HELP OEDIT
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>OLC EDIT</keyword>
+<Topic>OLC (On-Line Coding) Editor</Topic>
+<Syntax>edit area [create/reset] [vnum]   - Area Creation and Repoping
+edit room [create] [vnum]        - Room Creation and Editing
+edit object [create] [vnum]      - Object Creation and Editing
+edit mobile [create] [vnum]      - Mobile Creation and Editing
+edit plot                        - Plot Creation and Editing
+edit event                       - Event Creation and Editing
+edit script                      - Script Creation and Editing
+asave [world/area/changed/list]  - Save Editing to Disk
+alist                            - Listing of Areas
+</Syntax>
+<Desc>The OLC (On-Line Coding) system allows builders and staff to create and modify the game world from within the game itself.\n\nThe \tWedit\tn command is the main dispatcher for all OLC editors. The available subcommands include: \tWarea\tn, \tWroom\tn, \tWobject\tn, \tWmobile\tn, \tWplot\tn, \tWevent\tn, \tWscript\tn, \tWreact\tn, \tWhelp\tn, \tWtip\tn, \tWbg\tn, \tWknow\tn, and \tWmprog\tn.\n\nDefinition: [optional]  &lt;required&gt;  (combined arguments)\n\nThe above commands are used to expand the game world. The original code was written by Surreality and installed in The Isles by Locke. It was then converted to work with Envy by Jason Dinkel, and ported to ROM by Hans Birkeland (Hugin).\n\nInside an editor, typing \tWCOMMANDS\tn lists working commands and \tW?\tn gives help. AEDIT and REDIT default to the current area or room. \tWedit room reset\tn resets the current room. Most commands with no arguments display syntax.
+</Desc>
+<See>HELP AEDIT, HELP REDIT, HELP MEDIT, HELP OEDIT
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>MEDIT</keyword>
+<Topic>Mobile Editor</Topic>
+<Syntax>medit [mob_vnum]
+medit create &lt;vnum&gt;
+</Syntax>
+<Desc>The mobile editor (MEDIT) is used to create and modify mobiles (NPCs) within the game world.\n\nThe following commands are available from within the mobile editor:\n\n  \tWalignment [value]\tn   - set the mobile&apos;s alignment\n  \tWcommands\tn            - prints a list of possible commands\n  \tWcreate [vnum]\tn       - creates mobile with specified vnum\n  \tWdesc\tn                - edit the mobile&apos;s description (when looked at)\n  \tWdone\tn                - exits the mobile editor and returns to normal play\n  \tWlevel [level]\tn       - set the mobile&apos;s level\n  \tWlong\tn                - edit long description (the one in the room)\n  \tWname [keywords]\tn     - sets the keywords on a mobile\n  \tWshop\tn                - type this command for further information\n  \tWshort [desc]\tn        - sets the &apos;name&apos; of a mobile (a sword, a fish etc)\n  \tWshow\tn                - hitting return, or &apos;show&apos; shows the mobile stats\n  \tWspec\tn                - sets a mobile&apos;s spec proc, type ? SPEC for a list\n  \tWsex\tn                 - set the mobile&apos;s sex, type ? SEX for a list\n  \tWact\tn                 - mobile actions, type ? ACT for a list\n  \tWaffect\tn              - mobile affects, type ? AFFECT for a list\n  \tWac\tn                  - set the mobile&apos;s ac, type ? AC for a list\n  \tWform\tn                - mobile body-form, type ? FORM for a list\n  \tWpart\tn                - mobile bodyparts, type ? PART for a list\n  \tWimm\tn                 - mobile is immune to, type ? IMM for a list\n  \tWres\tn                 - mobile is resistant to, type ? RES for a list\n  \tWvuln\tn                - mobile is vulnerable to, type ? VULN for a list\n  \tWmaterial\tn            - material mobile is made from, type ? MATERIAL for a list\n  \tWoff\tn                 - offensive behaviour, type ? OFF for a list\n  \tWsize\tn                - size, type ? SIZE for a list\n  \tWtrigger\tn             - creating a trigger for a mobile\n  \tWmpadd\tn               - adding a predefined mobprog to a mobile\n  \tWmpdel\tn               - removing a predefined mobprog from a mobile\n\nType &apos;help HITDICE&apos;, &apos;help MANADICE&apos;, &apos;help DAMDICE&apos; for lists of reasonable dice combinations on different levels.
+</Desc>
+<See>HELP OLC, HELP AEDIT, HELP REDIT, HELP OEDIT
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>OEDIT</keyword>
+<Topic>Object Editor</Topic>
+<Syntax>oedit [obj_vnum]
+oedit create &lt;vnum&gt;
+</Syntax>
+<Desc>The object editor (OEDIT) is used to create and modify objects within the game world.\n\nThe following commands are available from within the object editor:\n\n  \tWaddaffect\tn           - applies an affect to an object, no args for help\n  \tWdelaffect\tn           - removes an affect from an object, no args for help\n  \tWcommands\tn            - prints a list of possible commands\n  \tWcost [gold]\tn         - sets the gold value of the object\n  \tWcreate [vnum]\tn       - creates object with specified vnum\n  \tWdone\tn                - exits the object editor and returns to normal play\n  \tWed\tn                  - type this for info on adding/editing extended descriptions\n  \tWlong\tn                - edit long description (the one in the room)\n  \tWname [keywords]\tn     - sets the keywords on an object\n  \tWshort [desc]\tn        - sets the &apos;name&apos; of an object (a sword, a fish etc)\n  \tWshow\tn                - hitting return, or &apos;show&apos; shows the object stats\n  \tWv0 [num]\tn            - sets the value &apos;0&apos; on the object\n  \tWv1 [num]\tn            - sets the value &apos;1&apos; on the object\n  \tWv2 [num]\tn            - sets the value &apos;2&apos; on the object\n  \tWv3 [num]\tn            - sets the value &apos;3&apos; on the object\n  \tWv4 [num]\tn            - sets the value &apos;4&apos; on the object\n  \tWweight [num]\tn        - sets the weight of the object\n  \tWtype\tn                - type of object, type ? TYPE for a list\n  \tWextra\tn               - attributes of object, type ? EXTRA for a list\n  \tWwear\tn                - where object is worn, type ? WEAR for a list\n  \tWmaterial\tn            - material the object is made from
+</Desc>
+<See>HELP OLC, HELP AEDIT, HELP REDIT, HELP MEDIT
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>REDIT</keyword>
+<Topic>Room Editor</Topic>
+<Syntax>redit [room_vnum]
+redit create &lt;vnum&gt;
+redit reset
+edit room
+</Syntax>
+<Desc>The room editor (REDIT) is used to create and modify rooms within the game world.\n\nThe following commands are available from within the room editor:\n\n  \tWcommands\tn            - prints a list of possible commands\n  \tWcreate [vnum]\tn       - creates a room with a certain vnum\n  \tWdesc\tn                - edit description of room\n  \tWdone\tn                - exits the room editor and returns to normal play\n  \tWed\tn                  - type this command for additional extra-description help\n  \tWformat\tn              - format (word wrap) the room description\n  \tWname [room title]\tn   - changes the room title\n  \tWshow\tn                - hitting return, or &apos;show&apos; shows the room stats\n  \tWoshow [vnum]\tn        - shows an object with given vnum\n  \tWolist\tn               - lists objects in this area\n  \tWmshow [vnum]\tn        - shows a mobile with given vnum\n  \tWmlist\tn               - lists mobiles in this area\n  \tW[room-flags]\tn        - room attributes, type ? ROOM for a list\n  \tW[sector]\tn            - terrain of room, type ? SECTOR for a list\n  \tW[direction]\tn         - see help EXIT, or type [dir] ?
+</Desc>
+<See>HELP OLC, HELP AEDIT, HELP MEDIT, HELP OEDIT, HELP EXIT
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>RESET</keyword>
+<Topic>Area Resets</Topic>
+<Syntax>reset
+reset [number] obj [vnum] [wear_loc]
+reset [number] obj [vnum] inside [vnum] [limit] [count]
+reset [number] obj [vnum] room
+reset [number] mob [vnum] [max # area] [max # room]
+reset [number] delete
+</Syntax>
+<Desc>The \tWreset\tn command is used to manage room resets, which control how mobiles and objects are placed when an area repopulates.\n\n\tWresets\tn alone gives a list of resets in the current room.\n\tWreset\tn allows the creating, editing, and deleting of resets in the current room.
+</Desc>
+<See>HELP RESETS, HELP REDIT
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>RESETS</keyword>
+<Topic>Reset Commands</Topic>
+<Syntax>reset [number] obj [vnum] [location on body]      - equips last mobile
+reset [number] obj [vnum] inside [obj vnum] [limit] [count] - store in container
+reset [number] obj [vnum] room                        - store in room
+reset [number] mob [vnum] [area max] [room max]       - load a mobile
+reset [number] delete                                 - delete a reset
+</Syntax>
+<Desc>\tWRESET\tn alone will display the resets in the current room. The [number] will be displayed with this list. Typing \tW? WEAR-LOC\tn will list possible locations that an object can be loaded to. The [max #] is the maximum number of mobiles allowed in this room and will default to 1 if no number is entered.\n\nFor resets to be successful, make sure that you add them in a logical order. For example, if you are equipping a mobile, don&apos;t load a container in the room and fill it with some objects and then continue equipping the mobile. It is likely that resets will backfire if they are not carefully entered.\n\nIf you wish to reset the room then use \tWedit room reset\tn.
+</Desc>
+<See>HELP RESET, HELP REDIT
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>PLIST</keyword>
+<Topic>Plot List</Topic>
+<Syntax>plist
+</Syntax>
+<Desc>The \tWplist\tn command lists all the plots currently created, displaying their vnum, title, and by whom they were created.
+</Desc>
+<See>HELP ELIST, HELP SLIST, HELP PEDIT, HELP STORY_UTILITIES
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>ELIST</keyword>
+<Topic>Event List</Topic>
+<Syntax>elist
+</Syntax>
+<Desc>The \tWelist\tn command lists all the events currently created, displaying their vnum, title, and by whom they were created.
+</Desc>
+<See>HELP PLIST, HELP SLIST, HELP EEDIT, HELP STORY_UTILITIES
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>SLIST</keyword>
+<Topic>Script List</Topic>
+<Syntax>slist
+</Syntax>
+<Desc>The \tWslist\tn command lists all the scripts currently in existence, displaying their trigger and reaction strings, the actor involved, and which event they belong to.
+</Desc>
+<See>HELP PLIST, HELP ELIST, HELP SEDIT, HELP STORY_UTILITIES
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>MLIST</keyword>
+<Topic>Mobile Listings</Topic>
+<Syntax>mlist [all/name]
+</Syntax>
+<Desc>While in REDIT, \tWmlist\tn will show the builder the name and vnum of all mobiles within the designated building area.\n\nNote: This command is available within the room editor context.
+</Desc>
+<See>HELP REDIT, HELP MEDIT
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>PEDIT PLOT</keyword>
+<Topic>The Plot Editor</Topic>
+<Syntax>pedit create
+pedit &lt;plot_vnum&gt;
+</Syntax>
+<Desc>Plots are descriptive buckets, containing information about who should be involved in a storyline, who the author is, and what events have been scheduled to run within it.\n\nThe plot editor (PEDIT) works in much the same way as the area editors: once you have entered the plot, you may change fields by using the field name.\n\nNote: Events can only be created from within the plot editor using the \tWevent\tn command.
+</Desc>
+<See>HELP STORY_UTILITIES, HELP EEDIT, HELP SEDIT, HELP PLIST
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>EEDIT EVENT</keyword>
+<Topic>The Event Editor</Topic>
+<Syntax>eedit &lt;event_vnum&gt;
+</Syntax>
+<Desc>Events are smaller buckets than plots, containing the individual scenes which are to be played out within a storyline as well as some information about who is involved, which location is to be used, what mobs are to be brought to the room, and what scripts are to be run.\n\nNote: Events can only be created within the plot editor, and scripts can only be created within the event editor.
+</Desc>
+<See>HELP STORY_UTILITIES, HELP PEDIT, HELP SEDIT, HELP ELIST
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>SEDIT SCRIPT</keyword>
+<Topic>The Script Editor</Topic>
+<Syntax>sedit &lt;script_vnum&gt;
+</Syntax>
+<Desc>At the lowest level of the hierarchical plot creation process, the script editor (SEDIT) allows for the creation of trigger/response strings for actors in the room.\n\nA trigger must be something that the mob would &quot;hear&quot; or &quot;see&quot; occur in the room around them, while a response must be an exact command.\n\nNote: Scripts can only be created within the event editor.
+</Desc>
+<See>HELP STORY_UTILITIES, HELP PEDIT, HELP EEDIT, HELP SLIST
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>RANDOMNAME RANDOMISER</keyword>
+<Topic>Random Name Generator</Topic>
+<Syntax>$f   - insert a random first name
+$l   - insert a random last name
+</Syntax>
+<Desc>Project Twilight is equipped with a name randomiser, which allows builders to insert \tW$f\tn (for a random first name) and \tW$l\tn (for a random last name) into the name string and the short, long, and standardised descriptions of mobiles.\n\nAny mob made which is NOT a uniquely named creature (i.e. you want it to ALWAYS repop with the same name as a plot device or something of that sort) should make use of these variables.\n\nThe variables should be used for:\n  Most shopkeepers, standardised mobs (like the joggers or police), and anything which does not need a specifically chosen name, excluding wild animals of course.
+</Desc>
+<See>HELP MEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>3</level>
+<keyword>STORY_UTILITIES</keyword>
+<Topic>Storyteller Utilities</Topic>
+<Syntax>pedit/eedit/sedit
+plist/elist/slist
+plotsave
+runevent
+endevent
+</Syntax>
+<Desc>The storyteller utilities are intended to make running stories easier for staff.\n\nPlease be aware that every event MUST be part of a plot to be saved and every script MUST be part of an event to be saved. The code should prevent scripts and events being closed without being attached, but please keep this in mind in case of a loophole existing.
+</Desc>
+<See>HELP PEDIT, HELP EEDIT, HELP SEDIT, HELP PLIST, HELP ELIST, HELP SLIST, HELP PLOTSAVE, HELP RUNEVENT, HELP TIMESTOP
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ECHO PECHO GECHO</keyword>
+<Topic>Sending Messages (Echoes)</Topic>
+<Syntax>echo &lt;message&gt;            - sends a message to the current room
+gecho &lt;message&gt;           - sends a game-wide message
+pecho &lt;player&gt; &lt;message&gt;  - sends a message to a specific player
+</Syntax>
+<Desc>Sometimes as staff we want to send messages which do not fall into the description of any channel. For this reason we have echo commands.\n\n\tWecho\tn sends a message to everyone in the current room.\n\tWgecho\tn broadcasts a message to all players in the game.\n\tWpecho\tn sends a private message to a specific player.
+</Desc>
+<See>HELP GOTO
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>GOTO POOFIN POOFOUT</keyword>
+<Topic>Getting Around Rapidly</Topic>
+<Syntax>goto &lt;target/room vnum&gt;
+poofin [message]    - sets the message for the target room
+poofout [message]   - sets the message for the source room
+</Syntax>
+<Desc>The \tWgoto\tn command allows for rapid arrivals and departures from rooms in the game. This is a semi-OOC command, so be prepared to cover for it if necessary.\n\nA message is sent to both the target room and the original room when using goto. These messages may be customized using the \tWpoofin\tn and \tWpoofout\tn commands.\n\nNote: The poofin and poofout messages MUST contain your character&apos;s name.
+</Desc>
+<See>HELP ECHO
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_ARMOR</keyword>
+<Topic>Armor Item Values</Topic>
+<Desc>Item values for armor type objects:\n\n  \tWvalue 0\tn    ac pierce\n  \tWvalue 1\tn    ac bash\n  \tWvalue 2\tn    ac slash\n  \tWvalue 3\tn    ac exotic (magic)\n  \tWvalue 4\tn    unused
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_CONTAINER</keyword>
+<Topic>Container Item Values</Topic>
+<Desc>Item values for container type objects:\n\n  \tWvalue 0\tn    weight capacity\n  \tWvalue 1\tn    flags: closeable, pickproof, closed, locked\n  \tWvalue 2\tn    key vnum\n  \tWvalue 3\tn    unused\n  \tWvalue 4\tn    unused\n\nAn up-to-date list of flags can be obtained by typing \tW? CONTAINER\tn.
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_FURNITURE</keyword>
+<Topic>Furniture Item Values</Topic>
+<Desc>Item values for furniture type objects:\n\n  \tWvalue 0\tn    maximum people which can be held by the furniture\n  \tWvalue 1\tn    maximum weight which it can hold\n  \tWvalue 2\tn    flags: sit_at, sit_on, etc.\n  \tWvalue 3\tn    heal bonus (currently disabled)\n  \tWvalue 4\tn    unused\n\nAn up-to-date list of flags can be obtained by typing \tW? FURNITURE\tn.
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_DRINK</keyword>
+<Topic>Drink Item Values</Topic>
+<Desc>Item values for drink container type objects:\n\n  \tWvalue 0\tn    capacity\n  \tWvalue 1\tn    current quantity\n  \tWvalue 2\tn    liquid type\n  \tWvalue 3\tn    poisoned?\n  \tWvalue 4\tn    unused\n\nAn up-to-date list of liquid types can be obtained by typing \tW? LIQUID\tn.
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_FOOD</keyword>
+<Topic>Food Item Values</Topic>
+<Desc>Item values for food type objects:\n\n  \tWvalue 0\tn    hours of food value\n  \tWvalue 1\tn    unused\n  \tWvalue 2\tn    unused\n  \tWvalue 3\tn    poisoned?\n  \tWvalue 4\tn    unused
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_LIGHT</keyword>
+<Topic>Light Item Values</Topic>
+<Desc>Item values for light type objects:\n\n  \tWvalue 0\tn    unused\n  \tWvalue 1\tn    unused\n  \tWvalue 2\tn    hours of light available (0 = dead, -1 or 999 = infinite)\n  \tWvalue 3\tn    unused\n  \tWvalue 4\tn    unused
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_MONEY</keyword>
+<Topic>Money Item Values</Topic>
+<Desc>Item values for money type objects:\n\n  \tWvalue 0\tn    value in cents\n  \tWvalue 1\tn    unused\n  \tWvalue 2\tn    unused\n  \tWvalue 3\tn    unused\n  \tWvalue 4\tn    unused
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_SCROLL_POTION_PILL ITEM_SCROLL ITEM_POTION ITEM_PILL</keyword>
+<Topic>Scroll, Potion and Pill Item Values</Topic>
+<Desc>Item values for scroll, potion, and pill type objects:\n\n  \tWvalue 0\tn    level\n  \tWvalue 1\tn    spell name 1\n  \tWvalue 2\tn    spell name 2\n  \tWvalue 3\tn    spell name 3\n  \tWvalue 4\tn    unused\n\nAn up-to-date list of spells can be obtained by typing:\n  \tW? SPELLS [ignore/attack/defend/self/object/all]\tn
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_STAFF_WAND ITEM_STAFF ITEM_WAND</keyword>
+<Topic>Staff and Wand Item Values</Topic>
+<Desc>Item values for staff and wand type objects:\n\n  \tWvalue 0\tn    level\n  \tWvalue 1\tn    max charges\n  \tWvalue 2\tn    current charges\n  \tWvalue 3\tn    spell name\n  \tWvalue 4\tn    unused\n\nAn up-to-date list of spells can be obtained by typing:\n  \tW? SPELLS [ignore/attack/defend/self/object/all]\tn
+</Desc>
+<See>HELP OEDIT, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_WEAPON</keyword>
+<Topic>Weapon Item Values</Topic>
+<Desc>Item values for weapon type objects:\n\n  \tWvalue 0\tn    weapon class\n  \tWvalue 1\tn    number of dice to roll\n  \tWvalue 2\tn    type of dice to roll\n  \tWvalue 3\tn    weapon type\n  \tWvalue 4\tn    special weapon type\n  \tWvalue 5\tn    ammo reference (firearms only)\n\nAn up-to-date list of values can be obtained by typing:\n  \tW? WCLASS\tn\n  \tWhelp WEAPON_DICE\tn\n  \tW? WEAPON\tn\n  \tW? WTYPE\tn\n  \tW? AMMOREF\tn
+</Desc>
+<See>HELP OEDIT, HELP ITEM_AMMO, HELP OLC
+</See>
+</Help>
+
+<Help>
+<level>2</level>
+<keyword>ITEM_AMMO</keyword>
+<Topic>Ammo Item Values</Topic>
+<Desc>Item values for ammo type objects:\n\n  \tWvalue 0\tn    number of rounds\n  \tWvalue 1\tn    damage dice (1-9)\n  \tWvalue 2\tn    range (in rooms)\n  \tWvalue 3\tn    weapon type\n  \tWvalue 4\tn    special weapon type\n  \tWvalue 5\tn    ammo reference\n\nAn up-to-date list of values can be obtained by typing:\n  \tW? WEAPON\tn\n  \tW? WTYPE\tn\n  \tW? AMMOREF\tn
+</Desc>
+<See>HELP OEDIT, HELP ITEM_WEAPON, HELP OLC
+</See>
+</Help>
+
+
+<Help>
+<level>0</level>
+<keyword>EMOTE_FIGHTING BRAWLING</keyword>
+<Topic>Emote Fighting</Topic>
+<Desc>Emote fighting is a player skill, and one which should be encouraged and developed. It involves both careful scripting of movements to allow for shifting weight or position and recognising that the combat is an interactive one, and not railroading the conflict through use of closed emotes.
+
+Keep in mind that the use of closed emotes on other characters is a fairly serious faux pas and will create instant antagonism. A closed emote forces an outcome on another player without giving them a chance to respond -- for example, emoting that you punch someone and they fall down, rather than emoting that you swing a punch and letting them decide the result.
+
+Emote fighting can be used alongside the coded combat system, using \tWemote\tn and \tWdmote\tn during combat rounds to add narrative flavor to your mechanical attacks. Good emote fighters combine the mechanical system with descriptive roleplay for the best experience.
+</Desc>
+<See>HELP ROLEPLAYING, HELP EMOTE, HELP COMBOS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>COMBOS COMBINATION COMBAT FIGHTING KILL BATTLE STRIKE ATTACK BLOW BRAWLING PUNCHING</keyword>
+<Topic>The Combat System</Topic>
+<Desc>Project Twilight uses a combo-based combat system. Individual combat moves can be used on their own or chained together into combinations for greater effect. Each move you execute is added to your current combo chain.
+
+The combat system is based on \tWaction points (AP)\tn, \tWbalance\tn, and \tWdice rolls\tn. Each move costs a certain number of AP to perform, and rolls are made using your relevant stat + ability versus a difficulty number. Your balance affects the difficulty of certain moves.
+
+\tWStrike Moves:\tn
+  lblow, rblow       - Left/right hand strikes (1 AP each)
+  kick, skick        - Front kick and spinning kick (1-2 AP)
+
+\tWDefense Moves:\tn
+  lblock, rblock     - Block attacks from left/right (1 AP each)
+  fblock             - Block kicks (1 AP)
+
+\tWGrapple Moves:\tn
+  lgrab, rgrab       - Left/right hand grapple (1 AP each)
+
+\tWMovement Moves:\tn
+  cjump              - Leap into the air for aerial attacks (2 AP)
+  sweep              - Attempt to knock opponent down (2 AP)
+
+\tWControl:\tn
+  cstop (cx)         - Cancel your current combat move
+</Desc>
+<See>HELP CSTOP, HELP CJUMP, HELP LBLOW, HELP KICK, HELP BLOCK, HELP GRAB, HELP SWEEP, HELP EMOTE_FIGHTING
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>CSTOP CX STOP</keyword>
+<Topic>Stopping a Combat Move</Topic>
+<Syntax>cstop
+cx
+</Syntax>
+<Desc>\tWcstop\tn (or its shortcut \tWcx\tn) cancels your current combat move before it completes. This costs \tW1 AP\tn and rolls \tWDEX + DODGE vs difficulty 3\tn.
+
+Be aware that canceling a move will prevent you from making another combat move for the remainder of the round.
+</Desc>
+<See>HELP COMBOS, HELP LBLOW, HELP KICK, HELP BLOCK
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>JUMP CJUMP</keyword>
+<Topic>Combat Jumping</Topic>
+<Syntax>cjump
+</Syntax>
+<Desc>\tWcjump\tn allows you to leap into the air to perform aerial attacks. This costs \tW2 AP\tn and rolls \tWSTR + ATHLETICS\tn versus a difficulty that scales based on your current balance.
+
+Jumping can set up more powerful aerial attack combinations but is riskier when your balance is poor.
+</Desc>
+<See>HELP COMBOS, HELP LBLOW, HELP KICK, HELP SWEEP
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>KICK SKICK</keyword>
+<Topic>Combat Kicking</Topic>
+<Syntax>kick
+skick
+</Syntax>
+<Desc>\tWkick\tn performs a front kick at your opponent. It costs \tW1 AP\tn and rolls \tWDEX + BRAWL vs difficulty 7\tn.
+
+\tWskick\tn performs a spinning kick, a more powerful but harder-to-land variant. It costs \tW2 AP\tn and rolls \tWDEX + BRAWL vs difficulty 8\tn.
+
+Kicks can be blocked by opponents using \tWfblock\tn.
+</Desc>
+<See>HELP COMBOS, HELP LBLOW, HELP GRAB, HELP BLOCK, HELP SWEEP
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>BLOCK LBLOCK LX RBLOCK RX FBLOCK FX</keyword>
+<Topic>Blocking Attacks</Topic>
+<Syntax>lblock
+rblock
+fblock
+</Syntax>
+<Desc>Block commands prepare a defensive block against incoming attacks. Each block costs \tW1 AP\tn and rolls \tWDEX + DODGE vs difficulty 3\tn.
+
+  \tWlblock\tn (or \tWlx\tn) - Prepares a block against attacks from the left.
+  \tWrblock\tn (or \tWrx\tn) - Prepares a block against attacks from the right.
+  \tWfblock\tn (or \tWfx\tn) - Prepares a block against kicks.
+
+Blocks may stop attacks from getting through to injure you.
+
+Note: The \tWblock\tn command by itself is not a combat command. It is used to block a player from your RP Join list.
+</Desc>
+<See>HELP COMBOS, HELP LBLOW, HELP KICK, HELP SWEEP
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>LBLOW RBLOW</keyword>
+<Topic>Striking Your Opponent</Topic>
+<Syntax>lblow &lt;target&gt;
+rblow &lt;target&gt;
+</Syntax>
+<Desc>\tWlblow\tn and \tWrblow\tn attempt to strike your target with your left or right hand respectively. Each costs \tW1 AP\tn and rolls \tWDEX + MELEE (or BRAWL) vs difficulty 6\tn, using whichever combat skill is appropriate for your equipped weapon or bare fists.
+
+There is one slightly unrealistic factor to the handed blows -- the system assumes that you have swapped hands with any weapon wielded to strike from the other side.
+</Desc>
+<See>HELP COMBOS, HELP KICK, HELP GRAB, HELP SWEEP
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>GRAB LGRAB RGRAB</keyword>
+<Topic>Grabbing Your Opponent</Topic>
+<Syntax>lgrab
+rgrab
+</Syntax>
+<Desc>\tWlgrab\tn and \tWrgrab\tn attempt to grapple your opponent with your left or right hand respectively. Each costs \tW1 AP\tn and rolls \tWDEX + BRAWL vs difficulty 8\tn.
+
+Opponents you have grabbed are easier to hit with subsequent attacks.
+</Desc>
+<See>HELP COMBOS, HELP LBLOW, HELP KICK, HELP SWEEP
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SWEEP</keyword>
+<Topic>Combat Sweeping</Topic>
+<Syntax>sweep &lt;target&gt;
+</Syntax>
+<Desc>\tWsweep\tn attempts to knock your opponent over by swinging your leg at their knees. It costs \tW2 AP\tn and rolls \tWDEX + BRAWL vs difficulty 6\tn.
+
+A successful sweep can knock your opponent down, giving you an advantage in the fight.
+</Desc>
+<See>HELP COMBOS, HELP LBLOW, HELP KICK, HELP GRAB
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>TOSS</keyword>
+<Topic>Coin Toss</Topic>
+<Syntax>toss
+</Syntax>
+<Desc>\tWtoss\tn flips a coin, producing a random heads or tails result. A simple toy, but surprisingly addictive.
+</Desc>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>GET TAKE DROP PUT GIVE</keyword>
+<Topic>Get, Take, Drop, Put, Give</Topic>
+<Syntax>get &lt;item&gt;
+get &lt;item&gt; &lt;container&gt;
+take &lt;item&gt;
+take &lt;item&gt; &lt;container&gt;
+drop &lt;item&gt;
+drop &lt;amount&gt; coins
+put &lt;item&gt; &lt;container&gt;
+give &lt;item&gt; &lt;target&gt;
+give &lt;amount&gt; coins &lt;target&gt;
+</Syntax>
+<Desc>These commands allow you to manipulate items in the world around you.
+
+\tWget\tn and \tWtake\tn pick up an item from the ground and place it in your inventory. You can also get or take an item from inside a container by specifying the container name.
+
+\tWdrop\tn places an item from your inventory onto the ground. You may also drop a specific amount of coins.
+
+\tWput\tn places an item from your inventory into a container.
+
+\tWgive\tn hands an item or an amount of coins to another character.
+
+You must be at least resting to use these commands.
+</Desc>
+<See>HELP WEAR, HELP STEAL, HELP INVENTORY
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>WEAR HOLD WIELD REMOVE WEARING HOLDING WIELDING REMOVING</keyword>
+<Topic>Handling Items: Wearing, Holding, Wielding, Removing</Topic>
+<Syntax>wear &lt;item&gt;
+wear all
+hold &lt;item&gt;
+wield &lt;weapon&gt;
+remove &lt;item&gt;
+remove all
+</Syntax>
+<Desc>These commands allow you to equip and unequip items on your character.
+
+\tWwear\tn puts on a piece of clothing or armor in the appropriate equipment slot. Using \tWwear all\tn will attempt to wear everything in your inventory that can be worn.
+
+\tWhold\tn holds an item in your hand.
+
+\tWwield\tn readies a weapon for combat.
+
+\tWremove\tn takes off an item that is currently held, wielded, or worn. Using \tWremove all\tn will attempt to remove all equipped items.
+
+You must be at least resting to use these commands. Note that characters in bat or wolf form cannot wear equipment.
+</Desc>
+<See>HELP GET, HELP INVENTORY
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>STEAL STEALING THEFT SHOPLIFTING SHOPLIFT PICKPOCKET LOOT ROB</keyword>
+<Topic>Stealing - The Art of the Thief</Topic>
+<Syntax>steal &lt;item&gt; &lt;target&gt;
+</Syntax>
+<Desc>Theft, while looked down upon by the authorities, is something which every society must deal with. Stealing generally involves some modicum of stealth, and in some cases may require an understanding of how people secure their belongings.
+
+To steal an item, you must be standing. The attempt is resolved by rolling your Dexterity + Subterfuge against the target&apos;s Dexterity + Alertness at a difficulty ranging from 6 to 10 depending on the circumstances.
+
+Be warned that failed theft attempts may have serious consequences, both from the target and from any law enforcement in the area.
+</Desc>
+<See>HELP STEALTH, HELP SECURITY
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>BRIBE BRIBERY BRIBES</keyword>
+<Topic>Bribes</Topic>
+<Syntax>bribe &lt;target&gt; &lt;amount&gt;
+bribe &lt;target&gt; &lt;amount&gt; &lt;victim&gt;
+</Syntax>
+<Desc>Bribes grease the wheels of power, enabling people to clear a police record or to increase the influence of an elected official.
+
+You can bribe police officers or court officials to look the other way or to take action on behalf of another person. Specify a victim name when bribing on behalf of someone else.
+
+The success of a bribe is determined by rolling your Charisma + Empathy against a difficulty of 9. The cost of the bribe is the dollar amount multiplied by 50. You must be at least resting to attempt a bribe.
+</Desc>
+<See>HELP MONEY
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>LOCK UNLOCK PATHS DIRECTIONS WINDOWS DOORS OPENING CLOSE CLOSING</keyword>
+<Topic>Doors, Paths, and Windows</Topic>
+<Syntax>open &lt;direction|door name&gt;
+close &lt;direction|door name&gt;
+lock &lt;direction|door name&gt;
+unlock &lt;direction|door name&gt;
+</Syntax>
+<Desc>Exits in Project Twilight can come in three forms: doors, windows, or open walkways.
+
+When viewing exits, doors are displayed in parentheses (), windows are displayed in brackets [], and open walkways are displayed without any surrounding symbols.
+
+The main difference between doors and windows is that windows can be seen through when closed.
+
+Locking and unlocking a door or container requires the appropriate key. Use the \tWopen\tn and \tWclose\tn commands to open or shut doors and windows, and the \tWlock\tn and \tWunlock\tn commands with the correct key in your inventory to secure or unsecure them.
+</Desc>
+<See>HELP EXIT
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>EXIT</keyword>
+<Topic>Movement and Exits</Topic>
+<Syntax>&lt;direction&gt;
+exits
+exits auto
+</Syntax>
+<Desc>These are the basic commands for moving about, which are essential for getting around and enjoying the sights of the city.
+
+To move, type a direction: \tWnorth\tn, \tWsouth\tn, \tWeast\tn, \tWwest\tn, \tWup\tn, or \tWdown\tn.
+
+The \tWexits\tn command gives a list of visible exits from your current location. Using \tWexits auto\tn toggles the automatic display of exits whenever you enter a room.
+</Desc>
+<See>HELP RUN, HELP ENTER, HELP LEAVE, HELP LOCK
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>FOOD EAT DRINK HUNGER THIRST NOURISHMENT THIRSTY</keyword>
+<Topic>Nourishment: Eating and Drinking</Topic>
+<Syntax>eat &lt;food item&gt;
+drink &lt;fountain|drink container&gt;
+</Syntax>
+<Desc>To stave off hunger and thirst, most, if not all, characters must eat and drink. Food items can be consumed with the \tWeat\tn command, which will increase your fullness. Liquids can be consumed from fountains or drink containers using the \tWdrink\tn command.
+
+The only exception to the need for mortal nourishment is vampires, who sustain themselves by feeding from living vessels rather than eating conventional food. Vampires cannot eat regular food.
+</Desc>
+<See>HELP FEED
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>RESTING SLEEPING SITTING STANDING</keyword>
+<Topic>Sit, Stand, Rest, Sleep, and Wake</Topic>
+<Syntax>sit [on|at|in] [furniture]
+stand [on|at|in] [furniture]
+rest [on|at|in] [furniture]
+sleep [on|at|in] [furniture]
+wake
+</Syntax>
+<Desc>These commands are used for changing your character&apos;s position. Resting and sleeping allow your character to recuperate and recover from injury more quickly. They also serve a roleplaying purpose by giving a visible pose to your character.
+
+You may optionally specify a piece of furniture to sit on, rest in, sleep on, and so forth by including \tWon\tn, \tWat\tn, or \tWin\tn followed by the furniture name.
+
+Note that sleep may be blocked if your character is affected by a supernatural sleep effect.
+</Desc>
+<See>HELP REST
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>PREFIX REPEATING REPETITION</keyword>
+<Topic>Prefix and Repetition of Commands</Topic>
+<Syntax>!
+prefix &lt;text&gt;
+prefix
+</Syntax>
+<Desc>Once you have entered a command, that command can be repeated by typing \tW!\tn and pressing enter to execute the exact same command again.
+
+If you want to repeat the same command multiple times with different arguments, the \tWprefix\tn command can be used to set a precursor that is automatically prepended to anything you type in subsequent commands.
+
+For example, using \tWprefix say\tn would cause everything you type afterward to be treated as a say command. Type \tWprefix\tn with no argument to clear the current prefix.
+</Desc>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>CONFIG DISPLAY PROMPTS</keyword>
+<Topic>Configuration and Prompts</Topic>
+<Syntax>config
+prompt &lt;format&gt;
+prompt all
+prompt default
+</Syntax>
+<Desc>The \tWconfig\tn command displays your current player configuration settings in a table, including options such as autoexit, compact mode, prompt display, and other preferences.
+
+The \tWprompt\tn command allows you to customize what information is displayed in your command prompt. The prompt format has a maximum length of 50 characters. Use \tWprompt all\tn to show all available information, or \tWprompt default\tn to restore the default prompt.
+
+The variables available for prompts are:
+  %h - health                %e - exits
+  %x - experience (spending) %g - experience (gifting)
+  %j - job energy            %d - dollars
+  %c - cents                 %n - new line
+  %a - rage/blood/glamour    %A - max rage/blood/glamour
+  %b - gnosis/humanity       %B - max gnosis/humanity
+  %t - time only             %T - time with date
+  %s - stock ticker          %% - literal % sign
+  %o - OLC editor type       %O - OLC editor vnum
+</Desc>
+<See>HELP SCORE
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>DESCRIPTIONS DESCRIBE</keyword>
+<Topic>Describing Your Character</Topic>
+<Syntax>description
+description &lt;text&gt;
+</Syntax>
+<Desc>The description of a character is a vital component of your experience here at Project Twilight. It is what others see when they look at you. As such, everyone should make an effort to have a complete and concise description of their character.
+
+The \tWdescription\tn command opens the string editor, allowing you to write or modify your character&apos;s visible description line by line.
+
+Your description should include, but is not limited to:
+  - Eye color (blue, green, black, brown, amber, etc.)
+  - Skin color (pale, brown, white, tan, etc.)
+  - Facial appearance (plain, ancient, angry, rugged, gentle, etc.)
+  - Hair length (shoulder length, short, shaved, bald, long, etc.)
+  - Hair style (curly, wavy, straight, smooth, thick, etc.)
+  - Body build (muscular, thin, lithe, broad, average, etc.)
+  - Facial hair (none, goatee, beard, clean shaven, etc.)
+  - Hair color (black, blonde, red, auburn, brown, grey, etc.)
+
+A complete description is required before you can receive experience from roleplaying.
+</Desc>
+<See>HELP SWITCHDESC, HELP CHARACTERISATION
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>DNAME UNAME DDESC UDESC</keyword>
+<Topic>Descriptions and Names in Parallel Planes</Topic>
+<Syntax>dname &lt;string&gt;
+uname &lt;string&gt;
+ddesc
+udesc
+</Syntax>
+<Desc>Because of the multi-planar nature of the World of Darkness, it is necessary for every room to have three separate descriptions and names.
+
+The regular room name and description are seen by all players initially and until they step into the Umbra or the Dreaming. The other descriptions and names are for those currently within those parallel planes.
+
+\tWdname\tn sets the room name as seen from the Dreaming.
+\tWuname\tn sets the room name as seen from the Umbra.
+\tWddesc\tn opens the string editor for the room description seen in the Dreaming.
+\tWudesc\tn opens the string editor for the room description seen in the Umbra.
+</Desc>
+<See>HELP DESCRIPTIONS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>EMOTES PMOTES DPMOTES DMOTES POSES ROOMECHOES</keyword>
+<Topic>Emotes - Free-form Actions</Topic>
+<Syntax>emote &lt;action&gt;
+pmote &lt;action&gt;
+dmote &lt;action&gt;
+dpmote &lt;action&gt;
+</Syntax>
+<Desc>Emotes allow greater breadth of actions than socials, providing free-form expression for roleplaying. You must be at least resting to use emotes.
+
+\tWemote\tn displays your action to everyone in the room. The output appears as your name followed by the action text.
+
+\tWpmote\tn is a personal emote directed at a specific player. The target character will see &quot;you&quot; in place of their name, making the action feel more personal and directed.
+
+\tWdmote\tn allows for a scene-setting statement to be made, appearing as a room-wide narrative without your name prefixed.
+
+\tWdpmote\tn combines the features of dmote and pmote, allowing a scene-setting statement that is also directed at a specific target who will see &quot;you&quot; instead of their name.
+</Desc>
+<See>HELP RP, HELP SOCIALS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>RP ROLEPLAYING ROLE-PLAYING</keyword>
+<Topic>Roleplaying - Playing a Character</Topic>
+<Desc>Roleplaying is the art of adopting a new persona, of creating a fictional character and responding to events as that character would, rather than as you as a player would respond. This is a rather confusing distinction sometimes, and it does generally require some practice, but adapting to a roleplaying environment can be a very rewarding experience.
+
+In essence, roleplaying is a form of free-form improvised acting. The character may be close in personality to the actor, but there must always be a certain degree of separation maintained to allow the character to live and grow as a separate entity. Good roleplaying almost always sees a character grow and develop, taking on a life of its own and becoming a very definable and recognizable creature.
+
+Project Twilight is meant as a roleplaying environment. We are seeking to create a world of living beings whose interactions with one another and their world at large create engaging stories of near boundless scope. We hope that you will join us in making this dream a reality.
+
+Closed emotes (emotes which define an action as an absolute success) are only reasonable where they do not affect another character or mob within the game. It should also be noted that blatantly abusing other players will have IC repercussions and is not going to endear you to anyone.
+
+You can toggle your RP availability with the \tWrpavailable\tn command, join ongoing RP with \tWrpjoin\tn, and see who is currently roleplaying with \tWrpwho\tn.
+</Desc>
+<See>HELP CHARACTERISATION, HELP RPAVAILABLE, HELP EMOTE_FIGHTING, HELP EMOTES
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>COLORS COLOURS ANSI</keyword>
+<Topic>Color</Topic>
+<Syntax>color
+</Syntax>
+<Desc>Turn on the multicolored fun with Project Twilight&apos;s ANSI color support. Use the \tWcolor\tn command to toggle color output on and off.
+</Desc>
+<See>HELP COLORCODES
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>COLOURCODES COLORCODES</keyword>
+<Topic>Colour Codes</Topic>
+<Desc>Project Twilight allows you the ability to make use of color in your descriptions, communications, prompts, and titles. Simply adding the appropriate colour code at the place in the string where you would like the colour to begin will cause the colour to appear in the output.
+
+The available colour codes are:
+
+  \tRR \trr\tn - Reds          \tBB \tbb\tn - Blues         \tWW\tn - White
+  \tGG \tgg\tn - Greens        \tMM \tmm\tn - Magentas      \tDD \tdd\tn - Black/Grey
+  \tYY \tyy\tn - Yellow        \tCC \tcc\tn - Cyans
+
+Capital letter codes produce bright/bold colors, lowercase codes produce dark/normal colors.
+
+Use \tn to end a colour sequence and return to the default color.
+</Desc>
+<See>HELP COLORS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>BLACKFURIES 'BLACK FURIES'</keyword>
+<Topic>Werewolf Tribe: Black Furies</Topic>
+<Desc>In a tribe composed exclusively of women, the Furies act as defenders of the Goddess and protectors of her most sacred places. Originating in Ancient Greece, the tribe has since inspired great legends of female heroes.\n\nThe Black Furies are identified as \tWFURY\tn on the WHO listing. Their powers are drawn from the tribal discipline tree, and they are capable of assuming wolf and werewolf forms in battle.
+</Desc>
+<See>HELP GAROU, HELP TRIBES
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>CHOICES START LIST PREMISE ADD MINUS DONE</keyword>
+<Topic>Character Creation: Available Choices</Topic>
+<Syntax>list
+premise
+add
+minus
+done
+</Syntax>
+<Desc>During character creation, you have several commands available to build your character:\n\n  \tWlist\tn      - Display available options for the current step.\n  \tWpremise\tn   - Set or view your character&apos;s premise.\n  \tWadd\tn       - Add points to an attribute or ability.\n  \tWminus\tn     - Remove points from an attribute or ability.\n  \tWdone\tn      - Finalize the current step and move on.\n\nUse \tWhelp\tn at any stage for more information on available options.
+</Desc>
+<See>HELP PREMISE, HELP ATTRIBUTES, HELP NEWBIE
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>EMBRACED EMBRACING CHRYSALIS AWAKENING</keyword>
+<Topic>Embrace, Chrysalis, and Awakening</Topic>
+<Syntax>embrace &lt;target&gt;
+chrysalis &lt;target&gt;
+awaken &lt;target&gt;
+</Syntax>
+<Desc>All three commands serve the same fundamental purpose: to transform an ordinary human character into a supernatural creature. Each character who begins as a human must go through one of these transformations to become something more.\n\n  \tWembrace\tn allows a vampire to kill a mortal character and resurrect them as Kindred. Any vampire may create another, however the power of each successive generation is lowered. The childe, as the new Kindred is called, is the responsibility of its creator as far as vampiric society is concerned. The new Kindred inherits their sire&apos;s clan and has their blood pool initialized.\n\n  \tWchrysalis\tn allows a changeling (faerie) to awaken a faerie soul within the human, thus breathing a new life of enchantment into the newly awakened faerie.\n\n  \tWawaken\tn allows a werewolf to bring forth the animal yearnings and abilities which lie latent within a person. The newly awakened Garou has their gnosis and rage initialized.\n\nThe target must first use the \tWconcede\tn command to consent to the transformation. You must be standing to perform this action.
+</Desc>
+<See>HELP CONCEDE
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>FALCONSPIRIT FALCON 'FALCON TOTEM' 'FALCON SPIRIT'</keyword>
+<Topic>Totem: Falcon</Topic>
+<Desc>The Falcon spirit is the spirit of royalty and leadership, and the powers which come from him suit the purposes of nobility.\n\nThe powers associated with Falcon include Awe, Heightened Senses, Iron Hide, Call of the Wild, Dread Gaze, and Silver Claws. The Silver Claws gift, granted at the third level of the Falcon totem, allows a Garou to enhance their claw attacks with silver damage.
+</Desc>
+<See>HELP TOTEM, HELP SILVERCLAWS, HELP GIFTS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>KENNING</keyword>
+<Topic>Ability: Kenning</Topic>
+<Desc>A changeling&apos;s ability to sense the supernatural is measured by the Kenning ability. This talent allows faeries to detect the presence of enchantment, glamour, and other supernatural forces in their surroundings.\n\nKenning is classified as a Talent and is primarily available to changeling characters.
+</Desc>
+<See>HELP TALENTS, HELP ABILITIES
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>TALENTS</keyword>
+<Topic>Abilities: Talents</Topic>
+<Desc>Talents contain those abilities which are extensions of personality traits. They are innate capabilities that can be improved through practice.\n\nThe Talents are:\n  Acting, Alertness, Athletics, Brawl, Dodge, Empathy, Expression,\n  Intimidation, Kenning, Leadership, Primal Urge, Streetwise, Subterfuge\n\nNote: Not all talents are available to all races. Check the \tWabilities\tn command for availability.
+</Desc>
+<See>HELP ACTING, HELP ALERTNESS, HELP ATHLETICS, HELP BRAWL, HELP DODGE, HELP EMPATHY, HELP EXPRESSION, HELP INTIMIDATION, HELP KENNING, HELP LEADERSHIP, HELP PRIMAL URGE, HELP STREETWISE, HELP SUBTERFUGE
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MENTAL 'MENTAL ATTRIBUTE' 'MENTAL ATTRIBUTES' PERCEPTION INTELLIGENCE WITS</keyword>
+<Topic>Attributes: Mental</Topic>
+<Desc>The three mental attributes relate to the intellectual capabilities of the character. The character&apos;s ability for rational thought, perceptiveness, and ability to think on their feet are all summed up by these attributes.\n\n\tWPerception:\tn To see, to hear, to smell, touch and taste -- these are the ways we experience our world. For characters, these senses and their relative acuity are summed up in the Perception attribute. The character&apos;s ability to notice and recognize influences and details in their environment are also examples in which Perception will come into play.\n\n\tWIntelligence:\tn The capacity for rational and lateral thinking are summed up in the character&apos;s Intelligence attribute. Anything which makes use of the character&apos;s ability to think, plan, design or consider a course of action and weigh its merit which does not require a reflexive response is where the character must rely upon their Intelligence score.\n\n\tWWits:\tn Where Intelligence is required for considered action, quick responses and split second decisions are functions of the character&apos;s Wits attribute. Characters with high Wits are quick on their feet and good in tight situations.
+</Desc>
+<See>HELP ATTRIBUTES, HELP PHYSICAL, HELP SOCIAL
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>PHYSICAL 'PHYSICAL ATTRIBUTES' 'PHYSICAL ATTRIBUTE' STRENGTH DEXTERITY STAMINA</keyword>
+<Topic>Attributes: Physical</Topic>
+<Desc>The physical attributes are what makes up a person&apos;s ability to influence the physical world around them.\n\n\tWStrength:\tn The measure of a character&apos;s physical power and ability to exert force on objects. The amount of weight a character can lift or carry, and the amount of damage done in melee or unarmed combat are all places where the Strength attribute comes into play.\n\n\tWDexterity:\tn Agility, speed, aim and grace are all elements of the Dexterity attribute. How good a character is at fine motor skills and how quickly a character can perform a physical activity are all reliant upon the Dexterity attribute.\n\n\tWStamina:\tn The resilience of the body, how much punishment a character can put their body through and how long a character can go without collapsing physically are all evinced by the Stamina attribute.
+</Desc>
+<See>HELP ATTRIBUTES, HELP MENTAL, HELP SOCIAL
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>CLAN 'VAMPIRE CLANS' 'VAMPIRE CLAN' 'KINDRED CLAN' 'KINDRED CLANS'</keyword>
+<Topic>Vampire Clans</Topic>
+<Desc>A Clan in Vampire lore -- often also called &quot;Cainite&quot; lore, as per the descendants of Caine, the first vampire -- refers to all the descendants of a single being of the Third Generation with numerous enough progeny.\n\nIn today&apos;s modern world, thirteen Clans are recognized as such. Each Clan has three clan disciplines that define their unique supernatural abilities.\n\nTo learn more about any one Clan, type \tWhelp &lt;clan name&gt;\tn for details about its nature, weaknesses, and general theme.\n\n\tW  The Camarilla\tn\n  ---------------\n  Ventrue, Toreador, Brujah, Nosferatu, Gangrel, Tremere, Malkavian\n\n\tW  The Sabbat\tn\n  ------------\n  Lasombra, Tzimisce\n\n\tW  The Independents\tn\n  -------------------\n  Ravnos, Assamite, Giovanni, Children of Set (Setites)
+</Desc>
+<See>HELP BLOODLINES, HELP KINDRED, HELP VAMPIRE
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MAKER CRAFTER</keyword>
+<Topic>Career: Maker</Topic>
+<Desc>Maker is a generic name for all those professions whose work involves the creation, preparation and in some cases the repair of inedible objects.\n\nNote: When becoming a Maker, remember to choose a type of object to create lest all of your creations be &quot;trash&quot;.\n\nRequisite Skill: Repair
+</Desc>
+<See>HELP MAKER_COMMANDS, HELP JOBS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SUMMARY TOPICS HELPS</keyword>
+<Topic>Help Summary</Topic>
+<Desc>Type \tWhelp &lt;topic&gt;\tn for more information. All new players are encouraged to make use of the OOC channel (\tWoocchan\tn or \tW]\tn).\n\n[-------------------PROJECT TWILIGHT HELPS--------------------------]\n\n  \tWCharacter Related:\tn  alias, attributes, death, description,\n                      disciplines, dots, gifts, spiritualities, ability,\n                      inventory, equipment, newbie, races, skills,\n                      train, advance, powers\n\n  \tWCommunication:\tn     admin, wizlist, builderhelp, phones, call,\n                      channels, yell, say, oocsay, discreet, immtalk,\n                      motd, laws, oocchan, notes, bugs, ideas, url, credit\n\n  \tWMud-Related:\tn       motd, laws, rules, welcome, disclaimer, admin,\n                      CMW, concept, diku, merc, rom, website, white wolf\n\n  \tWCombat:\tn            See \tWhelp combat\tn for all the details.\n\n  \tWJobs:\tn              voting, alderman, mayor, judges, jobs, nominate\n\n  \tWMiscellaneous:\tn     buy, sell, list, calm, frenzy, color, conceal,\n                      conscience, courage, willpower, self-control, droll,\n                      embrace, feed, gift (Important), get, take, drop,\n                      investigate, research, run, chase, flee, toss,\n                      virtue, wear, hold, wield
+</Desc>
+<See>HELP NEWBIE, HELP COMBAT, HELP JOBS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MERC</keyword>
+<Topic>Merc Credits</Topic>
+<Desc>This mud is based on Merc 2.1, created by Furey, Hatchet, and Kahn. Merc 2.1 is available as Merc_21.tar.gz from ftp.tcp.com and ftp.math.okstate.edu.\n\nE-mail to &apos;majordomo@webnexus.com&apos; to join the merc mailing list.\n\nThanks to ...\n  ... Diku Mud for starting it all.\n  ... The Free Software Foundation and DJ Delorie for kick-ass tools.\n  ... Copper Mud and Alfa Mud for releasing their code and worlds.\n  ... Aod of Generic for ... well, everything. You&apos;re a hoopy frood, Aod.\n  ... Alander for many ideas and contributions.\n  ... John Brothers of Silly for permission to use Silly code and worlds.\n  ... Zrin for administering the mailing list.\n  ... Abaddon for proofreading our comm.c.\n  ... Hind, Quin, Vic, Diavolo, Oleg, Trienne, and others for porting help.\n  ... Diavolo, Grodyn, Morgenes, and others for code and bug fixes.\n  ... Raff, Doctor, VampLestat, Nirrad, Tyrst, PinkF, Chris, Glop for worlds.\n  ... the players and imps of Mud Dome, Final Mud, Mud Lite, Vego Mud, Rivers\n      of Mud, Ruhr Mud, and Mystic Realms for bug reports, ideas, new code,\n      and hours of enjoyment.
+</Desc>
+<See>HELP ROM, HELP DIKU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>ROM</keyword>
+<Topic>ROM Credits</Topic>
+<Desc>ROM started in early February 1993, using Merc 1.0 code. In July of 1993, ROM II was started, eventually replacing the original ROM. ROM was up for a little over a year, after which the code (version 2.3) was released, and various other ROM muds were started, including Rivers of Mud under a new management (Zump&apos;s ROM), at rom.org 9000.\n\nThe following people contributed to the ROM flavor of the merc base code:\n\n  Socials -- Kelsey and Liralen\n  New, Improved Valhalla -- Liralen\n  Puff&apos;s new special proc and improved poofin/poofout code -- Seth\n  Maps and map shop -- Ezra, Regnan (Olympus)\n  Nirvana zone -- Forstall (mobiles rewritten by Alander)\n  Mob Factory -- Pinkfloyd (originally written for ROM, mobiles rewritten by Alander)\n  Geographically correct Midgaard (tm) -- Alander\n  Ideas and playtesting -- Thousands of dedicated mudders around the world\n  Beta testing -- Ken Blosser, Doug Araya, and Sherene Neil\n\nNew Thalos area was donated by Onivel of Jedi, who was also the originator of the ASCII flags used in the zone files.\n\nROM 2.4 was developed during Alander&apos;s time with Moosehead mud. Additional code was written by Seth Scott (enchant armor, the new poofin/poofout), and many contributions and ideas from the Merc list were used.\n\nThe new features of 2.4 were largely produced in bull sessions with Gabrielle Taylor and Brian Moore, without whom this release wouldn&apos;t have happened. In particular, the new privacy code, furniture, and wiznet are largely the results of Gabrielle&apos;s ideas.
+</Desc>
+<See>HELP MERC, HELP DIKU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MOONSHIELD 'MOON SHIELD'</keyword>
+<Topic>Gift: Moon Shield</Topic>
+<Syntax>moonshield
+</Syntax>
+<Desc>Moon Shield is a Level 2 Werewolf gift that calls upon Luna&apos;s armor to protect the Garou. When activated, it grants the werewolf additional health levels temporarily. These additional levels are lost first when damage is taken, acting as a buffer against incoming attacks.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SILVERCLAWS</keyword>
+<Topic>Gift: Silver Claws</Topic>
+<Syntax>silverclaws
+</Syntax>
+<Desc>Silver Claws is a Falcon totem gift that allows a Garou to coat their claws with a sheen of silver. With silver claws, the werewolf can do aggravated damage to other Garou and supernatural creatures without suffering the gnosis limitations normally associated with carrying silver.\n\nThe Garou must be standing to activate this gift.
+</Desc>
+<See>HELP FALCONSPIRIT, HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SHAREWILL</keyword>
+<Topic>Gift: Share Will</Topic>
+<Syntax>sharewill &lt;number&gt;
+</Syntax>
+<Desc>Share Will is a Level 4 Ahroun auspice gift. Through use of this power, a Garou can rally her comrades to greater efforts. By expending willpower as well as Gnosis, the werewolf can give all of those in her group an additional willpower point to spend.\n\nThe Garou must be resting or standing still to invoke this gift. This gift has a cooldown period before it can be used again.
+</Desc>
+<See>HELP GIFTS, HELP AHROUN, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>DREAMSPEAK 'DREAM SPEECH'</keyword>
+<Topic>Gift: Dream Speech</Topic>
+<Syntax>dreamspeak &lt;target&gt; &lt;message&gt;
+</Syntax>
+<Desc>Dream Speech is a Level 3 Galliard auspice gift. Using dreamspeak, the Garou can speak into the dreams of another character, communicating with them while they sleep. The target can be anywhere in the world, as long as they are asleep.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GALLIARD, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SNIFFUMBRA 'SCENT FROM BEYOND' SCENT BEYOND</keyword>
+<Topic>Gift: Scent from Beyond</Topic>
+<Syntax>sniffumbra
+</Syntax>
+<Desc>Scent from Beyond is a Level 4 Philodox auspice gift. This gift allows the Garou to sense and perceive the Umbra (spirit world) while remaining in the physical realm. The werewolf can detect spiritual presences and disturbances from across the Gauntlet.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP PHILODOX, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>EXORCISM</keyword>
+<Topic>Gift: Exorcism</Topic>
+<Syntax>exorcism
+</Syntax>
+<Desc>Exorcism is a Level 4 Theurge auspice gift. Through an exorcism, a Theurge can drive away spirits and remove spiritual influences from the room they are in.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP THEURGE, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>BRIDGEWALKER 'BRIDGE WALKER'</keyword>
+<Topic>Gift: Bridge Walker</Topic>
+<Syntax>bridgewalk &lt;target&gt;
+</Syntax>
+<Desc>Bridge Walker is a Level 5 Galliard auspice gift. This powerful gift allows the Garou to travel between the physical world and the Umbra (spirit world), stepping quickly from one place to another by crossing through the spirit realm.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GALLIARD, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>FILCH 'STEAL THE FORGOTTEN'</keyword>
+<Topic>Gift: Steal the Forgotten</Topic>
+<Syntax>filch &lt;target&gt; &lt;object&gt;
+</Syntax>
+<Desc>Steal the Forgotten is a Werewolf gift that allows a Garou to take an item from a target without the target knowing that the object has been taken. Successful use of this gift means the theft goes completely unnoticed.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>TRUESCENT 'TRUE SCENT'</keyword>
+<Topic>Gift: Scent of the True Form</Topic>
+<Syntax>truescent &lt;target&gt;
+</Syntax>
+<Desc>The Scent of the True Form allows a Garou to smell hints of a target&apos;s true shape and detect whether they are more than what they initially appear to be. This gift can pierce through disguises and shapeshifting to reveal a creature&apos;s actual nature.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MINDSPEAK 'MIND SPEECH'</keyword>
+<Topic>Gift: Mental Speech</Topic>
+<Syntax>mindspeak &lt;target&gt; &lt;message&gt;
+</Syntax>
+<Desc>Mental Speech is a Level 3 Metis breed gift. This gift allows direct telepathic communication between the user and their target, enabling silent conversation that cannot be overheard by others.\n\nThe Garou must be resting or standing still to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP METIS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MANSMELL 'SMELL OF MAN'</keyword>
+<Topic>Gift: Smell of Man</Topic>
+<Syntax>mansmell
+</Syntax>
+<Desc>Smell of Man is a Level 1 Werewolf gift. The smell of man can scare away many of Gaia&apos;s creatures. With the use of this gift, the Garou can project the scent of humanity, disguising their werewolf nature from supernatural detection and frightening nearby animals.\n\nThe Garou may be sitting or standing to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SHED</keyword>
+<Topic>Gift: Shed</Topic>
+<Syntax>shed
+</Syntax>
+<Desc>Shed is a Level 2 Werewolf gift. By shedding one&apos;s skin, the Garou gains improved speed and agility, but at the cost of resilience. This tradeoff can be advantageous in situations where quickness is more important than toughness.\n\nThe Garou may be sitting or standing to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>WEAKTOUCH 'WEAK ARM'</keyword>
+<Topic>Gift: Weak Arm</Topic>
+<Syntax>weaktouch &lt;target&gt;
+</Syntax>
+<Desc>With a touch, the Garou can weaken an opponent, giving an advantage against them in combat.\n\n\tWNote:\tn This gift may no longer be available. Check with staff for current status.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>DISQUIET</keyword>
+<Topic>Gift: Disquiet</Topic>
+<Syntax>disquiet &lt;target&gt;
+</Syntax>
+<Desc>Disquiet is a Level 3 Werewolf gift. By causing the target to become depressed and unsettled, the Garou can make its opponent more likely to make mistakes, reducing their confidence and ability to act effectively.\n\nThe Garou may be sitting or standing to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>LUNASBLESSING 'LUNA&apos;S BLESSING'</keyword>
+<Topic>Gift: Luna&apos;s Blessing</Topic>
+<Syntax>lunasblessing
+</Syntax>
+<Desc>Luna&apos;s Blessing is a Level 5 Werewolf gift. By calling on Luna, the Garou is blessed with enhanced strength and stamina, receiving +2 to both Strength and Stamina attributes. This powerful blessing removes the fear of aggravated damage from silver objects.\n\nThe Garou may be sitting or standing to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU, HELP LUNASAVENGER
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>LUNASAVENGER 'LUNA&apos;S AVENGER'</keyword>
+<Topic>Gift: Luna&apos;s Avenger</Topic>
+<Syntax>lunasavenger
+</Syntax>
+<Desc>Luna&apos;s Avenger is a Level 5 Werewolf gift. By calling on Luna, the Garou can transform into a giant silver Crinos form, becoming an enhanced instrument of Luna&apos;s wrath. This powerful combat form grants significant advantages in battle.\n\nThe Garou may be sitting or standing to invoke this gift.
+</Desc>
+<See>HELP GIFTS, HELP GAROU, HELP LUNASBLESSING
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>REPORTER_COMMANDS</keyword>
+<Topic>Job Commands: Reporter</Topic>
+<Syntax>job subject &lt;string&gt;
+job category &lt;string&gt;
+job body
+job post &lt;string&gt;
+</Syntax>
+<Desc>Commands available to Reporters:\n\n  \tWjob subject &lt;string&gt;\tn    - Set the subject of the article.\n  \tWjob category &lt;string&gt;\tn   - Set the category of the article (e.g. tabloid).\n  \tWjob body\tn                - Open up the string editor to write the body of the article.\n  \tWjob post &lt;string&gt;\tn       - Make the article available to newspaper editors.
+</Desc>
+<See>HELP JOBS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>CHEF_COMMANDS</keyword>
+<Topic>Job Commands: Chef</Topic>
+<Syntax>job cook &lt;size&gt; &lt;material&gt; &lt;worn&gt; &lt;name&gt;
+job desc
+job string &lt;string&gt;
+job name &lt;string&gt;
+job sell &lt;object&gt;
+job typelist
+job sizelist
+job materiallist
+job wearlist
+</Syntax>
+<Desc>Commands available to Chefs:\n\n  \tWjob cook &lt;size&gt; &lt;material&gt; &lt;worn&gt; &lt;name&gt;\tn - Produce food.\n  \tWjob desc\tn                                  - Open the string editor for the object description.\n  \tWjob string &lt;string&gt;\tn                       - Set the short description for the object.\n  \tWjob name &lt;string&gt;\tn                         - Set the name for the object.\n  \tWjob sell &lt;object&gt;\tn                         - Prepare an object for sale.\n  \tWjob typelist\tn                               - Display a list of object types.\n  \tWjob sizelist\tn                               - Display a list of object sizes.\n  \tWjob materiallist\tn                           - Display a list of materials.\n  \tWjob wearlist\tn                               - Display a list of wear locations.
+</Desc>
+<See>HELP JOBS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MAKER_COMMANDS RESTRING</keyword>
+<Topic>Job Commands: Maker</Topic>
+<Syntax>job type &lt;object type&gt;
+job make &lt;size&gt; &lt;material&gt; &lt;worn&gt; &lt;name&gt;
+job desc &lt;object&gt;
+job short &lt;object&gt;
+job name &lt;object&gt; &lt;string&gt;
+job long &lt;object&gt; &lt;string&gt;
+job sell &lt;object&gt;
+job typelist
+job sizelist
+job materiallist
+job wearlist
+buy raw &lt;material&gt; [amount] &lt;keeper&gt;
+list rawmaterials &lt;keeper&gt;
+</Syntax>
+<Desc>Commands available to Makers:\n\n  \tWjob type &lt;object type&gt;\tn                       - Set the type of object you will make.\n  \tWjob make &lt;size&gt; &lt;material&gt; &lt;worn&gt; &lt;name&gt;\tn     - Produce an inedible object.\n  \tWjob desc &lt;object&gt;\tn                             - Open the string editor for the object description.\n  \tWjob short &lt;object&gt;\tn                            - Set the short description for the object.\n  \tWjob name &lt;object&gt; &lt;string&gt;\tn                    - Set the name for the object.\n  \tWjob long &lt;object&gt; &lt;string&gt;\tn                    - Set the long description for the object.\n  \tWjob sell &lt;object&gt;\tn                             - Prepare an object for sale.\n  \tWjob typelist\tn                                   - Display a list of object types.\n  \tWjob sizelist\tn                                   - Display a list of object sizes.\n  \tWjob materiallist\tn                               - Display a list of materials.\n  \tWjob wearlist\tn                                   - Display a list of wear locations.\n\nCommands for obtaining raw materials:\n  \tWbuy raw &lt;material&gt; [amount] &lt;keeper&gt;\tn          - Purchase raw materials.\n  \tWlist rawmaterials &lt;keeper&gt;\tn                     - List available raw materials.
+</Desc>
+<See>HELP MAKER, HELP JOBS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>SALESMAN_COMMANDS</keyword>
+<Topic>Job Commands: Salesman</Topic>
+<Syntax>job markup &lt;percentage&gt;
+job buy &lt;object&gt; &lt;keeper&gt;
+job sell &lt;object&gt;
+</Syntax>
+<Desc>Commands available to Salesmen:\n\n  \tWjob markup &lt;percentage&gt;\tn          - Set your profit margin (100% = cost price).\n  \tWjob buy &lt;object&gt; &lt;keeper&gt;\tn       - Buy an object from an NPC shop at cost price.\n  \tWjob sell &lt;object&gt;\tn                - Prepare an object for sale.
+</Desc>
+<See>HELP JOBS
+</See>
+</Help>
+
+<Help>
+<level>0</level>
+<keyword>MUSICIAN_COMMANDS</keyword>
+<Topic>Job Commands: Musician</Topic>
+<Syntax>job jam
+job play &lt;string&gt;
+job sing &lt;string/string/string&gt;
+</Syntax>
+<Desc>Commands available to Musicians:\n\n  \tWjob jam\tn   - Initiates a &quot;jam&quot; session. During a jam session, play and sing commands can be heard from the room the musician is in as well as the adjoining rooms.\n\n  \tWjob play &lt;string&gt;\tn   - A normal emote which will be heard in the room as well as adjoining rooms if jam is on.\n  Example:\n    The command: job play taps out a funky beat on his bass guitar.\n    Will be displayed as: Joe taps out a funky beat on his bass guitar.\n\n  \tWjob sing &lt;string/string/string&gt;\tn   - An emote which will place the lyrics of the song in an organized paragraph. These emotes can be heard in the room the musician is in as well as adjoining rooms if jam is on.\n  Example:\n    The command: job sing sings in a soft voice:/lalala/lalala\n    Will be displayed as:\n    Mary sings in a soft voice:\n    lalala\n    lalala
+</Desc>
+<See>HELP MUSICIAN, HELP JOBS
+</See>
+</Help>
+
 </Helps>

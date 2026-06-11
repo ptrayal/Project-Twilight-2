@@ -2888,7 +2888,11 @@ STOCKS *new_stock()
 	stock->name = NULL;
 	stock->ticker = NULL;
 	stock->last_change = current_time;
+	stock->last_dividend = current_time;
 	stock->cost = 0;
+	stock->cost_basis = 0;
+	stock->price_high = 0;
+	stock->price_low = 0;
 	stock->phase = 0;
 	stock->upordown = 0;
 

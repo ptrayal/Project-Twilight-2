@@ -570,84 +570,116 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
 {
     OBJ_DATA *obj;
     char buf[MSL] = {'\0'};
-    char *msg;
     int iWear = 0;
     int diff = 0;
     bool found = FALSE;
+    const char *disp_name;
+    const char *health_label;
+    const char *health_color;
+    const char *form_name = NULL;
+    char health_bar[16];
+    int filled;
+    int i;
 
-    if ( victim->description[0] == '\0' )
+    /* --- Determine display name --- */
+    if(LOOKS_DIFFERENT(victim))
+        disp_name = ALT_PERS(victim, ch);
+    else
+        disp_name = PERS(victim, ch);
+
+    /* --- Build health bar --- */
+    diff = victim->health + victim->agghealth - 7;
+
+    if(diff <= 0)       { health_label = "Incapacitated"; health_color = "\tR"; }
+    else if(diff == 1)  { health_label = "Critical";      health_color = "\tR"; }
+    else if(diff == 2)  { health_label = "Badly Hurt";    health_color = "\tR"; }
+    else if(diff <= 4)  { health_label = "Hurt";          health_color = "\tO"; }
+    else if(diff <= 6)  { health_label = "Weakened";       health_color = "\tY"; }
+    else                { health_label = "Full Health";   health_color = "\tG"; }
+
+    filled = (diff < 0) ? 0 : (diff > 7 ? 7 : diff);
+    for(i = 0; i < 7; i++)
+        health_bar[i] = (i < filled) ? '=' : '-';
+    health_bar[7] = '\0';
+
+    /* --- Determine form --- */
+    if(IS_SET(victim->form, FORM_MIST))        form_name = "Ghostly Mist";
+    else if(IS_SET(victim->form, FORM_BLOOD))  form_name = "Pool of Blood";
+    else if(IS_SET(victim->form, FORM_SHADOW)) form_name = "Dark Shadow";
+    else if(IS_SET(victim->form, FORM_HORRID)) form_name = "Horrid Beast";
+    else if(IS_SET(victim->form, FORM_ASH))    form_name = "Pile of Ashes";
+
+    /* --- Card header --- */
+    send_to_char("\tY ___________________________________________________________________________\tn\n\r", ch);
+    send_to_char(Format("\tY|\tn \tB%-73s\tn \tY|\tn\n\r", disp_name), ch);
+    send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+
+    /* --- Status row --- */
     {
-        act( "You see nothing special about $M.", ch, NULL, victim, TO_CHAR, 1);
+        char vis[MSL], row[MSL];
+        int vlen, pad;
+
+        if(form_name != NULL)
+        {
+            snprintf(vis, sizeof(vis), "Health: [%s] %s | Form: %s", health_bar, health_label, form_name);
+            snprintf(row, sizeof(row), "\tWHealth:\tn [%s%s\tn] %s \tY|\tn \tWForm:\tn %s",
+                health_color, health_bar, health_label, form_name);
+        }
+        else
+        {
+            snprintf(vis, sizeof(vis), "Health: [%s] %s", health_bar, health_label);
+            snprintf(row, sizeof(row), "\tWHealth:\tn [%s%s\tn] %s",
+                health_color, health_bar, health_label);
+        }
+
+        vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+        send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
     }
-    else if (LOOKS_DIFFERENT(victim))
+    send_to_char("\tY|___________________________________________________________________________|\tn\n\r", ch);
+
+    /* --- Description --- */
+    if(victim->description[0] == '\0')
     {
-        send_to_char( victim->alt_description, ch );
+        send_to_char("  You see nothing special about them.\n\r", ch);
+    }
+    else if(LOOKS_DIFFERENT(victim))
+    {
+        send_to_char("  ", ch);
+        send_to_char(victim->alt_description, ch);
+        send_to_char("\n\r", ch);
     }
     else
     {
-        send_to_char( victim->description, ch );
+        send_to_char("  ", ch);
+        send_to_char(victim->description, ch);
+        send_to_char("\n\r", ch);
     }
 
-    if(IS_SET(victim->form, FORM_MIST))
-    {
-        act("$N's form is a ghostly mist.", ch, NULL, victim, TO_CHAR, 1);
-    }
-
-    if(IS_SET(victim->form, FORM_BLOOD))
-    {
-        act("$N's form is a pool of blood.", ch, NULL, victim, TO_CHAR, 1);
-    }
-
-    if(IS_SET(victim->form, FORM_SHADOW))
-    {
-        act("$N's form is a dark shadow.", ch, NULL, victim, TO_CHAR, 1);
-    }
-
-    if(IS_SET(victim->form, FORM_HORRID))
-    {
-        act("$N's form is a horrid beast.", ch, NULL, victim, TO_CHAR, 1);
-    }
-
-    if(IS_SET(victim->form, FORM_ASH))
-    {
-        act("$N's form is a pile of ashes.", ch, NULL, victim, TO_CHAR, 1);
-    }
-
-    diff = victim->health + victim->agghealth - 7;
-
-    if ( diff  <=   0 ) msg = "$N is incapacitated.";
-    else if ( diff  ==   1 ) msg = "$N is having trouble moving.";
-    else if ( diff  ==   2 ) msg = "$N is hurt badly.";
-    else if ( diff  ==   3 ) msg = "$N is hurt.";
-    else if ( diff  ==   4 ) msg = "$N is hurt.";
-    else if ( diff  ==   5 ) msg = "$N has been weakened a little.";
-    else if ( diff  ==   6 ) msg = "$N has been weakened a little.";
-    else                    msg = "$N is at full health.";
-
-    act( msg, ch, NULL, victim, TO_CHAR, 1 );
-
+    /* --- Odd body parts --- */
     odd_parts_to_char(ch, victim);
 
-    for ( iWear = 0; iWear < MAX_WEAR; iWear++ )
+    /* --- Equipment --- */
+    for(iWear = 0; iWear < MAX_WEAR; iWear++)
     {
-        if ( ( obj = get_eq_char( victim, iWear ) ) != NULL
-                &&   can_see_obj( ch, obj ) )
+        if((obj = get_eq_char(victim, iWear)) != NULL
+                && can_see_obj(ch, obj))
         {
-            if ( !found )
+            if(!found)
             {
-                send_to_char( "\n\r", ch );
-                act( "$N is using:", ch, NULL, victim, TO_CHAR, 1 );
+                send_to_char("\n\r  \tW-- \tYEquipment \tW-------------------------------------------------------\tn\n\r", ch);
                 found = TRUE;
             }
-            snprintf(buf, sizeof(buf), "< %-19s > %s\n\r", wear_loc_strings[iWear].name, format_obj_to_char( obj, ch, TRUE ));
-            if((obj != get_eq_char( victim, WEAR_UNDERPANTS ) && obj != get_eq_char( victim, WEAR_UNDERTOP ))
-                    || (obj == get_eq_char( victim, WEAR_UNDERPANTS ) && get_eq_char(victim, WEAR_LEGS) == NULL)
-                    || (obj == get_eq_char( victim, WEAR_UNDERTOP ) && get_eq_char(victim, WEAR_BODY) == NULL)
-              )
-                send_to_char( buf, ch );
+            snprintf(buf, sizeof(buf), "  \tY<\tn \tW%-19s\tn \tY>\tn %s\n\r",
+                wear_loc_strings[iWear].name,
+                format_obj_to_char(obj, ch, TRUE));
+            if((obj != get_eq_char(victim, WEAR_UNDERPANTS) && obj != get_eq_char(victim, WEAR_UNDERTOP))
+                    || (obj == get_eq_char(victim, WEAR_UNDERPANTS) && get_eq_char(victim, WEAR_LEGS) == NULL)
+                    || (obj == get_eq_char(victim, WEAR_UNDERTOP) && get_eq_char(victim, WEAR_BODY) == NULL))
+                send_to_char(buf, ch);
         }
     }
 
+    send_to_char("\n\r", ch);
     return;
 }
 
@@ -987,6 +1019,455 @@ void do_nofollow(CHAR_DATA *ch, char *argument)
         SET_BIT(ch->plr_flags, PLR_NOFOLLOW);
         die_follower( ch );
     }
+}
+
+/*
+ * send_wrapped_card_text — Word-wraps text inside bordered card lines.
+ *
+ * Takes a free-form text string and sends it to the character wrapped
+ * inside yellow card borders:  | text padded to 73 chars |
+ *
+ * Handles:
+ *   - MUD color codes (\t + letter) as zero-width characters
+ *   - Word-boundary wrapping (won't split mid-word)
+ *   - Existing newlines (\n, \r) in the input as forced line breaks
+ *   - Lines shorter than 73 chars are right-padded with spaces
+ *
+ * width: visible character width of the content area (73 for standard card)
+ */
+void send_wrapped_card_text(const char *text, CHAR_DATA *ch, int width)
+{
+    char line[MSL];
+    int lpos;
+    int vcol;
+    const char *p = text;
+    const char *word_start;
+    int word_raw_len, word_vis_len;
+
+    while(*p)
+    {
+        lpos = 0;
+        vcol = 0;
+
+        while(*p && vcol < width)
+        {
+            if(*p == '\n' || *p == '\r')
+            {
+                if(*p == '\r' && *(p+1) == '\n') p++;
+                else if(*p == '\n' && *(p+1) == '\r') p++;
+                p++;
+                break;
+            }
+
+            if(*p == '\t' && *(p+1) != '\0')
+            {
+                line[lpos++] = *p++;
+                line[lpos++] = *p++;
+                continue;
+            }
+
+            if(*p == ' ')
+            {
+                line[lpos++] = *p++;
+                vcol++;
+                continue;
+            }
+
+            word_start = p;
+            word_raw_len = 0;
+            word_vis_len = 0;
+            while(*p && *p != ' ' && *p != '\n' && *p != '\r')
+            {
+                if(*p == '\t' && *(p+1) != '\0')
+                {
+                    p += 2;
+                    word_raw_len += 2;
+                }
+                else
+                {
+                    p++;
+                    word_raw_len++;
+                    word_vis_len++;
+                }
+            }
+
+            if(vcol + word_vis_len > width && vcol > 0)
+            {
+                p = word_start;
+                break;
+            }
+
+            memcpy(line + lpos, word_start, word_raw_len);
+            lpos += word_raw_len;
+            vcol += word_vis_len;
+        }
+
+        while(lpos > 0 && line[lpos-1] == ' ')
+        {
+            lpos--;
+            vcol--;
+        }
+        line[lpos] = '\0';
+
+        {
+            int pad = width - vcol;
+            if(pad < 0) pad = 0;
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", line, pad, ""), ch);
+        }
+    }
+}
+
+/*
+ * show_item_card — Renders a bordered "item card" display for any object.
+ *
+ * Called from do_look when a player inspects an object in inventory or
+ * on the ground. Provides a consistent, LARP-style card layout with
+ * type-specific stat blocks for weapons, armor, containers, etc.
+ *
+ * Color scheme:
+ *   Borders = \tY (yellow)   Headers = \tB (blue)
+ *   Labels  = \tW (white)    Values  = \tn (normal)
+ */
+void show_item_card(OBJ_DATA *obj, CHAR_DATA *ch, char *arg)
+{
+    char *pdesc;
+    const char *cond_str;
+    const char *cond_color;
+
+    /* --- Condition lookup --- */
+    if(obj->condition > 90)      { cond_str = "Excellent";     cond_color = "\tG"; }
+    else if(obj->condition > 80) { cond_str = "Good";          cond_color = "\tG"; }
+    else if(obj->condition > 70) { cond_str = "Fair";          cond_color = "\tY"; }
+    else if(obj->condition > 50) { cond_str = "Worn";          cond_color = "\tY"; }
+    else if(obj->condition > 30) { cond_str = "Poor";          cond_color = "\tO"; }
+    else if(obj->condition > 20) { cond_str = "Bad";           cond_color = "\tR"; }
+    else                         { cond_str = "Falling Apart"; cond_color = "\tR"; }
+
+    /* --- Card header --- */
+    send_to_char("\tY ___________________________________________________________________________ \tn\n\r", ch);
+    send_to_char(Format("\tY|\tn \tB%-73s\tn \tY|\tn\n\r", obj->short_descr), ch);
+    send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+
+    /* --- Property rows and type-specific stats --- */
+    /* Helper approach: build visible text, measure, pad to 73 chars */
+    {
+        char row[MSL], vis[MSL];
+        int vlen, pad;
+
+        /* Row 1: Type | Material */
+        snprintf(vis, sizeof(vis), "Type: %-16s | Material: %s",
+            item_name(obj->item_type), obj->material ? obj->material : "unknown");
+        vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+        snprintf(row, sizeof(row), "\tWType:\tn %-16s \tY|\tn \tWMaterial:\tn %s",
+            item_name(obj->item_type), obj->material ? obj->material : "unknown");
+        send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+
+        /* Row 2: Wear | Quality */
+        snprintf(vis, sizeof(vis), "Wear: %-16s | Quality: %s",
+            flag_string(wear_flags, obj->wear_flags), quality_flags[obj->quality].name);
+        vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+        snprintf(row, sizeof(row), "\tWWear:\tn %-16s \tY|\tn \tWQuality:\tn %s",
+            flag_string(wear_flags, obj->wear_flags), quality_flags[obj->quality].name);
+        send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+
+        /* Row 3: Weight | Condition */
+        snprintf(vis, sizeof(vis), "Weight: %-14d | Condition: %s", obj->weight, cond_str);
+        vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+        snprintf(row, sizeof(row), "\tWWeight:\tn %-14d \tY|\tn \tWCondition:\tn %s%s\tn",
+            obj->weight, cond_color, cond_str);
+        send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+    }
+
+    /* --- Type-specific stats --- */
+    switch(obj->item_type)
+    {
+        case ITEM_WEAPON:
+        {
+            const char *wclass;
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+
+            switch(obj->value[0])
+            {
+                case WEAPON_EXOTIC:  wclass = "Exotic";  break;
+                case WEAPON_FIREARM: wclass = "Firearm"; break;
+                case WEAPON_BLADE:   wclass = "Blade";   break;
+                case WEAPON_BLUNT:   wclass = "Blunt";   break;
+                case WEAPON_WHIP:    wclass = "Whip";    break;
+                case WEAPON_GRAPPLE: wclass = "Grapple"; break;
+                default:             wclass = "Unknown"; break;
+            }
+
+            if(obj->value[0] == WEAPON_FIREARM)
+            {
+                snprintf(vis, sizeof(vis), "FIREARM   Class: %-10s | Difficulty: %-4d | Ammo: %d/%d",
+                    wclass, obj->value[1], obj->value[3], obj->value[4]);
+                vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+                snprintf(row, sizeof(row), "\tBFIREARM\tn   \tWClass:\tn %-10s \tY|\tn \tWDifficulty:\tn %-4d \tY|\tn \tWAmmo:\tn %d/%d",
+                    wclass, obj->value[1], obj->value[3], obj->value[4]);
+                send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            }
+            else
+            {
+                snprintf(vis, sizeof(vis), "WEAPON    Class: %-10s | Difficulty: %-4d | Damage: %d",
+                    wclass, obj->value[1], obj->value[2]);
+                vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+                snprintf(row, sizeof(row), "\tBWEAPON\tn    \tWClass:\tn %-10s \tY|\tn \tWDifficulty:\tn %-4d \tY|\tn \tWDamage:\tn %d",
+                    wclass, obj->value[1], obj->value[2]);
+                send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            }
+            break;
+        }
+
+        case ITEM_ARMOR:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            snprintf(vis, sizeof(vis), "ARMOR     AC (Normal): %-8d | AC (Aggro): %d", obj->value[0], obj->value[1]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tBARMOR\tn     \tWAC (Normal):\tn %-8d \tY|\tn \tWAC (Aggro):\tn %d", obj->value[0], obj->value[1]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_CONTAINER:
+        {
+            const char *status;
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+
+            if(IS_SET(obj->value[1], CONT_LOCKED))       status = "Locked";
+            else if(IS_SET(obj->value[1], CONT_CLOSED))  status = "Closed";
+            else                                          status = "Open";
+
+            snprintf(vis, sizeof(vis), "CONTAINER Capacity: %-6d | Status: %-8s | Key: %s",
+                obj->value[0], status, obj->value[2] > 0 ? "Yes" : "No");
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tBCONTAINER\tn \tWCapacity:\tn %-6d \tY|\tn \tWStatus:\tn %-8s \tY|\tn \tWKey:\tn %s",
+                obj->value[0], status, obj->value[2] > 0 ? "Yes" : "No");
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_DRINK_CON:
+        case ITEM_FOUNTAIN:
+        {
+            char fill[32], row[MSL], vis[MSL];
+            int vlen, pad;
+            const char *label = obj->item_type == ITEM_FOUNTAIN ? "FOUNTAIN" : "DRINK";
+
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            snprintf(fill, sizeof(fill), "%d/%d", obj->value[1], obj->value[0]);
+
+            snprintf(vis, sizeof(vis), "%-9s Liquid: %-12s | Fill: %s%s",
+                label, liq_table[obj->value[2]].liq_name, fill,
+                obj->value[3] ? " [Poisoned]" : "");
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tB%-9s\tn \tWLiquid:\tn %-12s \tY|\tn \tWFill:\tn %s%s",
+                label, liq_table[obj->value[2]].liq_name, fill,
+                obj->value[3] ? " \tR[Poisoned]\tn" : "");
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_FOOD:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            snprintf(vis, sizeof(vis), "FOOD      Nourishment: %d%s",
+                obj->value[0], obj->value[3] ? " [Poisoned]" : "");
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tBFOOD\tn      \tWNourishment:\tn %d%s",
+                obj->value[0], obj->value[3] ? " \tR[Poisoned]\tn" : "");
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_LIGHT:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            if(obj->value[2] < 0)
+                snprintf(vis, sizeof(vis), "LIGHT     Duration: Infinite");
+            else
+                snprintf(vis, sizeof(vis), "LIGHT     Duration: %d hours", obj->value[2]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            if(obj->value[2] < 0)
+                snprintf(row, sizeof(row), "\tBLIGHT\tn     \tWDuration:\tn Infinite");
+            else
+                snprintf(row, sizeof(row), "\tBLIGHT\tn     \tWDuration:\tn %d hours", obj->value[2]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_AMMO:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            snprintf(vis, sizeof(vis), "AMMO      Rounds: %-8d | Damage: %-8d | Range: %d",
+                obj->value[0], obj->value[1], obj->value[2]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tBAMMO\tn      \tWRounds:\tn %-8d \tY|\tn \tWDamage:\tn %-8d \tY|\tn \tWRange:\tn %d",
+                obj->value[0], obj->value[1], obj->value[2]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_BOMB:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            snprintf(vis, sizeof(vis), "BOMB      Fuse: %d rounds [Ticking]", obj->value[0]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tBBOMB\tn      \tWFuse:\tn %d rounds \tR[Ticking]\tn", obj->value[0]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_FURNITURE:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            if(obj->value[3] > 0)
+                snprintf(vis, sizeof(vis), "FURNITURE Capacity: %d people | Heal Bonus: %d", obj->value[0], obj->value[3]);
+            else
+                snprintf(vis, sizeof(vis), "FURNITURE Capacity: %d people", obj->value[0]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            if(obj->value[3] > 0)
+                snprintf(row, sizeof(row), "\tBFURNITURE\tn \tWCapacity:\tn %d people \tY|\tn \tWHeal Bonus:\tn %d", obj->value[0], obj->value[3]);
+            else
+                snprintf(row, sizeof(row), "\tBFURNITURE\tn \tWCapacity:\tn %d people", obj->value[0]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_PORTAL:
+        {
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            if(obj->value[0] < 0)
+                snprintf(vis, sizeof(vis), "PORTAL    Charges: Unlimited");
+            else
+                snprintf(vis, sizeof(vis), "PORTAL    Charges: %d", obj->value[0]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            if(obj->value[0] < 0)
+                snprintf(row, sizeof(row), "\tBPORTAL\tn    \tWCharges:\tn Unlimited");
+            else
+                snprintf(row, sizeof(row), "\tBPORTAL\tn    \tWCharges:\tn %d", obj->value[0]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        case ITEM_GRIMOIRE:
+        {
+            const char *clarity;
+            char row[MSL], vis[MSL];
+            int vlen, pad;
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            switch(obj->value[0])
+            {
+                case 0:  clarity = "Full";    break;
+                case 1:  clarity = "Partial"; break;
+                case 2:  clarity = "Cryptic"; break;
+                default: clarity = "Unknown"; break;
+            }
+            snprintf(vis, sizeof(vis), "GRIMOIRE  Clarity: %-10s | Condition: %d%%", clarity, obj->value[1]);
+            vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+            snprintf(row, sizeof(row), "\tBGRIMOIRE\tn  \tWClarity:\tn %-10s \tY|\tn \tWCondition:\tn %d%%", clarity, obj->value[1]);
+            send_to_char(Format("\tY|\tn %s%*s \tY|\tn\n\r", row, pad, ""), ch);
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    /* --- Description --- */
+    if(!IS_NULLSTR(obj->full_desc))
+    {
+        send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+        send_wrapped_card_text(obj->full_desc, ch, 73);
+    }
+
+    /* --- Extra descriptions / Grimoire ritual details --- */
+    if(obj->item_type == ITEM_GRIMOIRE)
+    {
+        EXTRA_DESCR_DATA *ed;
+        const char *ritual_name = NULL;
+        struct ritual_type *r;
+
+        for(ed = obj->extra_descr; ed != NULL; ed = ed->next)
+            if(!str_cmp(ed->keyword, "RITELINK")) { ritual_name = ed->description; break; }
+        if(!ritual_name && obj->pIndexData)
+            for(ed = obj->pIndexData->extra_descr; ed != NULL; ed = ed->next)
+                if(!str_cmp(ed->keyword, "RITELINK")) { ritual_name = ed->description; break; }
+
+        if(ritual_name != NULL)
+        {
+            char detail[MSL];
+
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            send_to_char(Format("\tY|\tn \tB%-73s\tn \tY|\tn\n\r", "ADDITIONAL DETAILS"), ch);
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+
+            snprintf(detail, sizeof(detail), "\tW%s\tn", ritual_name);
+            send_wrapped_card_text(detail, ch, 73);
+
+            for(r = ritual_list; r != NULL; r = r->next)
+                if(!str_cmp(r->name, ritual_name)) break;
+
+            if(r != NULL)
+            {
+                int i, step = 0, total = rite_count_steps(r);
+                char rbuf[MSL] = {'\0'};
+                char phrase[MIL];
+
+                for(i = 0; i < MAX_RITE_STEPS && r->actions[i] >= 0; i++)
+                {
+                    snprintf(phrase, sizeof(phrase), "%s",
+                        rite_actions[r->actions[i]].grimoire_text
+                            ? rite_actions[r->actions[i]].grimoire_text
+                            : rite_actions[r->actions[i]].name);
+                    strncat(rbuf, phrase, sizeof(rbuf) - strlen(rbuf) - 1);
+                    step++;
+                    if(step < total)
+                        strncat(rbuf, ", ", sizeof(rbuf) - strlen(rbuf) - 1);
+                }
+
+                snprintf(detail, sizeof(detail),
+                    "The text describes a rite performed in %d parts: %s.", total, rbuf);
+                send_wrapped_card_text(detail, ch, 73);
+            }
+        }
+    }
+    else
+    {
+        pdesc = get_extra_descr(arg, obj->extra_descr);
+        if(pdesc == NULL)
+            pdesc = get_extra_descr(arg, obj->pIndexData->extra_descr);
+
+        if(pdesc != NULL)
+        {
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            send_to_char(Format("\tY|\tn \tB%-73s\tn \tY|\tn\n\r", "ADDITIONAL DETAILS"), ch);
+            send_to_char("\tY|---------------------------------------------------------------------------|\tn\n\r", ch);
+            send_wrapped_card_text(pdesc, ch, 73);
+        }
+    }
+
+    /* --- Card footer --- */
+    send_to_char("\tY|___________________________________________________________________________|\tn\n\r", ch);
 }
 
 void state_obj_cond(OBJ_DATA *obj, CHAR_DATA *ch)
@@ -1483,76 +1964,133 @@ void do_look( CHAR_DATA *ch, char *argument )
 
     if ( IS_NULLSTR(arg1) || !str_cmp( arg1, "auto" ) )
     {
+        bool is_holylight = !IS_NPC(ch) && IS_ADMIN(ch)
+                            && IS_SET(ch->plr_flags, PLR_HOLYLIGHT);
+        bool is_builder   = !IS_NPC(ch) && ch->pcdata->security > 0;
+        const char *room_name;
+        const char *room_desc;
+        const char *plane_tag = "";
 
-        /*************************************
-         * If an Admin, show the room number *
-         *************************************/
-        if ((IS_ADMIN(ch)
-                && ((IS_NPC(ch) && ch->desc->original && IS_ADMIN(ch->desc->original))
-                    || IS_SET(ch->plr_flags, PLR_HOLYLIGHT)))
-                || ch->pcdata->security > 0)
-        {
-            send_to_char(Format(" [\tORoom %d\tn] ", looking->vnum), ch);
-        }
-
-        /*************************************
-         * If the character is in the Umbra, *
-         * show the Umbral room name.        *
-         *************************************/
         if(IS_SET(ch->act, ACT_UMBRA))
         {
-            send_to_char( Format("\tW%s\tn", looking->uname), ch );
-
-            send_to_char( "\n\r", ch );
-
-            if(!IS_NPC(ch) && !IS_SET(ch->comm, COMM_BRIEF))
-            {
-                send_to_char( "\tB", ch);
-                send_to_char( "  ", ch);
-                send_to_char( looking->udescription, ch );
-                send_to_char( "\tn", ch);
-            }
+            room_name = looking->uname;
+            room_desc = looking->udescription;
+            plane_tag = " \tR[Umbral]\tn";
         }
         else
         {
-            send_to_char( Format("\tW%s\tn", looking->name), ch );
+            room_name = looking->name;
+            room_desc = looking->description;
+        }
 
-            send_to_char( "\n\r", ch );
+        {
+            char sector_buf[MIL];
+            strncpy(sector_buf, flag_string(sector_flags, looking->sector_type), sizeof(sector_buf) - 1);
+            sector_buf[sizeof(sector_buf) - 1] = '\0';
 
-            // Show the room description. Make the description text white.
-            if(!IS_NPC(ch) && !IS_SET(ch->comm, COMM_BRIEF))
+            /* --- Room header bar --- */
+            send_to_char("\tY ___________________________________________________________________________\tn\n\r", ch);
+
+            if(is_holylight || is_builder)
             {
-                send_to_char( "\tW", ch);
-                send_to_char( "  ", ch);
-                send_to_char( looking->description, ch );
-                send_to_char( "\tn", ch);
+                char header[MSL];
+                char right[MSL];
+                int hlen, rlen, pad;
+
+                snprintf(header, sizeof(header), "[%d] %s", looking->vnum, room_name);
+
+                if(is_holylight)
+                {
+                    char rflags[MIL];
+                    strncpy(rflags, flag_string(room_flags, looking->room_flags), sizeof(rflags) - 1);
+                    rflags[sizeof(rflags) - 1] = '\0';
+                    snprintf(right, sizeof(right), "[%s] [%s]",
+                        capitalize(sector_buf), rflags);
+                }
+                else
+                {
+                    snprintf(right, sizeof(right), "[%s]",
+                        capitalize(sector_buf));
+                }
+
+                hlen = (int)strlen(header);
+                rlen = (int)strlen(right);
+                pad  = 73 - hlen - rlen;
+                if(pad < 1) pad = 1;
+
+                send_to_char(Format("\tY|\tn \tB%s\tn%*s\tO%s\tn \tY|\tn\n\r", header, pad, "", right), ch);
+            }
+            else
+            {
+                char right[MIL];
+                int hlen, rlen, pad;
+
+                snprintf(right, sizeof(right), "[%s]%s",
+                    capitalize(sector_buf), plane_tag);
+
+                hlen = (int)strlen(room_name);
+                rlen = (int)strlen(right);
+                if(plane_tag[0] != '\0')
+                    rlen -= 8;
+                pad  = 73 - hlen - rlen;
+                if(pad < 1) pad = 1;
+
+                send_to_char(Format("\tY|\tn \tB%s\tn%*s\tW%s\tn \tY|\tn\n\r", room_name, pad, "", right), ch);
             }
         }
 
-        // Show the exits. Need to colorize.
+        send_to_char("\tY|___________________________________________________________________________|\tn\n\r", ch);
+
+        /* --- Room description --- */
+        if(!IS_NPC(ch) && !IS_SET(ch->comm, COMM_BRIEF))
+        {
+            send_to_char("  ", ch);
+            send_to_char(room_desc, ch);
+            send_to_char("\n\r", ch);
+        }
+
+        /* --- Exits --- */
         if ( IS_SET(ch->plr_flags, PLR_AUTOEXIT) )
         {
             send_to_char("\n\r", ch);
             do_function(ch, &do_exits, "auto");
         }
 
-        // Let people know if this room has a special function (like a bank room)
+        /* --- Room feature notices --- */
         if(IS_SET(ch->in_room->room_flags, ROOM_BANK))
         {
             send_to_char("\tOYou can do \t<send href='help bank'>banking\t</send> here.\tn\n\r", ch);
         }
 
-        // Show objects in the room.
-        send_to_char("\tW---\tYObjects\tW---\tn\n\r", ch);
-        show_list_to_char( ch->in_room->contents, ch, FALSE, FALSE );
+        /* --- Objects (only if room has contents) --- */
+        if(ch->in_room->contents != NULL)
+        {
+            send_to_char("\n\r  \tW-- \tYObjects \tW---------------------------------------------------------\tn\n\r", ch);
+            show_list_to_char( ch->in_room->contents, ch, FALSE, FALSE );
+        }
+
+        /* --- People (only if others are present) --- */
+        {
+            CHAR_DATA *rch;
+            bool has_others = FALSE;
+
+            for(rch = ch->in_room->people; rch != NULL; rch = rch->next_in_room)
+            {
+                if(rch != ch && get_trust(ch) >= rch->invis_level)
+                {
+                    has_others = TRUE;
+                    break;
+                }
+            }
+
+            if(has_others)
+            {
+                send_to_char("\n\r  \tW-- \tYPeople \tW----------------------------------------------------------\tn\n\r", ch);
+                show_char_to_char( ch->in_room->people, ch );
+            }
+        }
+
         send_to_char("\n\r", ch);
-
-        // Show people and mobs in the room.
-        send_to_char("\tW---\tYPeople\tW---\tn\n\r", ch);
-        show_char_to_char( ch->in_room->people, ch );
-
-        /*  if(IS_SET(ch->act, ACT_UMBRA))
-        show_char_to_char( looking->people,   ch ); */
         return;
     }
 
@@ -1677,63 +2215,7 @@ void do_look( CHAR_DATA *ch, char *argument )
         {
             if (++count == number)
             {
-                send_to_char("\tW+--------------------------------\tn \tBItem  Card\tn \tW--------------------------------+\tn\n\r", ch);
-                send_to_char(Format("\tW|\tn %-9s: %-63s \tW|\tn\n\r", "Item Name", obj->short_descr), ch);
-				send_to_char(Format("\tW|\tn %-9s: %-63s \tW|\tn\n\r", "Item Type", item_name(obj->item_type) ), ch);
-				send_to_char(Format("\tW|\tn %-14s: %-58s \tW|\tn\n\r", "Wear Locations", flag_string( wear_flags, obj->wear_flags ) ), ch);
-				send_to_char(Format("\tW|\tn %-8s: %-64s \tW|\tn\n\r", "Material", obj->material), ch);
-				send_to_char("\tW+----------------------------------------------------------------------------+\tn\n\r", ch);
-
-				// Special Weapons Block of Information
-				if (obj->item_type == ITEM_WEAPON)
-				{
-					send_to_char(Format("\tW|\tn %-11s: ", "Weapon Type"), ch);
-					switch (obj->value[0])
-					    {
-					    	case(WEAPON_EXOTIC):
-						    send_to_char(Format("%-7s", "Exotic"),ch);
-						    break;
-					    	case(WEAPON_FIREARM):
-						    send_to_char(Format("%-7s", "Firarm"),ch);
-						    break;
-					    	case(WEAPON_BLADE):
-						    send_to_char(Format("%-7s", "Blade"),ch);
-						    break;
-					    	case(WEAPON_BLUNT):
-						    send_to_char(Format("%-7s", "Blunt"),ch);
-						    break;
-					    	case(WEAPON_GRAPPLE):
-						    send_to_char(Format("%-7s", "Grapple"),ch);
-						    break;
-					    	case(WEAPON_WHIP):
-						    send_to_char(Format("%-7s", "Whip"),ch);
-						    break;
-					    	default:
-						    send_to_char(Format("%-7s", "Unknown"),ch);
-						    break;
-						}
-					send_to_char(Format("%54s \tW|\tn\n\r", ""), ch);
-
-					send_to_char( Format("\tW|\tn Difficulty: %-23d | Damage Dice: %-23d \tW|\tn\n\r", obj->value[1],obj->value[2]), ch );
-					send_to_char("\tW+----------------------------------------------------------------------------+\tn\n\r", ch);
-				}
-
-                send_to_char(obj->full_desc, ch);
-                send_to_char("\n\r", ch);
-
-                // Now show extra descriptions, if available.
-                pdesc = get_extra_descr(arg3, obj->extra_descr);
-                if (pdesc == NULL)
-                    pdesc = get_extra_descr(arg3, obj->pIndexData->extra_descr);
-
-                if (pdesc != NULL)
-                {
-                    send_to_char("\twAdditional Details\tn:\n\r", ch);
-                    send_to_char(pdesc, ch);
-                }
-
-
-                state_obj_cond(obj, ch);
+                show_item_card(obj, ch, arg3);
                 return;
             }
         }
@@ -1773,9 +2255,7 @@ void do_look( CHAR_DATA *ch, char *argument )
             if ( is_name( arg3, obj->name ) )
                 if (++count == number)
                 {
-                    send_to_char( obj->full_desc, ch );
-                    send_to_char( "\n\r", ch);
-                    state_obj_cond(obj, ch);
+                    show_item_card(obj, ch, arg3);
                     return;
                 }
         }
@@ -1934,7 +2414,6 @@ void do_examine( CHAR_DATA *ch, char *argument )
             break;
 
         case ITEM_GRIMOIRE:
-            show_grimoire(ch, obj);
             break;
         }
     }
@@ -5400,6 +5879,7 @@ void do_stocks(CHAR_DATA *ch, char *argument)
     STOCKS *stock, *chst;
     int owned = 0;
     long portfolio = 0;
+    long total_basis = 0;
 
     CheckCH(ch);
 
@@ -5410,12 +5890,15 @@ void do_stocks(CHAR_DATA *ch, char *argument)
     }
 
     send_to_char("\tBStock Market\tn\n\r", ch);
-    send_to_char(Format("\tY|\tn \tB%-6s\tn \tY|\tn \tB%-24s\tn \tY|\tn \tB%-9s\tn \tY|\tn \tB%-5s\tn \tY|\tn\n\r",
-                        "Ticker", "Company", "Price", "Owned"), ch);
-    send_to_char("\tY|--------+--------------------------+-----------+-------|\tn\n\r", ch);
+    send_to_char(Format("\tY|\tn \tB%-6s\tn \tY|\tn \tB%-18s\tn \tY|\tn \tB%-9s\tn \tY|\tn \tB%s\tn \tY|\tn \tB%-17s\tn \tY|\tn \tB%-5s\tn \tY|\tn\n\r",
+                        "Ticker", "Company", "Price", "Trend", "High / Low", "Owned"), ch);
+    send_to_char("\tY|--------+--------------------+-----------+-------+-------------------+-------|\tn\n\r", ch);
     for(stock = stock_list; stock; stock = stock->next)
     {
-        char price[16];
+        char price[16], highlow[32];
+        const char *trend_color;
+        const char *trend_arrow;
+
         chst = NULL;
         for(chst = ch->stocks; chst != NULL; chst = chst->next)
         {
@@ -5424,20 +5907,51 @@ void do_stocks(CHAR_DATA *ch, char *argument)
 
         owned = chst ? chst->cost : 0;
         portfolio += (long)stock->cost * owned;
+        if(chst) total_basis += chst->cost_basis;
         snprintf(price, sizeof(price), "$%d.%.2d", stock->cost / 100, stock->cost % 100);
+        snprintf(highlow, sizeof(highlow), "$%d.%.2d / $%d.%.2d",
+            stock->price_high / 100, stock->price_high % 100,
+            stock->price_low / 100, stock->price_low % 100);
 
-        send_to_char(Format("\tY|\tn \tW%-6s\tn \tY|\tn \tW%-24s\tn \tY|\tn %s%-9s\tn \tY|\tn \tW%5d\tn \tY|\tn\n\r",
+        if(stock->upordown > 0) { trend_color = "\tG"; trend_arrow = " [+] "; }
+        else if(stock->upordown < 0) { trend_color = "\tR"; trend_arrow = " [-] "; }
+        else { trend_color = "\tW"; trend_arrow = " [=] "; }
+
+        send_to_char(Format("\tY|\tn \tW%-6s\tn \tY|\tn \tW%-18s\tn \tY|\tn %s%-9s\tn \tY|\tn %s%s\tn \tY|\tn \tW%-17s\tn \tY|\tn \tW%5d\tn \tY|\tn\n\r",
                             stock->ticker, stock->name,
-                            stock->upordown > 0 ? "\tG" : stock->upordown < 0 ? "\tR" : "\tW",
-                            price, owned), ch);
+                            trend_color, price,
+                            trend_color, trend_arrow,
+                            highlow,
+                            owned), ch);
     }
-    send_to_char("\tY|--------+--------------------------+-----------+-------|\tn\n\r", ch);
+    send_to_char("\tY|--------+--------------------+-----------+-------+-------------------+-------|\tn\n\r", ch);
     {
-        char val[32];
-        snprintf(val, sizeof(val), "$%ld.%.2ld", portfolio / 100, portfolio % 100);
-        send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%-36s\tn \tY|\tn\n\r", val), ch);
+        long gain = portfolio - total_basis;
+
+        if(total_basis > 0 && portfolio > 0)
+        {
+            char pval[32], gval[32], line[128];
+            int pad;
+
+            snprintf(pval, sizeof(pval), "$%ld.%.2ld", portfolio / 100, portfolio % 100);
+            snprintf(gval, sizeof(gval), "%s$%ld.%.2ld", gain >= 0 ? "+" : "-", labs(gain) / 100, labs(gain) % 100);
+            snprintf(line, sizeof(line), "%s (%s)", pval, gval);
+            pad = 64 - (int)strlen(line);
+            if(pad < 0) pad = 0;
+
+            send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%s\tn (%s%s\tW)%*s \tY|\tn\n\r",
+                pval,
+                gain >= 0 ? "\tG" : "\tR", gval,
+                pad, ""), ch);
+        }
+        else
+        {
+            char val[32];
+            snprintf(val, sizeof(val), "$%ld.%.2ld", portfolio / 100, portfolio % 100);
+            send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%-64s\tn \tY|\tn\n\r", val), ch);
+        }
     }
-    send_to_char("\tY|--------+--------------------------+-----------+-------|\tn\n\r", ch);
+    send_to_char("\tY|--------+--------------------------+-----------+-------+-------|\tn\n\r", ch);
 }
 
 void do_use(CHAR_DATA *ch, char *argument)

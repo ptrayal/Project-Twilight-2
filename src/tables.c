@@ -3452,6 +3452,7 @@ const struct smarket_cmd_type smarket_cmd_table [] =
 	{ "price",		0,	smarket_price		},
 	{ "rename",		0,	smarket_rename		},
 	{ "ticker",		0,	smarket_ticker		},
+	{ "resethighlow",	0,	smarket_resethighlow	},
 	{ NULL,		0,	NULL			}
 };
 

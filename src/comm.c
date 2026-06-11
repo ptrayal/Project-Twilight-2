@@ -1878,7 +1878,9 @@ void bust_a_prompt( CHAR_DATA *ch )
 		    stock = stock->next;
 		    if(stock == NULL) stock = stock_list;
 		}
-		snprintf( buf2, sizeof(buf2), "%s $%d.%d",
+		snprintf( buf2, sizeof(buf2), "%s%s %s $%d.%.2d\tn",
+		    stock->upordown > 0 ? "\tG" : stock->upordown < 0 ? "\tR" : "\tW",
+		    stock->upordown > 0 ? "[+]" : stock->upordown < 0 ? "[-]" : "[=]",
 		    stock->name, stock->cost/100, stock->cost%100);
 		ch->stock_ticker++;
 		i = buf2;

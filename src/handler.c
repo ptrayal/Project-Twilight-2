@@ -4493,7 +4493,7 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 
 	cash = (ch->dollars * 100) + ch->cents;
 	cost = st->cost * num;
-	tax = cost * 0.03;
+	tax = cost * 3 / 100;
 
 	if(buy)
 	{
@@ -4527,11 +4527,15 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 		}
 
 		chst->cost += num;
+		chst->cost_basis += (long)cost;
 
 		send_to_char(Format("\tGYou buy %d shares of \tW%s\tG for \tW$%d.%.2d\tG.\tn\n\r", num, st->name, cost/100, cost%100), ch);
 	}
 	else
 	{
+		long basis_sold;
+		long profit;
+
 		if(!found)
 		{
 			send_to_char("\tRYou don't own any of those shares.\tn\n\r", ch);
@@ -4545,6 +4549,9 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 		}
 
 		if(fees) cost -= tax;
+
+		basis_sold = (chst->cost > 0) ? (chst->cost_basis * num / chst->cost) : 0;
+		profit = (long)cost - basis_sold;
 
 		if(chst->cost == num)
 		{
@@ -4566,14 +4573,28 @@ bool trade_stocks(CHAR_DATA *ch, STOCKS *st, int num, bool fees, bool buy)
 					free_stock(chst);
 				}
 			}
+			chst = NULL;
 		}
-
-		if(chst != NULL && chst->cost > num) chst->cost -= num;
+		else
+		{
+			chst->cost_basis -= basis_sold;
+			chst->cost -= num;
+		}
 
 		ch->dollars += cost/100;
 		ch->cents   += cost%100;
+		if(ch->cents >= 100)
+		{
+			ch->dollars += ch->cents / 100;
+			ch->cents    = ch->cents % 100;
+		}
 
-		send_to_char(Format("\tGYou sell %d shares of \tW%s\tG for \tW$%d.%.2d\tG.\tn\n\r", num, st->name, cost/100, cost%100), ch);
+		send_to_char(Format("\tGYou sell %d shares of \tW%s\tG for \tW$%d.%.2d\tG", num, st->name, cost/100, cost%100), ch);
+		if(profit > 0)
+			send_to_char(Format(" (\tGprofit: +$%ld.%.2ld\tG)", profit/100, profit%100), ch);
+		else if(profit < 0)
+			send_to_char(Format(" (\tRloss: -$%ld.%.2ld\tG)", (-profit)/100, (-profit)%100), ch);
+		send_to_char(".\tn\n\r", ch);
 	}
 
 	send_to_char(Format("You now have \tW%d\tn shares of \tW%s\tn.\n\r", chst?chst->cost:0, st->name), ch);

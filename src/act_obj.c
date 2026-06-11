@@ -3726,7 +3726,7 @@ void do_trade(CHAR_DATA *ch, char *argument)
 
     if(IS_NULLSTR(argument))
     {
-        send_to_char("\tCSyntax: influence trade [buy/sell] [shares] [company]\tn\n\r", ch);
+        send_to_char("\tCSyntax: trade [buy/sell] [shares] [company]\tn\n\r", ch);
         return;
     }
 
@@ -3736,20 +3736,46 @@ void do_trade(CHAR_DATA *ch, char *argument)
         Buy = TRUE;
     else if(str_prefix(buf, "sell"))
     {
-        send_to_char("\tCSyntax: influence trade [buy/sell] [shares] [company]\tn\n\r", ch);
+        send_to_char("\tCSyntax: trade [buy/sell] [shares] [company]\tn\n\r", ch);
         return;
     }
 
     argument = one_argument(argument, buf);
     if((st = stock_lookup(argument)) == NULL)
     {
-        send_to_char("There is no such company.\n\r", ch);
+        send_to_char("\tRThere is no such company.\tn\n\r", ch);
+        return;
+    }
+
+    if(!str_cmp(buf, "all"))
+    {
+        STOCKS *chst;
+        int num = 0;
+
+        if(Buy)
+        {
+            send_to_char("\tRYou can only use 'all' when selling.\tn\n\r", ch);
+            return;
+        }
+
+        for(chst = ch->stocks; chst != NULL; chst = chst->next)
+        {
+            if(!str_cmp(chst->ticker, st->ticker)) { num = chst->cost; break; }
+        }
+
+        if(num < 1)
+        {
+            send_to_char("\tRYou don't own any of those shares.\tn\n\r", ch);
+            return;
+        }
+
+        trade_stocks(ch, st, num, TRUE, FALSE);
         return;
     }
 
     if(IS_NULLSTR(buf) || !is_number(buf))
     {
-        send_to_char("How many shares do you want to buy?\n\r", ch);
+        send_to_char(Format("How many shares do you want to %s?\n\r", Buy ? "buy" : "sell"), ch);
         return;
     }
 

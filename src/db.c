@@ -1123,7 +1123,7 @@ void load_helps(FILE *fp, int type)
 
         fread_help(pHelp, fp);
 
-        if (!str_cmp(pHelp->keyword, "greeting"))
+        if (!str_cmp(pHelp->keyword, "greeting") && pHelp->unformatted != NULL)
         {
             help_greeting = pHelp->unformatted;
         }
@@ -1250,7 +1250,8 @@ void load_helps_xml(FILE *fp, int type)
         {
             if (!pHelp)
                 continue;
-            if (pHelp->keyword && !str_cmp(pHelp->keyword, "greeting"))
+            if (pHelp->keyword && !str_cmp(pHelp->keyword, "greeting")
+                    && pHelp->unformatted != NULL)
                 help_greeting = pHelp->unformatted;
             if (!type)
             {
@@ -1538,7 +1539,7 @@ void load_old_helps(FILE *fp, int type)
             return;
         }
 
-        if (!str_cmp(pHelp->keyword, "greeting"))
+        if (!str_cmp(pHelp->keyword, "greeting") && pHelp->unformatted != NULL)
         {
             help_greeting = pHelp->unformatted;
         }

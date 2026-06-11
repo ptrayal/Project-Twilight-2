@@ -23,6 +23,7 @@ void open_car_doors(ROOM_INDEX_DATA *car);
 void close_car_doors(ROOM_INDEX_DATA *car);
 void free_obj(OBJ_DATA *obj);
 void save_stocks();
+void broadcast_stock_event(STOCKS *stock, int old_cost, int new_cost);
 void free_extra_descr( EXTRA_DESCR_DATA *pExtra );
 OBJ_DATA *new_obj(void);
 void tip_to_char(CHAR_DATA *ch);
@@ -1780,6 +1781,8 @@ void stock_update()
 
     for (stock = stock_list; stock; stock = stock->next)
     {
+        int old_cost;
+
         if (stock->last_change < time(NULL) - 2 * 24 * 60 * 60)
         {
             stock->last_change = time(NULL);
@@ -1806,6 +1809,8 @@ void stock_update()
 
         stock->upordown = number_range(-1, 1);
 
+        old_cost = stock->cost;
+
         switch (stock->phase)
         {
         case 0:
@@ -1818,12 +1823,80 @@ void stock_update()
             break;
         case 2:
             igain = ((stock->upordown * stock->cost) * (idays + istock_flux) * 32 / 100) / 1050;
-            stock->cost -= igain;  // Introduce downward movement
+            stock->cost -= igain;
             break;
         default:
             break;
         }
+
+        if(stock->cost < 1) stock->cost = 1;
+
+        if(stock->cost > stock->price_high) stock->price_high = stock->cost;
+        if(stock->cost < stock->price_low || stock->price_low == 0) stock->price_low = stock->cost;
+
+        broadcast_stock_event(stock, old_cost, stock->cost);
     }
+
+    /*
+     * Dividend Payouts
+     *
+     * Stocks in the qualifying phase (STOCK_DIVIDEND_PHASE, default: Bull
+     * Market) pay dividends to online shareholders every
+     * STOCK_DIVIDEND_INTERVAL real seconds (default: 86400 = 24 hours).
+     *
+     * Payout per share = stock_price * STOCK_DIVIDEND_PCT / 10000
+     *   (STOCK_DIVIDEND_PCT is in hundredths of a percent: 100 = 1%)
+     *
+     * All three tuning knobs are #defined in twilight.h — change them
+     * there to adjust dividend behavior globally.
+     */
+    for (stock = stock_list; stock; stock = stock->next)
+    {
+        if(stock->phase != STOCK_DIVIDEND_PHASE)
+            continue;
+
+        if(stock->last_dividend + STOCK_DIVIDEND_INTERVAL > time(NULL))
+            continue;
+
+        stock->last_dividend = time(NULL);
+
+        {
+            DESCRIPTOR_DATA *d;
+
+            for(d = descriptor_list; d != NULL; d = d->next)
+            {
+                if(d->connected == CON_PLAYING && d->character != NULL)
+                {
+                    STOCKS *chst;
+
+                    for(chst = d->character->stocks; chst != NULL; chst = chst->next)
+                    {
+                        if(!str_cmp(chst->ticker, stock->ticker) && chst->cost > 0)
+                        {
+                            long payout = (long)stock->cost * chst->cost * STOCK_DIVIDEND_PCT / 10000;
+
+                            if(payout > 0)
+                            {
+                                d->character->dollars += (int)(payout / 100);
+                                d->character->cents   += (int)(payout % 100);
+                                if(d->character->cents >= 100)
+                                {
+                                    d->character->dollars += d->character->cents / 100;
+                                    d->character->cents    = d->character->cents % 100;
+                                }
+
+                                send_to_char(Format(
+                                    "\tC[Dividend]\tn \tW%s\tn pays a dividend of \tG$%ld.%.2ld\tn on your %d shares.\n\r",
+                                    stock->name, payout / 100, payout % 100, chst->cost), d->character);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     save_stocks();
 }
 
