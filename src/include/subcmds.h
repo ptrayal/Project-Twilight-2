@@ -115,6 +115,7 @@ DECLARE_INFL_FUN( smarket_create	);
 DECLARE_INFL_FUN( smarket_delete	);
 DECLARE_INFL_FUN( smarket_save		);
 DECLARE_INFL_FUN( smarket_price		);
+DECLARE_INFL_FUN( smarket_resethighlow	);
 
 /*
  * Housing commands.

@@ -5927,16 +5927,17 @@ void do_stocks(CHAR_DATA *ch, char *argument)
     send_to_char("\tY|--------+--------------------+-----------+-------+-------------------+-------|\tn\n\r", ch);
     {
         long gain = portfolio - total_basis;
+        char vis[128];
+        int pad;
 
         if(total_basis > 0 && portfolio > 0)
         {
-            char pval[32], gval[32], line[128];
-            int pad;
+            char pval[32], gval[32];
 
             snprintf(pval, sizeof(pval), "$%ld.%.2ld", portfolio / 100, portfolio % 100);
             snprintf(gval, sizeof(gval), "%s$%ld.%.2ld", gain >= 0 ? "+" : "-", labs(gain) / 100, labs(gain) % 100);
-            snprintf(line, sizeof(line), "%s (%s)", pval, gval);
-            pad = 64 - (int)strlen(line);
+            snprintf(vis, sizeof(vis), "Portfolio Value: %s (%s)", pval, gval);
+            pad = 75 - (int)strlen(vis);
             if(pad < 0) pad = 0;
 
             send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%s\tn (%s%s\tW)%*s \tY|\tn\n\r",
@@ -5948,10 +5949,14 @@ void do_stocks(CHAR_DATA *ch, char *argument)
         {
             char val[32];
             snprintf(val, sizeof(val), "$%ld.%.2ld", portfolio / 100, portfolio % 100);
-            send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%-64s\tn \tY|\tn\n\r", val), ch);
+            snprintf(vis, sizeof(vis), "Portfolio Value: %s", val);
+            pad = 75 - (int)strlen(vis);
+            if(pad < 0) pad = 0;
+
+            send_to_char(Format("\tY|\tn \tBPortfolio Value:\tn \tW%s\tn%*s \tY|\tn\n\r", val, pad, ""), ch);
         }
     }
-    send_to_char("\tY|--------+--------------------------+-----------+-------+-------|\tn\n\r", ch);
+    send_to_char("\tY|--------+--------------------+-----------+-------+-------------------+-------|\tn\n\r", ch);
 }
 
 void do_use(CHAR_DATA *ch, char *argument)
