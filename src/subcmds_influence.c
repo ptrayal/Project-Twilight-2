@@ -2215,6 +2215,8 @@ int smarket_delete (CHAR_DATA *ch, char *arg)
 							chst_prev->next = chst_next;
 						else
 							d->character->stocks = chst_next;
+						chst->ticker = NULL;
+						chst->name   = NULL;
 						free_stock(chst);
 					}
 					else
