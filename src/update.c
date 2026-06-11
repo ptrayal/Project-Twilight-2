@@ -1772,36 +1772,61 @@ void update_handler( void )
 	return;
 }
 
+/*
+ * stock_update — Periodic stock price movement.
+ *
+ * Called every PULSE_TICK (60 real seconds). Each stock moves
+ * independently based on its current market phase:
+ *
+ *   Phase 0 (Bull):   Small, upward-biased moves.
+ *   Phase 1 (Volatile): Larger swings, no directional bias.
+ *   Phase 2 (Bear):   Small, downward-biased moves.
+ *
+ * Phase transitions occur every 2 real days per stock.
+ * Transition probabilities are balanced so stocks spend
+ * roughly equal time in each phase over the long term:
+ *
+ *   Bull     -> 50% stay Bull, 50% go Volatile
+ *   Volatile -> 33% go Bull, 34% stay Volatile, 33% go Bear
+ *   Bear     -> 50% go Volatile, 50% stay Bear
+ *
+ * To tune the market, adjust the phase transition probabilities
+ * and the gain divisors in each phase's formula.
+ */
 void stock_update()
 {
     STOCKS *stock;
-    int igain = 0;
-    int iflux = dice(1, 7) - 4;
-    int istock_flux = dice(1, 9);
 
     for (stock = stock_list; stock; stock = stock->next)
     {
         int old_cost;
+        int igain = 0;
+        int istock_flux = dice(1, 9);
 
         if (stock->last_change < time(NULL) - 2 * 24 * 60 * 60)
         {
+            int roll = number_range(1, 100);
+
             stock->last_change = time(NULL);
-            if (stock->phase < 2)
+
+            switch(stock->phase)
             {
-                stock->phase++;
-            }
-            else if (stock->phase == 2)
-            {
-                if (iflux <= 0)
-                    stock->phase--;
-                else if (iflux <= 2)
-                    stock->phase = 2;
-                else
+                case 0:
+                    if(roll <= 50) stock->phase = 0;
+                    else           stock->phase = 1;
+                    break;
+                case 1:
+                    if(roll <= 33)      stock->phase = 0;
+                    else if(roll <= 67) stock->phase = 1;
+                    else                stock->phase = 2;
+                    break;
+                case 2:
+                    if(roll <= 50) stock->phase = 1;
+                    else           stock->phase = 2;
+                    break;
+                default:
                     stock->phase = 0;
-            }
-            else
-            {
-                stock->phase = 0;
+                    break;
             }
         }
 
@@ -1815,15 +1840,21 @@ void stock_update()
         {
         case 0:
             igain = (stock->upordown * (stock->cost + istock_flux * stock->cost + idays)) / 1000;
+            if(igain == 0 && stock->upordown != 0)
+                igain = stock->upordown;
             stock->cost += igain;
             break;
         case 1:
             igain = ((stock->upordown * stock->cost) * (idays + istock_flux) * 32 / 100) / 1050;
+            if(igain == 0 && stock->upordown != 0)
+                igain = stock->upordown;
             stock->cost += igain;
             break;
         case 2:
-            igain = ((stock->upordown * stock->cost) * (idays + istock_flux) * 32 / 100) / 1050;
-            stock->cost -= igain;
+            igain = (stock->upordown * (stock->cost + istock_flux * stock->cost + idays)) / 1000;
+            if(igain == 0 && stock->upordown != 0)
+                igain = stock->upordown;
+            stock->cost += igain;
             break;
         default:
             break;
