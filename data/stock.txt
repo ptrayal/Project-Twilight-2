@@ -1,0 +1,72 @@
+Name  Magadon~
+Tick  mgdn~
+Last_Change  1781697707
+Stock_Price  11056
+Stock_Phase  0
+UporDown  0
+Price_High  11306
+Price_Low  5736
+Last_Dividend  1781702155
+Name  Omnicron Financial~
+Tick  omni~
+Last_Change  1781697647
+Stock_Price  8119
+Stock_Phase  1
+UporDown  1
+Price_High  12955
+Price_Low  5927
+Last_Dividend  1781615720
+Name  Tellus Enterprises~
+Tick  tell~
+Last_Change  1781697647
+Stock_Price  890
+Stock_Phase  0
+UporDown  1
+Price_High  14769
+Price_Low  1
+Last_Dividend  1781697647
+Name  Prism Media~
+Tick  prsm~
+Last_Change  1781697587
+Stock_Price  12689
+Stock_Phase  0
+UporDown  1
+Price_High  12920
+Price_Low  6973
+Last_Dividend  1781702155
+Name  Aegis Security~
+Tick  aegs~
+Last_Change  1781697527
+Stock_Price  690
+Stock_Phase  0
+UporDown  1
+Price_High  9812
+Price_Low  1
+Last_Dividend  1781697527
+Name  Sunburst Computers~
+Tick  sunb~
+Last_Change  1781697527
+Stock_Price  444
+Stock_Phase  0
+UporDown  -1
+Price_High  8779
+Price_Low  1
+Last_Dividend  1781772056
+Name  Pentex~
+Tick  pntx~
+Last_Change  1781697467
+Stock_Price  23083
+Stock_Phase  0
+UporDown  0
+Price_High  23246
+Price_Low  11369
+Last_Dividend  1781702155
+Name  Eternis Financial~
+Tick  etrn~
+Last_Change  1781697226
+Stock_Price  846
+Stock_Phase  0
+UporDown  -1
+Price_High  14294
+Price_Low  1
+Last_Dividend  1781772056

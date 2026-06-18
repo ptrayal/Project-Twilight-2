@@ -1,3 +1,6 @@
+Name  The Bal Harbor Herald~
+States 1 250
+Articles 1 2 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 Name  Sentinel~
 States 1 100
 Articles -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1

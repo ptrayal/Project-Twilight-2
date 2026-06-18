@@ -3348,6 +3348,7 @@ const struct influence_cmd_type influence_cmd_table [] =
   { "articles", 	INFL_MEDIA,			1, 5,	media_articles		},
   { "suppress", 	INFL_MEDIA,			2, 5,	media_suppress		},
   { "promote",  	INFL_MEDIA,			3, 5,	media_promote		},
+  { "submit",  	INFL_MEDIA,			2, 5,	media_submit		},
   /* BREAK */
   { "warrant",  	INFL_POLICE,		1, 5,	police_warrant		},
   { "apb",			INFL_POLICE,		4, 5,	police_apb			},

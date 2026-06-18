@@ -40,7 +40,11 @@
 
 DECLARE_DO_FUN( do_asave	);
 DECLARE_DO_FUN( do_look		);
+DECLARE_DO_FUN( do_rtedit	);
+DECLARE_DO_FUN( do_artedit	);
 void do_function args((CHAR_DATA *ch, DO_FUN *do_fun, char *argument));
+void rtedit_interp args((CHAR_DATA *ch, char *argument));
+void artedit_interp args((CHAR_DATA *ch, char *argument));
 
 /*
  * Local functions.
@@ -102,6 +106,12 @@ bool run_olc_editor( DESCRIPTOR_DATA *d )
 	break;
 	case ED_RITUAL:
 	ritedit( d->character, d->incomm );
+	break;
+	case ED_RESEARCH:
+	rtedit_interp( d->character, d->incomm );
+	break;
+	case ED_ARTICLE:
+	artedit_interp( d->character, d->incomm );
 	break;
 	default:
 	return FALSE;
@@ -165,6 +175,12 @@ char *olc_ed_name( CHAR_DATA *ch )
 		break;
 	case ED_RITUAL:
 		send_to_char("RiteEdit", ch);
+		break;
+	case ED_RESEARCH:
+		send_to_char("RTEdit", ch);
+		break;
+	case ED_ARTICLE:
+		send_to_char("ArtEdit", ch);
 		break;
 	default:
 		send_to_char(" ", ch);
@@ -250,6 +266,18 @@ char *olc_ed_vnum( CHAR_DATA *ch )
 		{
 			struct ritual_type *pRite = (struct ritual_type *)ch->desc->pEdit;
 			send_to_char(Format("%s", pRite ? pRite->name : "(null)"), ch);
+		}
+		break;
+	case ED_RESEARCH:
+		{
+			RESEARCH_DATA *pRes = (RESEARCH_DATA *)ch->desc->pEdit;
+			send_to_char(Format("%s", pRes ? pRes->keywords : "(null)"), ch);
+		}
+		break;
+	case ED_ARTICLE:
+		{
+			ARTICLE_DATA *pArt = (ARTICLE_DATA *)ch->desc->pEdit;
+			send_to_char(Format("%d", pArt ? pArt->id : 0), ch);
 		}
 		break;
 	default:
@@ -1560,6 +1588,8 @@ const struct editor_cmd_type editor_table[] =
 	{   "bg",		do_bg		},
 	{   "know",		do_know		},
 	{   "mprog",	do_mpedit	},
+	{   "research",	do_rtedit	},
+	{   "article",	do_artedit	},
 
 	{	NULL,		0,		}
 };
@@ -4813,7 +4843,7 @@ void save_papers()
         fprintf(fp, "Articles");
         for (i = 0; i < MAX_ARTICLES; i++)
         {
-            fprintf(fp, " %ld", pnews->articles[i]);
+            fprintf(fp, " %d", pnews->articles[i]);
         }
         fprintf(fp, "\n");
     }

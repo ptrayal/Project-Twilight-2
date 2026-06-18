@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include "twilight.h"
 #include "tables.h"
+#include "olc.h"
 
 RESEARCH_DATA *research_list;
 
@@ -41,6 +42,78 @@ int                 get_research_modifier args( (CHAR_DATA *ch, RESEARCH_DATA *r
 RESEARCH_TIER *     get_tier_by_successes args( (RESEARCH_DATA *research, int successes) );
 void                save_research_topics args( (void) );
 void                load_research_topics args( (void) );
+void                sort_research_list   args( (void) );
+void                rtedit_interp        args( (CHAR_DATA *ch, char *argument) );
+
+/* OLC helpers */
+/* edit_done declared in olc.h (included above) */
+extern void string_append( CHAR_DATA *ch, char **pString );
+
+/*
+ * Sort research_list alphabetically by title.
+ * Uses simple insertion sort — fine for small lists.
+ */
+void sort_research_list( void )
+{
+    RESEARCH_DATA *sorted = NULL, *cur, *next, *ins;
+
+    for(cur = research_list; cur != NULL; cur = next)
+    {
+        next = cur->next;
+        cur->next = NULL;
+
+        if(sorted == NULL || str_cmp(cur->title, sorted->title) < 0)
+        {
+            cur->next = sorted;
+            sorted = cur;
+        }
+        else
+        {
+            for(ins = sorted; ins->next != NULL; ins = ins->next)
+            {
+                if(str_cmp(cur->title, ins->next->title) < 0)
+                    break;
+            }
+            cur->next = ins->next;
+            ins->next = cur;
+        }
+    }
+
+    research_list = sorted;
+}
+
+/*
+ * Check if a player has already discovered a hidden research topic.
+ */
+static bool has_discovered( CHAR_DATA *ch, const char *keywords )
+{
+    RESEARCH_COOLDOWN *disc;
+
+    if(IS_NPC(ch) || !ch->pcdata)
+        return FALSE;
+
+    for(disc = ch->pcdata->research_discovered; disc != NULL; disc = disc->next)
+    {
+        if(!str_cmp(disc->keyword, keywords))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ * Record a hidden research topic as discovered by this player.
+ */
+static void mark_discovered( CHAR_DATA *ch, const char *keywords )
+{
+    RESEARCH_COOLDOWN *disc;
+
+    disc = new_research_cooldown();
+    disc->keyword = str_dup(keywords);
+    disc->last_attempt = time(NULL);
+    disc->next = ch->pcdata->research_discovered;
+    ch->pcdata->research_discovered = disc;
+}
 
 /*
  * Find a research topic by keyword
@@ -311,6 +384,16 @@ void attempt_research( CHAR_DATA *ch, RESEARCH_DATA *research )
                   tier->info_text );
     send_to_char( buf, ch );
 
+    /* Award discovery XP for hidden topics (one-time only) */
+    if ( research->hidden && RESEARCH_DISCOVERY_XP > 0
+            && !has_discovered( ch, research->keywords ) )
+    {
+        mark_discovered( ch, research->keywords );
+        ch->exp += RESEARCH_DISCOVERY_XP;
+        send_to_char( Format( "\tGYou've uncovered hidden knowledge! (+%d XP)\tn\n\r",
+                              RESEARCH_DISCOVERY_XP ), ch );
+    }
+
     /* Set cooldown */
     set_cooldown( ch, research->keywords );
 }
@@ -343,6 +426,8 @@ void do_research( CHAR_DATA *ch, char *argument )
     /* Handle 'research list' command */
     if ( !str_cmp( arg, "list" ) )
     {
+        bool found_any = FALSE;
+
         if ( !research_list )
         {
             send_to_char( "There are no research topics available.\n\r", ch );
@@ -353,13 +438,15 @@ void do_research( CHAR_DATA *ch, char *argument )
 
         for ( research = research_list; research; research = research->next )
         {
+            if ( research->hidden )
+                continue;
+
+            found_any = TRUE;
             sprintf( buf, "\tW%-20s\tn - %s\n\r", research->keywords, research->title );
             send_to_char( buf, ch );
 
-            /* Check cooldown status */
             if ( check_cooldown( ch, research->keywords ) )
             {
-                /* Find the cooldown to get time remaining */
                 for ( cooldown = ch->pcdata->research_cooldowns; cooldown; cooldown = cooldown->next )
                 {
                     if ( !str_cmp( cooldown->keyword, research->keywords ) )
@@ -373,6 +460,10 @@ void do_research( CHAR_DATA *ch, char *argument )
                 }
             }
         }
+
+        if ( !found_any )
+            send_to_char( "There are no research topics available.\n\r", ch );
+
         return;
     }
 
@@ -442,18 +533,313 @@ int lookup_stat( const char *name )
 
 /*
  * Research Topic Editor (OLC-style command)
- * Usage: rtedit <command> [arguments]
+ * show_research_detail — Display all fields of a research topic.
+ * Used by the OLC editor's show command and on entering the editor.
  */
-void do_rtedit( CHAR_DATA *ch, char *argument )
+static void show_research_detail( CHAR_DATA *ch, RESEARCH_DATA *research )
 {
+    RESEARCH_TIER *tier;
+    RESEARCH_MODIFIER *mod;
+
+    send_to_char( "\tB--------------------------< RESEARCH OLC >--------------------------\tn\n\r", ch );
+    send_to_char( Format( "Title:       \tW%s\tn\n\r", research->title ), ch );
+    send_to_char( Format( "Keywords:    \tW%s\tn\n\r", research->keywords ), ch );
+    send_to_char( Format( "Stat:        \tW%s\tn\n\r",
+                          research->stat >= 0 && research->stat < 9 ? stat_table[research->stat].name : "invalid" ), ch );
+    send_to_char( Format( "Ability:     \tW%s\tn\n\r",
+                          research->ability >= 0 && research->ability < MAX_ABIL ? ability_table[research->ability].name : "invalid" ), ch );
+    send_to_char( Format( "Difficulty:  \tW%d\tn\n\r", research->base_difficulty ), ch );
+    send_to_char( Format( "Hidden:      \tW%s\tn\n\r", research->hidden ? "Yes" : "No" ), ch );
+    send_to_char( Format( "Tier Count:  \tW%d\tn\n\r", research->tier_count ), ch );
+
+    if ( research->failure_text && research->failure_text[0] != '\0' )
+    {
+        send_to_char( "\n\r\tBFailure Text:\tn\n\r", ch );
+        send_to_char( research->failure_text, ch );
+        send_to_char( "\n\r", ch );
+    }
+
+    if ( research->modifiers )
+    {
+        send_to_char( "\n\r\tBModifiers:\tn\n\r", ch );
+        for ( mod = research->modifiers; mod; mod = mod->next )
+            send_to_char( Format( "  \tW%s\tn '%s': %+d\n\r", mod->type, mod->value, mod->adjustment ), ch );
+    }
+
+    if ( research->tiers )
+    {
+        send_to_char( "\n\r\tBTiers:\tn\n\r", ch );
+        for ( tier = research->tiers; tier; tier = tier->next )
+            send_to_char( Format( "  \tW%d\tn successes: %s\n\r", tier->successes_required, tier->info_text ), ch );
+    }
+
+    send_to_char( "\tOType 'done' to exit the editor.\tn\n\r", ch );
+}
+
+/*
+ * rtedit_interp — OLC interpreter for the research topic editor.
+ * Called when a player is in ED_RESEARCH mode.
+ */
+void rtedit_interp( CHAR_DATA *ch, char *argument )
+{
+    RESEARCH_DATA *research;
     char command[MAX_INPUT_LENGTH];
     char arg1[MAX_INPUT_LENGTH];
     char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
-    RESEARCH_DATA *research;
+    char arg[MAX_INPUT_LENGTH];
     RESEARCH_TIER *tier, *tier_prev;
     RESEARCH_MODIFIER *mod, *mod_prev;
     int value;
+
+    research = (RESEARCH_DATA *)ch->desc->pEdit;
+
+    if ( !research )
+    {
+        send_to_char( "Editor error: no research topic loaded.\n\r", ch );
+        edit_done( ch );
+        return;
+    }
+
+    smash_tilde( argument );
+    strncpy( arg, argument, sizeof(arg) - 1 );
+    arg[sizeof(arg) - 1] = '\0';
+    argument = one_argument( argument, command );
+
+    if ( !str_cmp( command, "done" ) )
+    {
+        save_research_topics();
+        sort_research_list();
+        edit_done( ch );
+        return;
+    }
+
+    if ( command[0] == '\0' || !str_cmp( command, "show" ) )
+    {
+        show_research_detail( ch, research );
+        return;
+    }
+
+    if ( !str_cmp( command, "title" ) )
+    {
+        if ( argument[0] == '\0' ) { send_to_char( "Syntax: title <text>\n\r", ch ); return; }
+        PURGE_DATA( research->title );
+        research->title = str_dup( argument );
+        send_to_char( Format( "Title set to: %s\n\r", argument ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "keywords" ) )
+    {
+        if ( argument[0] == '\0' ) { send_to_char( "Syntax: keywords <text>\n\r", ch ); return; }
+        PURGE_DATA( research->keywords );
+        research->keywords = str_dup( argument );
+        send_to_char( Format( "Keywords set to: %s\n\r", argument ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "stat" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        if ( arg1[0] == '\0' )
+        {
+            int i;
+            send_to_char( "\tB=== Available Stats ===\tn\n\r", ch );
+            for ( i = 0; i < 9; i++ )
+                send_to_char( Format( "  \tW%-15s\tn %s\n\r", stat_table[i].name,
+                    research->stat == i ? "\tG(SELECTED)\tn" : "" ), ch );
+            return;
+        }
+        value = lookup_stat( arg1 );
+        if ( value < 0 ) { send_to_char( "Invalid stat. Type 'stat' to see list.\n\r", ch ); return; }
+        research->stat = value;
+        send_to_char( Format( "Stat set to: %s\n\r", stat_table[value].name ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "ability" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        if ( arg1[0] == '\0' )
+        {
+            int i;
+            send_to_char( "\tB=== Available Abilities ===\tn\n\r", ch );
+            for ( i = 0; i < MAX_ABIL; i++ )
+                if ( ability_table[i].name && ability_table[i].name[0] != '\0' )
+                    send_to_char( Format( "  \tW%-20s\tn %s\n\r", ability_table[i].name,
+                        research->ability == i ? "\tG(SELECTED)\tn" : "" ), ch );
+            return;
+        }
+        value = lookup_ability( arg1 );
+        if ( value < 0 ) { send_to_char( "Invalid ability. Type 'ability' to see list.\n\r", ch ); return; }
+        research->ability = value;
+        send_to_char( Format( "Ability set to: %s\n\r", ability_table[value].name ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "difficulty" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        if ( arg1[0] == '\0' || !is_number( arg1 ) ) { send_to_char( "Syntax: difficulty <2-10>\n\r", ch ); return; }
+        value = atoi( arg1 );
+        if ( value < 2 || value > 10 ) { send_to_char( "Difficulty must be 2-10.\n\r", ch ); return; }
+        research->base_difficulty = value;
+        send_to_char( Format( "Difficulty set to: %d\n\r", value ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "hidden" ) )
+    {
+        research->hidden = !research->hidden;
+        send_to_char( Format( "Hidden set to: %s\n\r", research->hidden ? "Yes" : "No" ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "failure" ) )
+    {
+        if ( argument[0] == '\0' ) { send_to_char( "Syntax: failure <text>\n\r", ch ); return; }
+        PURGE_DATA( research->failure_text );
+        research->failure_text = str_dup( argument );
+        send_to_char( "Failure text set.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "editfail" ) )
+    {
+        string_append( ch, &research->failure_text );
+        return;
+    }
+
+    if ( !str_cmp( command, "addtier" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        if ( arg1[0] == '\0' || !is_number( arg1 ) || argument[0] == '\0' )
+        { send_to_char( "Syntax: addtier <successes> <text>\n\r", ch ); return; }
+        value = atoi( arg1 );
+        for ( tier = research->tiers; tier; tier = tier->next )
+            if ( tier->successes_required == value )
+            { send_to_char( "Tier already exists. Use 'edittier' or 'deltier'.\n\r", ch ); return; }
+        tier = new_research_tier();
+        tier->successes_required = value;
+        tier->info_text = str_dup( argument );
+        tier->next = research->tiers;
+        research->tiers = tier;
+        research->tier_count++;
+        send_to_char( Format( "Added tier: %d successes.\n\r", value ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "edittier" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        if ( arg1[0] == '\0' || !is_number( arg1 ) )
+        { send_to_char( "Syntax: edittier <successes>\n\r", ch ); return; }
+        value = atoi( arg1 );
+        for ( tier = research->tiers; tier; tier = tier->next )
+            if ( tier->successes_required == value )
+            { string_append( ch, &tier->info_text ); return; }
+        send_to_char( "Tier not found. Create it first with 'addtier'.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "deltier" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        if ( arg1[0] == '\0' || !is_number( arg1 ) )
+        { send_to_char( "Syntax: deltier <successes>\n\r", ch ); return; }
+        value = atoi( arg1 );
+        tier_prev = NULL;
+        for ( tier = research->tiers; tier; tier_prev = tier, tier = tier->next )
+        {
+            if ( tier->successes_required == value )
+            {
+                if ( tier_prev ) tier_prev->next = tier->next;
+                else research->tiers = tier->next;
+                free_research_tier( tier );
+                research->tier_count--;
+                send_to_char( Format( "Deleted tier: %d successes.\n\r", value ), ch );
+                return;
+            }
+        }
+        send_to_char( "Tier not found.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "addmod" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        argument = one_argument( argument, arg2 );
+        if ( arg1[0] == '\0' || arg2[0] == '\0' || argument[0] == '\0' )
+        { send_to_char( "Syntax: addmod <type> <value> <adjustment>\n\rType: clan, race, or pack\n\r", ch ); return; }
+        if ( str_cmp( arg1, "clan" ) && str_cmp( arg1, "race" ) && str_cmp( arg1, "pack" ) )
+        { send_to_char( "Type must be 'clan', 'race', or 'pack'.\n\r", ch ); return; }
+        value = atoi( argument );
+        mod = new_research_modifier();
+        mod->type = str_dup( arg1 );
+        mod->value = str_dup( arg2 );
+        mod->adjustment = value;
+        mod->next = research->modifiers;
+        research->modifiers = mod;
+        send_to_char( Format( "Added modifier: %s '%s' %+d\n\r", arg1, arg2, value ), ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "delmod" ) )
+    {
+        argument = one_argument( argument, arg1 );
+        argument = one_argument( argument, arg2 );
+        if ( arg1[0] == '\0' || arg2[0] == '\0' )
+        { send_to_char( "Syntax: delmod <type> <value>\n\r", ch ); return; }
+        mod_prev = NULL;
+        for ( mod = research->modifiers; mod; mod_prev = mod, mod = mod->next )
+        {
+            if ( !str_cmp( mod->type, arg1 ) && !str_cmp( mod->value, arg2 ) )
+            {
+                if ( mod_prev ) mod_prev->next = mod->next;
+                else research->modifiers = mod->next;
+                free_research_modifier( mod );
+                send_to_char( Format( "Deleted modifier: %s '%s'\n\r", arg1, arg2 ), ch );
+                return;
+            }
+        }
+        send_to_char( "Modifier not found.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( command, "delete" ) )
+    {
+        RESEARCH_DATA *prev = NULL, *cur;
+        for ( cur = research_list; cur; prev = cur, cur = cur->next )
+        {
+            if ( cur == research )
+            {
+                if ( prev ) prev->next = cur->next;
+                else research_list = cur->next;
+                break;
+            }
+        }
+        send_to_char( "Research topic deleted.\n\r", ch );
+        save_research_topics();
+        ch->desc->pEdit = NULL;
+        edit_done( ch );
+        free_research( research );
+        return;
+    }
+
+    interpret( ch, arg );
+}
+
+/*
+ * do_rtedit — Entry point for the research topic OLC editor.
+ *
+ * Usage:
+ *   rtedit list             — list all topics (outside editor)
+ *   rtedit create <keyword> — create topic and enter editor
+ *   rtedit <keyword>        — enter editor for existing topic
+ */
+void do_rtedit( CHAR_DATA *ch, char *argument )
+{
+    char arg1[MAX_INPUT_LENGTH];
+    RESEARCH_DATA *research;
 
     if ( IS_NPC(ch) )
     {
@@ -461,33 +847,25 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
         return;
     }
 
-    argument = one_argument( argument, command );
+    argument = one_argument( argument, arg1 );
 
-    if ( command[0] == '\0' )
+    if ( arg1[0] == '\0' )
     {
-        send_to_char( "\tB=== Research Topic Editor Commands ===\tn\n\r", ch );
-        send_to_char( "  rtedit list                           - List all research topics\n\r", ch );
-        send_to_char( "  rtedit create \tW<keyword>\tn               - Create new research topic\n\r", ch );
-        send_to_char( "  rtedit delete \tW<keyword>\tn               - Delete a research topic\n\r", ch );
-        send_to_char( "  rtedit show \tW<keyword>\tn                 - Show research topic details\n\r", ch );
-        send_to_char( "  rtedit title \tW<keyword>\tn \tW<title>\tn        - Set topic title\n\r", ch );
-        send_to_char( "  rtedit keywords \tW<keyword>\tn \tW<keywords>\tn  - Set topic keywords\n\r", ch );
-        send_to_char( "  rtedit stat \tW<keyword>\tn [stat_name]     - Set stat (list shown if no name)\n\r", ch );
-        send_to_char( "  rtedit ability \tW<keyword>\tn [ability]    - Set ability (list shown if no name)\n\r", ch );
-        send_to_char( "  rtedit difficulty \tW<keyword>\tn \tW<2-10>\tn    - Set base difficulty\n\r", ch );
-        send_to_char( "  rtedit failure \tW<keyword>\tn \tW<text>\tn       - Set failure/botch text (short)\n\r", ch );
-        send_to_char( "  rtedit editfail \tW<keyword>\tn             - Edit failure text (multi-line editor)\n\r", ch );
-        send_to_char( "  rtedit addtier \tW<keyword>\tn \tW<succ>\tn \tW<txt>\tn - Add information tier (short text)\n\r", ch );
-        send_to_char( "  rtedit edittier \tW<keyword>\tn \tW<successes>\tn - Edit tier text (multi-line editor)\n\r", ch );
-        send_to_char( "  rtedit deltier \tW<keyword>\tn \tW<successes>\tn  - Delete a tier\n\r", ch );
-        send_to_char( "  rtedit addmod \tW<kw>\tn \tW<type>\tn \tW<val>\tn \tW<adj>\tn - Add modifier (type: clan/race/pack)\n\r", ch );
-        send_to_char( "  rtedit delmod \tW<keyword>\tn \tW<type>\tn \tW<val>\tn  - Delete modifier\n\r", ch );
-        send_to_char( "  rtedit save                           - Save all research topics\n\r", ch );
+        send_to_char( "\tB=== Research Topic Editor ===\tn\n\r", ch );
+        send_to_char( "  rtedit list             - List all research topics\n\r", ch );
+        send_to_char( "  rtedit create \tW<keyword>\tn - Create new topic and enter editor\n\r", ch );
+        send_to_char( "  rtedit \tW<keyword>\tn        - Edit existing topic\n\r", ch );
         return;
     }
 
-    /* List command */
-    if ( !str_cmp( command, "list" ) )
+    if ( !str_cmp( arg1, "save" ) )
+    {
+        save_research_topics();
+        send_to_char( "Research topics saved.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( arg1, "list" ) )
     {
         if ( !research_list )
         {
@@ -507,33 +885,27 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
         return;
     }
 
-    /* Save command */
-    if ( !str_cmp( command, "save" ) )
+    /* Create command — create and enter editor */
+    if ( !str_cmp( arg1, "create" ) )
     {
-        save_research_topics();
-        send_to_char( "Research topics saved to XML file.\n\r", ch );
-        return;
-    }
+        char keyword[MAX_INPUT_LENGTH];
 
-    /* Create command */
-    if ( !str_cmp( command, "create" ) )
-    {
-        argument = one_argument( argument, arg1 );
+        argument = one_argument( argument, keyword );
 
-        if ( arg1[0] == '\0' )
+        if ( keyword[0] == '\0' )
         {
-            send_to_char( "Create what keyword?\n\r", ch );
+            send_to_char( "Syntax: rtedit create <keyword>\n\r", ch );
             return;
         }
 
-        if ( find_research( arg1 ) )
+        if ( find_research( keyword ) )
         {
             send_to_char( "A research topic with that keyword already exists.\n\r", ch );
             return;
         }
 
         research = new_research();
-        research->keywords = str_dup( arg1 );
+        research->keywords = str_dup( keyword );
         research->title = str_dup( "New Research Topic" );
         research->stat = STAT_INT;
         research->ability = 0;
@@ -541,534 +913,27 @@ void do_rtedit( CHAR_DATA *ch, char *argument )
         research->tier_count = 0;
         research->next = research_list;
         research_list = research;
+        sort_research_list();
 
-        send_to_char( Format( "Created new research topic with keyword '%s'.\n\r", arg1 ), ch );
+        ch->desc->pEdit = (void *)research;
+        ch->desc->editor = ED_RESEARCH;
+
+        send_to_char( Format( "Created and editing research topic '%s'.\n\r", keyword ), ch );
+        show_research_detail( ch, research );
         return;
     }
 
-    /* Delete command */
-    if ( !str_cmp( command, "delete" ) )
+    /* Default: enter editor for existing topic */
+    research = find_research( arg1 );
+    if ( !research )
     {
-        RESEARCH_DATA *prev = NULL;
-
-        argument = one_argument( argument, arg1 );
-
-        if ( arg1[0] == '\0' )
-        {
-            send_to_char( "Delete which research topic?\n\r", ch );
-            return;
-        }
-
-        for ( research = research_list; research; prev = research, research = research->next )
-        {
-            if ( is_name( arg1, research->keywords ) )
-            {
-                if ( prev )
-                    prev->next = research->next;
-                else
-                    research_list = research->next;
-
-                free_research( research );
-                send_to_char( Format( "Deleted research topic '%s'.\n\r", arg1 ), ch );
-                return;
-            }
-        }
-
-        send_to_char( "Research topic not found.\n\r", ch );
+        send_to_char( "Research topic not found. Use 'rtedit list' to see topics.\n\r", ch );
         return;
     }
 
-    /* Show command */
-    if ( !str_cmp( command, "show" ) )
-    {
-        argument = one_argument( argument, arg1 );
-
-        if ( arg1[0] == '\0' )
-        {
-            send_to_char( "Show which research topic?\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        send_to_char( "\tB=== Research Topic Details ===\tn\n\r", ch );
-        send_to_char( Format( "Title:       %s\n\r", research->title ), ch );
-        send_to_char( Format( "Keywords:    \tW%s\tn\n\r", research->keywords ), ch );
-        send_to_char( Format( "Stat:        %s\n\r",
-                              research->stat >= 0 && research->stat < 9 ? stat_table[research->stat].name : "invalid" ), ch );
-        send_to_char( Format( "Ability:     %s\n\r",
-                              research->ability >= 0 && research->ability < MAX_ABIL ? ability_table[research->ability].name : "invalid" ), ch );
-        send_to_char( Format( "Difficulty:  %d\n\r", research->base_difficulty ), ch );
-        send_to_char( Format( "Tier Count:  %d\n\r", research->tier_count ), ch );
-
-        if ( research->failure_text && research->failure_text[0] != '\0' )
-        {
-            send_to_char( "\n\rFailure Text:\n\r", ch );
-            send_to_char( research->failure_text, ch );
-            send_to_char( "\n\r", ch );
-        }
-
-        if ( research->modifiers )
-        {
-            send_to_char( "\n\rModifiers:\n\r", ch );
-            for ( mod = research->modifiers; mod; mod = mod->next )
-            {
-                send_to_char( Format( "  %s '%s': %+d\n\r", mod->type, mod->value, mod->adjustment ), ch );
-            }
-        }
-
-        if ( research->tiers )
-        {
-            send_to_char( "\n\rTiers:\n\r", ch );
-            for ( tier = research->tiers; tier; tier = tier->next )
-            {
-                send_to_char( Format( "  %d successes: %s\n\r",
-                                      tier->successes_required,
-                                      tier->info_text ), ch );
-            }
-        }
-
-        return;
-    }
-
-    /* Title command */
-    if ( !str_cmp( command, "title" ) )
-    {
-        argument = one_argument( argument, arg1 );
-
-        if ( arg1[0] == '\0' || argument[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit title <keyword> <title>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        PURGE_DATA( research->title );
-        research->title = str_dup( argument );
-        send_to_char( Format( "Title set to: %s\n\r", argument ), ch );
-        return;
-    }
-
-    /* Keywords command */
-    if ( !str_cmp( command, "keywords" ) )
-    {
-        argument = one_argument( argument, arg1 );
-
-        if ( arg1[0] == '\0' || argument[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit keywords <keyword> <new keywords>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        PURGE_DATA( research->keywords );
-        research->keywords = str_dup( argument );
-        send_to_char( Format( "Keywords set to: %s\n\r", argument ), ch );
-        return;
-    }
-
-    /* Stat command */
-    if ( !str_cmp( command, "stat" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-
-        if ( arg1[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit stat <keyword> <stat_name>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        if ( arg2[0] == '\0' )
-        {
-            int i;
-            send_to_char( "\tB=== Available Stats ===\tn\n\r", ch );
-            for ( i = 0; i < 9; i++ )
-            {
-                send_to_char( Format( "  \tW%-15s\tn %s\n\r",
-                                      stat_table[i].name,
-                                      research->stat == i ? "\tG(SELECTED)\tn" : "" ), ch );
-            }
-            return;
-        }
-
-        value = lookup_stat( arg2 );
-        if ( value < 0 )
-        {
-            send_to_char( "Invalid stat name. Use 'rtedit stat <keyword>' to see list.\n\r", ch );
-            return;
-        }
-
-        research->stat = value;
-        send_to_char( Format( "Stat set to: %s\n\r", stat_table[value].name ), ch );
-        return;
-    }
-
-    /* Ability command */
-    if ( !str_cmp( command, "ability" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-
-        if ( arg1[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit ability <keyword> <ability_name>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        if ( arg2[0] == '\0' )
-        {
-            int i;
-            send_to_char( "\tB=== Available Abilities ===\tn\n\r", ch );
-            send_to_char( "\tBTalents:\tn\n\r", ch );
-            for ( i = 0; i <= 12; i++ )
-            {
-                send_to_char( Format( "  \tW%-20s\tn%s\n\r",
-                                      ability_table[i].name,
-                                      research->ability == i ? " \tG(SELECTED)\tn" : "" ), ch );
-            }
-            send_to_char( "\n\r\tBSkills:\tn\n\r", ch );
-            for ( i = 13; i <= 23; i++ )
-            {
-                send_to_char( Format( "  \tW%-20s\tn%s\n\r",
-                                      ability_table[i].name,
-                                      research->ability == i ? " \tG(SELECTED)\tn" : "" ), ch );
-            }
-            send_to_char( "\n\r\tBKnowledges:\tn\n\r", ch );
-            for ( i = 24; i < MAX_ABIL && ability_table[i].name != NULL; i++ )
-            {
-                send_to_char( Format( "  \tW%-20s\tn%s\n\r",
-                                      ability_table[i].name,
-                                      research->ability == i ? " \tG(SELECTED)\tn" : "" ), ch );
-            }
-            return;
-        }
-
-        value = lookup_ability( arg2 );
-        if ( value < 0 )
-        {
-            send_to_char( "Invalid ability name. Use 'rtedit ability <keyword>' to see list.\n\r", ch );
-            return;
-        }
-
-        research->ability = value;
-        send_to_char( Format( "Ability set to: %s\n\r", ability_table[value].name ), ch );
-        return;
-    }
-
-    /* Difficulty command */
-    if ( !str_cmp( command, "difficulty" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-
-        if ( arg1[0] == '\0' || arg2[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit difficulty <keyword> <2-10>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        value = atoi( arg2 );
-        if ( value < 2 || value > 10 )
-        {
-            send_to_char( "Difficulty must be between 2 and 10.\n\r", ch );
-            return;
-        }
-
-        research->base_difficulty = value;
-        send_to_char( Format( "Base difficulty set to: %d\n\r", value ), ch );
-        return;
-    }
-
-    /* Failure text command */
-    if ( !str_cmp( command, "failure" ) )
-    {
-        argument = one_argument( argument, arg1 );
-
-        if ( arg1[0] == '\0' || argument[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit failure <keyword> <failure text>\n\r", ch );
-            send_to_char( "This sets the text shown when research botches or fails badly.\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        PURGE_DATA( research->failure_text );
-        research->failure_text = str_dup( argument );
-        send_to_char( "Failure text set.\n\r", ch );
-        return;
-    }
-
-    /* Edit failure text command - uses string editor for multi-line text */
-    if ( !str_cmp( command, "editfail" ) || !str_cmp( command, "editfailure" ) )
-    {
-        argument = one_argument( argument, arg1 );
-
-        if ( arg1[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit editfail <keyword>\n\r", ch );
-            send_to_char( "This opens a multi-line editor for the failure/botch text.\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        send_to_char( "Entering string editor for failure text...\n\r", ch );
-        string_append( ch, &research->failure_text );
-        return;
-    }
-
-    /* Add Tier command */
-    if ( !str_cmp( command, "addtier" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-
-        if ( arg1[0] == '\0' || arg2[0] == '\0' || argument[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit addtier <keyword> <successes_required> <info_text>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        if ( research->tier_count >= MAX_RESEARCH_TIERS )
-        {
-            send_to_char( Format( "Cannot add more than %d tiers.\n\r", MAX_RESEARCH_TIERS ), ch );
-            return;
-        }
-
-        value = atoi( arg2 );
-        if ( value < 1 )
-        {
-            send_to_char( "Successes required must be at least 1.\n\r", ch );
-            return;
-        }
-
-        tier = new_research_tier();
-        tier->successes_required = value;
-        tier->info_text = str_dup( argument );
-        tier->next = research->tiers;
-        research->tiers = tier;
-        research->tier_count++;
-
-        send_to_char( Format( "Added tier requiring %d successes.\n\r", value ), ch );
-        return;
-    }
-
-    /* Delete Tier command */
-    if ( !str_cmp( command, "deltier" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-
-        if ( arg1[0] == '\0' || arg2[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit deltier <keyword> <successes_required>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        value = atoi( arg2 );
-        tier_prev = NULL;
-
-        for ( tier = research->tiers; tier; tier_prev = tier, tier = tier->next )
-        {
-            if ( tier->successes_required == value )
-            {
-                if ( tier_prev )
-                    tier_prev->next = tier->next;
-                else
-                    research->tiers = tier->next;
-
-                free_research_tier( tier );
-                research->tier_count--;
-                send_to_char( Format( "Deleted tier requiring %d successes.\n\r", value ), ch );
-                return;
-            }
-        }
-
-        send_to_char( "Tier not found.\n\r", ch );
-        return;
-    }
-
-    /* Edit Tier command - uses string editor for multi-line text */
-    if ( !str_cmp( command, "edittier" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-
-        if ( arg1[0] == '\0' || arg2[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit edittier <keyword> <successes_required>\n\r", ch );
-            send_to_char( "This will open a multi-line string editor for the tier text.\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        value = atoi( arg2 );
-
-        for ( tier = research->tiers; tier; tier = tier->next )
-        {
-            if ( tier->successes_required == value )
-            {
-                send_to_char( "Entering string editor for tier text...\n\r", ch );
-                string_append( ch, &tier->info_text );
-                return;
-            }
-        }
-
-        send_to_char( "Tier not found. Create it first with 'rtedit addtier'.\n\r", ch );
-        return;
-    }
-
-    /* Add Modifier command */
-    if ( !str_cmp( command, "addmod" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-        argument = one_argument( argument, arg3 );
-
-        if ( arg1[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0' || argument[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit addmod <keyword> <type> <value> <adjustment>\n\r", ch );
-            send_to_char( "Type: 'clan', 'race', or 'pack'\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        if ( str_cmp( arg2, "clan" ) && str_cmp( arg2, "race" ) && str_cmp( arg2, "pack" ) )
-        {
-            send_to_char( "Type must be 'clan', 'race', or 'pack'.\n\r", ch );
-            return;
-        }
-
-        value = atoi( argument );
-
-        mod = new_research_modifier();
-        mod->type = str_dup( arg2 );
-        mod->value = str_dup( arg3 );
-        mod->adjustment = value;
-        mod->next = research->modifiers;
-        research->modifiers = mod;
-
-        send_to_char( Format( "Added modifier: %s '%s' %+d\n\r", arg2, arg3, value ), ch );
-        return;
-    }
-
-    /* Delete Modifier command */
-    if ( !str_cmp( command, "delmod" ) )
-    {
-        argument = one_argument( argument, arg1 );
-        argument = one_argument( argument, arg2 );
-        argument = one_argument( argument, arg3 );
-
-        if ( arg1[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0' )
-        {
-            send_to_char( "Usage: rtedit delmod <keyword> <type> <value>\n\r", ch );
-            return;
-        }
-
-        research = find_research( arg1 );
-        if ( !research )
-        {
-            send_to_char( "Research topic not found.\n\r", ch );
-            return;
-        }
-
-        mod_prev = NULL;
-        for ( mod = research->modifiers; mod; mod_prev = mod, mod = mod->next )
-        {
-            if ( !str_cmp( mod->type, arg2 ) && !str_cmp( mod->value, arg3 ) )
-            {
-                if ( mod_prev )
-                    mod_prev->next = mod->next;
-                else
-                    research->modifiers = mod->next;
-
-                free_research_modifier( mod );
-                send_to_char( Format( "Deleted modifier: %s '%s'\n\r", arg2, arg3 ), ch );
-                return;
-            }
-        }
-
-        send_to_char( "Modifier not found.\n\r", ch );
-        return;
-    }
-
-    send_to_char( "Unknown rtedit command. Type 'rtedit' for help.\n\r", ch );
+    ch->desc->pEdit = (void *)research;
+    ch->desc->editor = ED_RESEARCH;
+    show_research_detail( ch, research );
 }
 
 /*
@@ -1127,6 +992,9 @@ void save_research_topics( void )
         fprintf( fp, "    <ability>%d</ability>\n", research->ability );
         fprintf( fp, "    <base_difficulty>%d</base_difficulty>\n", research->base_difficulty );
         fprintf( fp, "    <tier_count>%d</tier_count>\n", research->tier_count );
+
+        if ( research->hidden )
+            fprintf( fp, "    <hidden>1</hidden>\n" );
 
         if ( research->failure_text && research->failure_text[0] != '\0' )
         {
@@ -1429,6 +1297,13 @@ void load_research_topics( void )
                 if ( content )
                     research->tier_count = atoi( content );
             }
+            else if ( (content = strstr( line, "<hidden>" )) != NULL )
+            {
+                fseek( fp, -(long)strlen(line), SEEK_CUR );
+                content = read_xml_tag_content( fp, "hidden" );
+                if ( content )
+                    research->hidden = atoi( content );
+            }
             else if ( (content = strstr( line, "<failure_text>" )) != NULL )
             {
                 fseek( fp, -(long)strlen(line), SEEK_CUR );
@@ -1481,5 +1356,6 @@ void load_research_topics( void )
     }
 
     fclose( fp );
+    sort_research_list();
     log_string( LOG_GAME, "load_research_topics: Research topics loaded successfully." );
 }

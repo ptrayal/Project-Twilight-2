@@ -1,8 +1,100 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <research_topics>
   <topic>
+    <title>The Pregame Ancillae</title>
+    <keywords>pregame_ancillae</keywords>
+    <stat>7</stat>
+    <ability>28</ability>
+    <base_difficulty>7</base_difficulty>
+    <tier_count>1</tier_count>
+    <tiers>
+      <tier>
+        <successes_required>1</successes_required>
+        <info_text>Beneath the three elders, prior to the disappearance, were the Ancillae. 
+There were six of them who ranked above the neonates in the city and they
+wielded signifgant power.  Indeed, two of the six were Tremere and three of
+the six were non-Camarilla clans.  The Ancillae were:
+
+Louis Zola - Follower of Set
+Janice Weaver - Gangrel (not of McLir&apos;s line)
+Francesca Giovanni - Giovanni
+Gideon Darkly - Samedi
+Arman Raith Paul - Tremere
+Frederico Del Rey - Tremere
+</info_text>
+      </tier>
+    </tiers>
+  </topic>
+  <topic>
+    <title>The Pregame Elders</title>
+    <keywords>pregame_elders</keywords>
+    <stat>7</stat>
+    <ability>28</ability>
+    <base_difficulty>9</base_difficulty>
+    <tier_count>1</tier_count>
+    <modifiers>
+      <modifier>
+        <type>race</type>
+        <value>human</value>
+        <adjustment>1</adjustment>
+      </modifier>
+      <modifier>
+        <type>race</type>
+        <value>werewolf</value>
+        <adjustment>1</adjustment>
+      </modifier>
+      <modifier>
+        <type>race</type>
+        <value>vampire</value>
+        <adjustment>-1</adjustment>
+      </modifier>
+    </modifiers>
+    <tiers>
+      <tier>
+        <successes_required>1</successes_required>
+        <info_text>The city was in the hands of three elders: Prince McLir of Clan Gangrel,
+Dr.  Tench of Clan Nosferatu, and Amon ak Tul (also known as Old Monster)
+who was a Follower of Set.  Each was at least four hundred years old and
+directly or indirectly controlled much of the city.  
+
+Though the three rarely saw eye to eye, they all had a vested interest in
+the city.  Even Old Monster wanted safety in the city and was a primary
+force in the defense of the city from Werewolf attacks over a hundred years
+ago.  Dr.  Tench was responsible for much of the city&apos;s infrastructure and
+was incredibly influential in city business.  And McLir, was of course, the
+Prince of City and ruled it under Camarilla law.  
+</info_text>
+      </tier>
+    </tiers>
+  </topic>
+  <topic>
+    <title>The Pregame Primogen Council</title>
+    <keywords>primogen_council</keywords>
+    <stat>7</stat>
+    <ability>28</ability>
+    <base_difficulty>6</base_difficulty>
+    <tier_count>1</tier_count>
+    <tiers>
+      <tier>
+        <successes_required>1</successes_required>
+        <info_text>Before the disapperances, the Prince was served by a council of Primogen,
+the major representatives of the Camarilla clans.  The Primogen council was
+made up of: 
+ 
+ 
+Brujah --&gt; Deacon Grimes
+Malkavian --&gt; Marcus Talbott
+Nosferatu --&gt; Mihail Bodnarescu
+Toreador --&gt; Alicia Winters
+Tremere --&gt; Arman Raith Paul
+Ventrue --&gt; Madeline Carper
+</info_text>
+      </tier>
+    </tiers>
+  </topic>
+  <topic>
     <title>Clan Gangrel</title>
-    <keywords>gangrel</keywords>
+    <keywords>pregame_gangrel</keywords>
     <stat>7</stat>
     <ability>28</ability>
     <base_difficulty>9</base_difficulty>
@@ -10,7 +102,12 @@
     <tiers>
       <tier>
         <successes_required>2</successes_required>
-        <info_text>These were the members of Clan Gangrel at one time: 
+        <info_text>The Gangrel were the most powerful and most numerous clan in the city,
+mostly due to the fact that if you included the Prince, almost half the
+gangrel were of the Prince&apos;s bloodline.  (Note: No Player may start of the
+McLir bloodline).  
+
+These were the members of Clan Gangrel at one time: 
 * Fang
 * Janet Weaver
 * Logan Reeves
@@ -65,6 +162,34 @@ most believe.
         <info_text>The Camarilla is the largest vampire sect, enforcing the Masquerade.  
  
 This is more text.
+</info_text>
+      </tier>
+    </tiers>
+  </topic>
+  <topic>
+    <title>Pregame History of Bal Harbor</title>
+    <keywords>city_history</keywords>
+    <stat>7</stat>
+    <ability>0</ability>
+    <base_difficulty>6</base_difficulty>
+    <tier_count>1</tier_count>
+    <tiers>
+      <tier>
+        <successes_required>1</successes_required>
+        <info_text>The City had been ruled by Camarilla Kindred since it&apos;s inception. 
+Originally, the city was &apos;colonized&apos; by three elders McLir, Amon ak Tul, and
+Dr.  Tench.  They setup the city, and with the exception of McLir, retired
+from active Kindred politics.  McLir became the Prince of the City and ruled
+under Camarilla law.  
+
+McLir was served by a Primogen Council, two harpies, and a sheriff.  The
+city&apos;s financial resources were &apos;managed&apos; by the Giovanni, with assistance
+from Dr.  Tench.  In essence, the city was ruled by the Elders and then the
+Ancillae.  Every other Kindred in the city was a neonate, and many would
+say, a pawn of the Elders.  
+ 
+The Elders also drove out the Werewolves from the area a long time ago and
+no one has seen hide nor hair of them since.
 </info_text>
       </tier>
     </tiers>

@@ -2439,6 +2439,7 @@ RESEARCH_DATA *new_research(void)
 	research->ability = 0;
 	research->base_difficulty = 6;
 	research->tier_count = 0;
+	research->hidden = 0;
 	research->failure_text = NULL;
 	research->modifiers = NULL;
 	research->tiers = NULL;
@@ -2558,6 +2559,45 @@ void free_research_cooldown(RESEARCH_COOLDOWN *cooldown)
 	PURGE_DATA(cooldown->keyword);
 	PURGE_DATA(cooldown);
 	return;
+}
+
+
+ARTICLE_DATA *new_article(void)
+{
+	ARTICLE_DATA *article;
+
+	ALLOC_DATA(article, ARTICLE_DATA, 1);
+
+	if (!article)
+	{
+		log_string(LOG_ERR, "new_article: Memory allocation failed.");
+		return NULL;
+	}
+
+	article->id = 0;
+	article->headline = NULL;
+	article->byline = NULL;
+	article->category = NULL;
+	article->body = NULL;
+	article->date_stamp = 0;
+	article->suppression = 0;
+	article->approved = 0;
+	article->submitted_by = NULL;
+	article->next = NULL;
+
+	return article;
+}
+
+void free_article(ARTICLE_DATA *article)
+{
+	Escape(article);
+
+	PURGE_DATA(article->headline);
+	PURGE_DATA(article->byline);
+	PURGE_DATA(article->category);
+	PURGE_DATA(article->body);
+	PURGE_DATA(article->submitted_by);
+	PURGE_DATA(article);
 }
 
 

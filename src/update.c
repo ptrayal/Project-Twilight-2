@@ -1796,12 +1796,23 @@ void update_handler( void )
 void stock_update()
 {
     STOCKS *stock;
+    static time_t last_price_update = 0;
+
+    if(last_price_update == 0)
+        last_price_update = time(NULL);
+
+    if(time(NULL) - last_price_update < STOCK_UPDATE_INTERVAL)
+        goto dividends;
+
+    last_price_update = time(NULL);
 
     for (stock = stock_list; stock; stock = stock->next)
     {
         int old_cost;
         int igain = 0;
         int istock_flux = dice(1, 9);
+        int max_change;
+        bool is_shock = (STOCK_SHOCK_CHANCE > 0 && number_range(1, 100) <= STOCK_SHOCK_CHANCE);
 
         if (stock->last_change < time(NULL) - 2 * 24 * 60 * 60)
         {
@@ -1831,8 +1842,22 @@ void stock_update()
         }
 
         int idays = (time(NULL) - stock->last_change) / 180;
+        bool recovering = FALSE;
 
         stock->upordown = number_range(-1, 1);
+
+        /*
+         * Recovery mechanic: when a stock is below 20% of its all-time
+         * high, bargain buyers push the price up. The direction is
+         * biased positive (75% up, 25% down) and gains a minimum
+         * recovery tick based on the high price, not the current price.
+         */
+        if(stock->price_high > 0 && stock->cost < stock->price_high / 5)
+        {
+            recovering = TRUE;
+            stock->upordown = (number_range(1, 4) <= 3) ? 1 : -1;
+            stock->phase = 0;
+        }
 
         old_cost = stock->cost;
 
@@ -1860,6 +1885,27 @@ void stock_update()
             break;
         }
 
+        /* Recovery boost: minimum gain of 1% of all-time high per tick */
+        if(recovering && stock->upordown > 0)
+        {
+            int min_recovery = stock->price_high / 100;
+            if(min_recovery < 1) min_recovery = 1;
+            if(stock->cost - old_cost < min_recovery)
+                stock->cost = old_cost + min_recovery;
+        }
+
+        /* Cap price change unless recovering or shock event */
+        if(!is_shock && !recovering && STOCK_MAX_CHANGE_PCT > 0 && old_cost > 0)
+        {
+            max_change = old_cost * STOCK_MAX_CHANGE_PCT / 10000;
+            if(max_change < 1) max_change = 1;
+
+            if(stock->cost > old_cost + max_change)
+                stock->cost = old_cost + max_change;
+            else if(stock->cost < old_cost - max_change)
+                stock->cost = old_cost - max_change;
+        }
+
         if(stock->cost < 1) stock->cost = 1;
 
         if(stock->cost > stock->price_high) stock->price_high = stock->cost;
@@ -1868,6 +1914,9 @@ void stock_update()
         broadcast_stock_event(stock, old_cost, stock->cost);
     }
 
+    save_stocks();
+
+dividends:
     /*
      * Dividend Payouts
      *
@@ -1928,8 +1977,21 @@ void stock_update()
         }
     }
 
-    save_stocks();
 }
+
+/*
+ * make_newspapers — Create newspaper objects from NEWSPAPER data.
+ *
+ * Uses the new ARTICLE_DATA system (article_list) instead of NOTE_DATA.
+ * Each article is stored as keyed extra_descr entries on the object:
+ *   art_head_<id>   = headline
+ *   art_body_<id>   = body text
+ *   art_byline_<id> = author credit
+ *   art_cat_<id>    = category/section name
+ *
+ * Only articles with suppression == 0 and approved == 1 are included.
+ */
+ARTICLE_DATA *find_article_by_id( int id );
 
 OBJ_DATA *make_newspapers()
 {
@@ -1938,18 +2000,16 @@ OBJ_DATA *make_newspapers()
     NEWSPAPER *pnews;
     EXTRA_DESCR_DATA *ed;
     char buf[MSL] = {'\0'};
-    char tmp[MSL] = {'\0'};
-    char tmp_buf[MSL] = {'\0'};  // Intermediate buffer for snprintf operations
     int i;
 
     for (pnews = paper_list; pnews; pnews = pnews->next)
     {
-        obj = create_object(get_obj_index(OBJ_VNUM_NEWSPAPER));  // Ensure get_obj_index returns valid data.
+        obj = create_object(get_obj_index(OBJ_VNUM_NEWSPAPER));
 
         if (!obj)
         {
-            log_string(LOG_ERR, "Failed to create newspaper object.");
-            continue;  // Skip this iteration if the object creation fails.
+            log_string(LOG_ERR, "make_newspapers: Failed to create newspaper object.");
+            continue;
         }
 
         snprintf(buf, sizeof(buf), obj->name, pnews->name);
@@ -1965,44 +2025,50 @@ OBJ_DATA *make_newspapers()
         obj->description = str_dup(buf);
 
         obj->cost = pnews->cost;
-        
-        // Iterate through articles, adding extra descriptions.
-        for (i = MAX_ARTICLES - 1; i >= 0; i--)
+
+        for (i = 0; i < MAX_ARTICLES; i++)
         {
-            NOTE_DATA *article;
-            int vnum = 0;
+            ARTICLE_DATA *art;
+            char key[MIL];
 
-            for (article = news_list; article != NULL; article = article->next)
-            {
-                if (vnum++ == pnews->articles[i]) break;
-            }
+            if (pnews->articles[i] < 1)
+                continue;
 
-            if (article != NULL && article->successes == 0) // Ensure the article is valid.
-            {
-                ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
-                if (!ed)
-                {
-                    log_string(LOG_ERR, "Memory allocation failed for EXTRA_DESCR_DATA.");
-                    continue;  // Skip this article if allocation fails.
-                }
+            art = find_article_by_id(pnews->articles[i]);
+            if (!art || art->suppression > 0 || art->approved != 1)
+                continue;
 
-                ed->keyword = str_dup(Format("Page%d: %s", i, article->subject));
-                ed->description = str_dup(Format("%s", article->text));
-                ed->next = obj->extra_descr;
-                obj->extra_descr = ed;
-            }
+            ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+            snprintf(key, sizeof(key), "art_head_%d", art->id);
+            ed->keyword = str_dup(key);
+            ed->description = str_dup(art->headline ? art->headline : "Untitled");
+            ed->next = obj->extra_descr;
+            obj->extra_descr = ed;
+
+            ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+            snprintf(key, sizeof(key), "art_body_%d", art->id);
+            ed->keyword = str_dup(key);
+            ed->description = str_dup(art->body ? art->body : "");
+            ed->next = obj->extra_descr;
+            obj->extra_descr = ed;
+
+            ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+            snprintf(key, sizeof(key), "art_byline_%d", art->id);
+            ed->keyword = str_dup(key);
+            ed->description = str_dup(art->byline ? art->byline : "Staff Reporter");
+            ed->next = obj->extra_descr;
+            obj->extra_descr = ed;
+
+            ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
+            snprintf(key, sizeof(key), "art_cat_%d", art->id);
+            ed->keyword = str_dup(key);
+            ed->description = str_dup(art->category ? art->category : "General");
+            ed->next = obj->extra_descr;
+            obj->extra_descr = ed;
         }
 
-        snprintf(tmp_buf, sizeof(tmp_buf), "Contents:\n\r");
-        for (ed = obj->extra_descr; ed; ed = ed->next)
-        {
-            strncat(tmp_buf, ed->keyword, sizeof(tmp_buf) - strlen(tmp_buf) - 1);
-            strncat(tmp_buf, "\n", sizeof(tmp_buf) - strlen(tmp_buf) - 1);
-        }
-
-        strncpy(tmp, tmp_buf, sizeof(tmp));
         PURGE_DATA(obj->full_desc);
-        obj->full_desc = str_dup(Format("%s\n\n%s", obj->full_desc, tmp));
+        obj->full_desc = str_dup("Use 'read' to see the front page.");
         obj->wear_loc = -1;
 
         obj->next = papers;

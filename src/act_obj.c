@@ -3014,6 +3014,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
                 }
 
                 t_obj->wear_loc = -1;
+                t_obj->value[0] = 1;
                 PURGE_DATA(t_obj->full_desc);
                 t_obj->full_desc = str_dup(obj->full_desc);
             }

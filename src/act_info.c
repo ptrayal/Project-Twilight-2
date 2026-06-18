@@ -2379,17 +2379,43 @@ void do_look( CHAR_DATA *ch, char *argument )
 }
 
 /* RT added back for the hell of it */
+void show_newspaper_front_page( CHAR_DATA *ch, OBJ_DATA *obj );
+void show_article_to_player( CHAR_DATA *ch, OBJ_DATA *obj, int article_num );
+
 void do_read (CHAR_DATA *ch, char *argument )
 {
+    OBJ_DATA *obj;
+
     CheckCH(ch);
 
     if(IS_NULLSTR(argument))
     {
+        for(obj = ch->carrying; obj != NULL; obj = obj->next_content)
+        {
+            if(obj->pIndexData && obj->pIndexData->vnum == OBJ_VNUM_NEWSPAPER)
+            {
+                show_newspaper_front_page(ch, obj);
+                return;
+            }
+        }
+
         send_to_char("What do you want to read?\n\r", ch);
         return;
     }
 
-    do_function(ch, &do_look, "argument");
+    if(is_number(argument))
+    {
+        for(obj = ch->carrying; obj != NULL; obj = obj->next_content)
+        {
+            if(obj->pIndexData && obj->pIndexData->vnum == OBJ_VNUM_NEWSPAPER)
+            {
+                show_article_to_player(ch, obj, atoi(argument));
+                return;
+            }
+        }
+    }
+
+    do_function(ch, &do_look, argument);
 }
 
 void do_examine( CHAR_DATA *ch, char *argument )

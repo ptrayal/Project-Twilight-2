@@ -938,13 +938,29 @@ int judicial_pardon(CHAR_DATA *ch, char *argument)
 
 
 /* Media Influence */
+ARTICLE_DATA *find_article_by_id( int id );
+void save_articles( void );
+
 int media_articles(CHAR_DATA *ch, char *argument)
 {
+	ARTICLE_DATA *art;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[EXPRESSION].value, 7);
 
 	if(fail > 0)
 	{
-		newspaper_articles(ch, "list");
+		send_to_char("\tB  ID | Headline                          | Category       | Status\tn\n\r", ch);
+		send_to_char("\tY-----+---------------------------------+----------------+------------\tn\n\r", ch);
+
+		for(art = article_list; art; art = art->next)
+		{
+			if(art->approved != 1) continue;
+
+			send_to_char(Format("\tY[\tn%3d\tY]\tn %-33s \tY|\tn %-14s \tY|\tn %s\n\r",
+				art->id,
+				art->headline ? art->headline : "(untitled)",
+				art->category ? art->category : "(none)",
+				art->suppression > 0 ? "\tYSuppressed\tn" : "\tGPublished\tn"), ch);
+		}
 	}
 	else if(fail == 0)
 	{
@@ -962,38 +978,29 @@ int media_articles(CHAR_DATA *ch, char *argument)
 
 int media_suppress(CHAR_DATA *ch, char *argument)
 {
-	NOTE_DATA *pnote;
+	ARTICLE_DATA *art;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[EXPRESSION].value, 7);
-	int anum = 0;
-	int vnum = 0;
-
-	pnote = news_list;
 
 	if(IS_NULLSTR(argument) || !is_number(argument))
 	{
-		send_to_char("Which article are you trying to suppress?\n\r", ch);
+		send_to_char("Which article ID are you trying to suppress?\n\r", ch);
 		return FALSE;
 	}
 
 	if(fail > 0)
 	{
-		anum = atoi( argument );
-		for ( pnote = news_list; pnote != NULL; pnote = pnote->next )
+		art = find_article_by_id(atoi(argument));
+		if(!art || art->approved != 1)
 		{
-			if ( is_note_to( ch, pnote ) && vnum++ == anum )
-			{
-				send_to_char(Format("\tGSuccess\tn: You arrange the suppression of '%s'.\n\r", pnote->subject), ch);
-				pnote->successes += fail;
-				ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
-
-				/* Added this so it will force the saving of the suppression */
-				save_notes(pnote->type);
-				return TRUE;
-			}
+			send_to_char("That article doesn't exist or isn't published.\n\r", ch);
+			return FALSE;
 		}
 
-		send_to_char("There aren't that many articles.\n\r",ch);
-		return FALSE;
+		art->suppression += fail;
+		ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
+		save_articles();
+		send_to_char(Format("\tGSuccess\tn: You arrange the suppression of '%s'.\n\r", art->headline), ch);
+		return TRUE;
 	}
 	else if(fail == 0)
 	{
@@ -1011,36 +1018,30 @@ int media_suppress(CHAR_DATA *ch, char *argument)
 
 int media_promote(CHAR_DATA *ch, char *argument)
 {
-	NOTE_DATA *pnote;
+	ARTICLE_DATA *art;
 	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[EXPRESSION].value, 7);
-	int anum = 0;
-	int vnum = 0;
 
 	if(IS_NULLSTR(argument) || !is_number(argument))
 	{
-		send_to_char("Which article are you trying to promote?\n\r", ch);
+		send_to_char("Which article ID are you trying to promote?\n\r", ch);
 		return FALSE;
 	}
 
 	if(fail > 0)
 	{
-		anum = atoi( argument );
-		for ( pnote = news_list; pnote != NULL; pnote = pnote->next )
+		art = find_article_by_id(atoi(argument));
+		if(!art || art->approved != 1)
 		{
-			if ( is_note_to( ch, pnote ) && vnum++ == anum )
-			{
-				send_to_char(Format("\tGSuccess\tn: You arrange the release of '%s'.\n\r",	pnote->subject), ch);
-				pnote->successes -= fail;
-				if(pnote->successes < 0) pnote->successes = 0;
-				ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
-				/* Added this so it will force the saving of the suppression */
-				save_notes(pnote->type);
-				return TRUE;
-			}
+			send_to_char("That article doesn't exist or isn't published.\n\r", ch);
+			return FALSE;
 		}
 
-		send_to_char("There aren't that many articles.\n\r",ch);
-		return FALSE;
+		art->suppression -= fail;
+		if(art->suppression < 0) art->suppression = 0;
+		ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
+		save_articles();
+		send_to_char(Format("\tGSuccess\tn: You arrange the release of '%s'.\n\r", art->headline), ch);
+		return TRUE;
 	}
 	else if(fail == 0)
 	{
@@ -1054,6 +1055,106 @@ int media_promote(CHAR_DATA *ch, char *argument)
 
 	ch->infl_timer = 3;
 	return TRUE;
+}
+
+int media_submit(CHAR_DATA *ch, char *argument)
+{
+	ARTICLE_DATA *art;
+	int fail = dice_rolls(ch, get_curr_stat(ch, STAT_MAN) + ch->ability[EXPRESSION].value, 7);
+	char arg1[MAX_INPUT_LENGTH];
+
+	if(IS_NULLSTR(argument))
+	{
+		send_to_char("Syntax: influence submit headline <text>\n\r", ch);
+		send_to_char("        influence submit category <section>\n\r", ch);
+		send_to_char("        influence submit body\n\r", ch);
+		send_to_char("        influence submit send\n\r", ch);
+		return FALSE;
+	}
+
+	argument = one_argument(argument, arg1);
+
+	if(!str_cmp(arg1, "headline"))
+	{
+		if(IS_NULLSTR(argument))
+		{ send_to_char("Set the headline to what?\n\r", ch); return FALSE; }
+		if(ch->pnote == NULL)
+		{
+			art = new_article();
+			art->submitted_by = str_dup(ch->name);
+			art->date_stamp = time(NULL);
+			art->approved = 0;
+			ch->pnote = (NOTE_DATA *)art;
+		}
+		else
+			art = (ARTICLE_DATA *)ch->pnote;
+		PURGE_DATA(art->headline);
+		art->headline = str_dup(argument);
+		send_to_char(Format("Headline set to: %s\n\r", argument), ch);
+		return FALSE;
+	}
+
+	if(!str_cmp(arg1, "category"))
+	{
+		if(ch->pnote == NULL)
+		{ send_to_char("Set the headline first.\n\r", ch); return FALSE; }
+		art = (ARTICLE_DATA *)ch->pnote;
+		PURGE_DATA(art->category);
+		art->category = str_dup(IS_NULLSTR(argument) ? "General" : argument);
+		send_to_char(Format("Category set to: %s\n\r", art->category), ch);
+		return FALSE;
+	}
+
+	if(!str_cmp(arg1, "body"))
+	{
+		if(ch->pnote == NULL)
+		{ send_to_char("Set the headline first.\n\r", ch); return FALSE; }
+		art = (ARTICLE_DATA *)ch->pnote;
+		string_append(ch, &art->body);
+		return FALSE;
+	}
+
+	if(!str_cmp(arg1, "send"))
+	{
+		if(ch->pnote == NULL)
+		{ send_to_char("You have no article draft. Set a headline first.\n\r", ch); return FALSE; }
+		art = (ARTICLE_DATA *)ch->pnote;
+
+		if(IS_NULLSTR(art->headline))
+		{ send_to_char("Your article needs a headline.\n\r", ch); return FALSE; }
+
+		if(fail <= 0)
+		{
+			if(fail == 0)
+				send_to_char("\tRFailure\tn: Your submission is rejected by the editors.\n\r", ch);
+			else
+			{
+				send_to_char("\tRBOTCH\tn: Your submission offends the editors.\n\r", ch);
+				ch->influences[INFL_MEDIA] = UMAX(0, ch->influences[INFL_MEDIA] - 1);
+			}
+			free_article(art);
+			ch->pnote = NULL;
+			ch->infl_timer = 4;
+			return TRUE;
+		}
+
+		art->id = top_article_id++;
+		if(IS_NULLSTR(art->byline))
+			art->byline = str_dup(ch->name);
+		if(IS_NULLSTR(art->category))
+			art->category = str_dup("General");
+		art->next = article_list;
+		article_list = art;
+		ch->pnote = NULL;
+
+		save_articles();
+		send_to_char("\tGSuccess\tn: Your article has been submitted for editorial review.\n\r", ch);
+		ch->infl_timer = 4;
+		return TRUE;
+	}
+
+	send_to_char("Unknown submit option. Use: headline, category, body, or send.\n\r", ch);
+	return FALSE;
 }
 
 /* Economic Influence */
@@ -1132,7 +1233,7 @@ int economic_market(CHAR_DATA *ch, char *argument)
 		st->upordown = UpOrDown;
 		st->phase = 1;
 		save_stocks();
-		act(Format("\tGSuccess\tn: The value of a share of \tW%s\tn is now: \tW$%d.%.2d\tn\n\r", st->name, st->cost/100, st->cost%100), ch, NULL, NULL, TO_CHAR, 1);
+		send_to_char(Format("\tGSuccess\tn: The value of a share of \tW%s\tn is now: \tW$%d.%.2d\tn\n\r", st->name, st->cost/100, st->cost%100), ch);
 		broadcast_stock_event(st, old_cost, st->cost);
 	}
 	else if(success == 0)
@@ -1699,8 +1800,7 @@ int newspaper_show (CHAR_DATA *ch, char *arg)
 {
 	NEWSPAPER *paper = NULL;
 	NEWSPAPER *tmp;
-	NOTE_DATA *article = NULL;
-	int i = 0, j = 0;
+	int i = 0;
 	int display_index = 0;
 
 	if(IS_NULLSTR(arg))
@@ -1734,24 +1834,27 @@ int newspaper_show (CHAR_DATA *ch, char *arg)
 
 	for(i = 0; i < MAX_ARTICLES; i++)
 	{
-		if(paper->articles[i] == -1)
+		ARTICLE_DATA *art;
+
+		if(paper->articles[i] < 1)
 		{
-			send_to_char(Format("\tY[\tn%d\tY]\tn: None\n\r", i), ch);
+			send_to_char(Format("\tY[\tn%2d\tY]\tn: (empty)\n\r", i), ch);
 			continue;
 		}
 
-		/* Reset j each iteration so we search from the start of news_list */
-		j = 0;
-		for(article = news_list; article; article = article->next)
+		art = find_article_by_id(paper->articles[i]);
+		if(!art)
 		{
-			if(j == paper->articles[i])
-			{
-				send_to_char(Format("\tY[\tn%d\tY]: [\tn%3d\tY]\tn %s: %s (%s)%s\n\r", i, j, article->sender, article->subject, article->to_list,
-						article->successes ? " (\tWSuppressed\tn)" : ""), ch);
-				break;
-			}
-			j++;
+			send_to_char(Format("\tY[\tn%2d\tY]\tn: (article #%d not found)\n\r", i, paper->articles[i]), ch);
+			continue;
 		}
+
+		send_to_char(Format("\tY[\tn%2d\tY]: [\tn%3d\tY]\tn %s - %s (%s)%s\n\r",
+			i, art->id,
+			art->byline ? art->byline : "Unknown",
+			art->headline ? art->headline : "(untitled)",
+			art->category ? art->category : "General",
+			art->suppression > 0 ? " (\tYSuppressed\tn)" : ""), ch);
 	}
 
 	return TRUE;
@@ -1883,22 +1986,21 @@ int newspaper_price(CHAR_DATA *ch, char *argument)
 
 int newspaper_place(CHAR_DATA *ch, char *argument)
 {
-	NOTE_DATA *pnote;
+	ARTICLE_DATA *art;
 	NEWSPAPER *paper = NULL;
 	char arg[MIL]={'\0'};
 	char position[MIL]={'\0'};
-	char article[MIL]={'\0'};
-	int anum = 0, vnum = 0;
+	char article_id[MIL]={'\0'};
 
 	if(IS_NULLSTR(argument))
 	{
-		send_to_char("Which newspaper do you wish to arrange?\n\r", ch);
+		send_to_char("Syntax: newspaper place <newspaper> <position> <article_id>\n\r", ch);
 		return FALSE;
 	}
 
 	argument = one_argument(argument, arg);
 	argument = one_argument(argument, position);
-	argument = one_argument(argument, article);
+	argument = one_argument(argument, article_id);
 
 	if((paper = find_newspaper_by_arg(arg)) == NULL)
 	{
@@ -1912,34 +2014,31 @@ int newspaper_place(CHAR_DATA *ch, char *argument)
 		return FALSE;
 	}
 
-	if(IS_NULLSTR(article) || IS_NULLSTR(position) || !is_number(article) || !is_number(position))
+	if(IS_NULLSTR(article_id) || IS_NULLSTR(position) || !is_number(article_id) || !is_number(position))
 	{
-		send_to_char("Syntax: newspaper place <newspaper> <position> <article>\n\r", ch);
+		send_to_char("Syntax: newspaper place <newspaper> <position> <article_id>\n\r", ch);
 		return FALSE;
 	}
 
-	/* Valid positions: 0 to MAX_ARTICLES-1 */
 	if(atoi(position) < 0 || atoi(position) >= MAX_ARTICLES)
 	{
-		send_to_char(Format("The target position must be between 0 and %d.\n\r", MAX_ARTICLES - 1), ch);
+		send_to_char(Format("Position must be 0-%d.\n\r", MAX_ARTICLES - 1), ch);
 		return FALSE;
 	}
 
-	anum = atoi( article );
-
-	for ( pnote = news_list; pnote != NULL; pnote = pnote->next )
+	art = find_article_by_id(atoi(article_id));
+	if(!art)
 	{
-		if ( vnum++ == anum )
-		{
-			send_to_char(Format("Article %d in %s is now %s by %s.\n\r", atoi(position), paper->name, pnote->subject, pnote->sender), ch);
-			paper->articles[atoi(position)] = anum;
-			return TRUE;
-		}
+		send_to_char("That article ID doesn't exist. Use 'artedit list' to see articles.\n\r", ch);
+		return FALSE;
 	}
 
-	send_to_char("There aren't that many articles.\n\r",ch);
-
-	return FALSE;
+	paper->articles[atoi(position)] = art->id;
+	send_to_char(Format("Position %d in %s set to: [%d] %s by %s.\n\r",
+		atoi(position), paper->name, art->id,
+		art->headline ? art->headline : "(untitled)",
+		art->byline ? art->byline : "Unknown"), ch);
+	return TRUE;
 }
 
 int newspaper_save(CHAR_DATA *ch, char *arg)

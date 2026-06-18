@@ -430,6 +430,14 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 		free(tmp);
 	}
 
+	{
+		RESEARCH_COOLDOWN *disc;
+		for(disc = ch->pcdata->research_discovered; disc != NULL; disc = disc->next)
+		{
+			fprintf(fp, "RDisc %s~\n", disc->keyword);
+		}
+	}
+
     if (ch->dollars > 0)
     {
     	WriteNumber( fp, "Dollars", ch->dollars );
@@ -1074,6 +1082,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 	ch->pcdata->bamfout			= NULL;
 	ch->pcdata->block_join		= NULL;
 	ch->pcdata->ignore_reject	= NULL;
+	ch->pcdata->research_discovered = NULL;
 	ch->pcdata->pwd				= NULL;
 	ch->pcdata->rpok_string		= str_dup( "Not Available" );
 	ch->pcdata->title			= NULL;
@@ -1701,6 +1710,18 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 			}
 
 			KEY( "Reject",	ch->pcdata->ignore_reject,fread_string( fp ) );
+
+			if ( !str_cmp( word, "RDisc" ) )
+			{
+				RESEARCH_COOLDOWN *disc;
+				disc = new_research_cooldown();
+				disc->keyword = fread_string( fp );
+				disc->last_attempt = 0;
+				disc->next = ch->pcdata->research_discovered;
+				ch->pcdata->research_discovered = disc;
+				fMatch = TRUE;
+				break;
+			}
 
 			if ( !str_cmp( word, "Room" ) )
 			{

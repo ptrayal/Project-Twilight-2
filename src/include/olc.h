@@ -92,6 +92,8 @@ DECLARE_SPELL_FUN( spell_null );
 #define ED_TIP   13
 #define ED_MPCODE   14
 #define ED_RITUAL   15
+#define ED_RESEARCH 16
+#define ED_ARTICLE  17
 
 /*
  * Interpreter Prototypes

@@ -436,7 +436,14 @@ M 0 H 100
 S
 #8287
 Inside the PT MUD Tutorial~
-Economies rise and fall in today's markets, and while many people thriveoff of it - others are destroyed by it.  This brings us to {Cbuy{ging and{Csell{ging.  If you recall the doctor from a few rooms previous, he was ashopkeeper.  If you want you can trace back to his room or just go down onemore time to link back in there.  In there you will be using commands like{Clist{g, {Cbuy{g, and {Csell{g on him - or you can just go to the next roomnorth of here and worry about it later!  {x ~
+Economies rise and fall in today's markets, and while many people
+thriveoff of it - others are destroyed by it.  This brings us to {Cbuy{ging
+and{Csell{ging.  If you recall the doctor from a few rooms previous, he was
+ashopkeeper.  If you want you can trace back to his room or just go down
+onemore time to link back in there.  In there you will be using commands
+like{Clist{g, {Cbuy{g, and {Csell{g on him - or you can just go to the next
+roomnorth of here and worry about it later!  {x 
+~
 0 8 0
 E
 XNUMB1~
@@ -469,7 +476,14 @@ M 0 H 100
 S
 #8288
 Inside the PT MUD Tutorial~
-{CCombat{g here in PT isn't of that much use as most of what goes on hereis role played out, but just in case you ever do decide to go into the realdeal instead of just acting it out - take a glance at {Ccombat{g and its'respective helps that go along with it.  {CExperience{g is something we allneed in this game as it helps to {Cadvance{g vampire {Cdisciplines{g, or{Ctrain{g werewolf{C gift{gs.  You can even raise your {Cbackground{gs,{Cinfluence{gs and most of your {Cattributes{g.  {x ~
+{CCombat{g here in PT isn't of that much use as most of what goes on
+hereis role played out, but just in case you ever do decide to go into the
+realdeal instead of just acting it out - take a glance at {Ccombat{g and
+its'respective helps that go along with it.  {CExperience{g is something we
+allneed in this game as it helps to {Cadvance{g vampire {Cdisciplines{g,
+or{Ctrain{g werewolf{C gift{gs.  You can even raise your {Cbackground{gs,
+{Cinfluence{gs and most of your {Cattributes{g.  {x 
+~
 0 8 0
 E
 XNUMB1~
@@ -516,7 +530,15 @@ M 0 H 100
 S
 #8289
 Inside the PT MUD Tutorial~
-Well, now for a few finishing touches to your character and you will bestep into the game.  Of course score is the normal character sheet with allof your character stats.  Near the top of that sheet you will see youroccupation if you chose one yet, your {Cconcept{g, {Cnature{g, and{Cdemeanor{g.  Last, but not least, of course is the character{Cdescription{g if you haven't already set one - why not do one now beforeheading into the game?  {x {gEast leads to more information on player racesin the game, and not too far after that the exit.  {x ~
+Well, now for a few finishing touches to your character and you will
+bestep into the game.  Of course score is the normal character sheet with
+allof your character stats.  Near the top of that sheet you will see
+youroccupation if you chose one yet, your {Cconcept{g, {Cnature{g,
+and{Cdemeanor{g.  Last, but not least, of course is the
+character{Cdescription{g if you haven't already set one - why not do one now
+beforeheading into the game?  {x {gEast leads to more information on player
+racesin the game, and not too far after that the exit.  {x 
+~
 0 8 0
 E
 XNUMB1~
@@ -551,7 +573,16 @@ M 0 H 100
 S
 #8290
 The End of the PT MUD Tutorial~
-That's it, hopefully by now you're ready to enter the game!  If you stillhave more questions that you feel weren't addressed in this tutorial - takea look at {Cnewbie{g, and if that isn't good enough try using one of thechannels listed earlier in this tutorial to communicate with {Cwho{geverelse is on the MUD at this time.  Or if you want to send a {Cnote{g, justtake a look at the instructions here.  Well, other than that - go on and{Cstep{g into the game!  You may find the need to look at the instructionsin this tutorial again - feel free to type 'newbie' at any time and it willtake you back to the beginning of this tutorial.  {x ~
+That's it, hopefully by now you're ready to enter the game!  If you
+stillhave more questions that you feel weren't addressed in this tutorial -
+takea look at {Cnewbie{g, and if that isn't good enough try using one of
+thechannels listed earlier in this tutorial to communicate with
+{Cwho{geverelse is on the MUD at this time.  Or if you want to send a
+{Cnote{g, justtake a look at the instructions here.  Well, other than that -
+go on and{Cstep{g into the game!  You may find the need to look at the
+instructionsin this tutorial again - feel free to type 'newbie' at any time
+and it willtake you back to the beginning of this tutorial.  {x 
+~
 0 8 0
 E
 XNUMB1~
@@ -561,7 +592,7 @@ XDUMB1~
 None~
 E
 newbie~
-Topic:  Help for New People Description:Here's a few useful commands we use to function within PT:Directions for moving about: n, s, e, w, u, dShopping: buy <item>, sell <item>, listGetting information about your character: score, abilities, powers, affectsCommunication: say, emote, call, yellObject handling: get, drop, give, wear, removeCombat: cstop, cstand, cflip, croll, cjump, lblow, rblow, lgrab, rgrab,kick, skick, bite, lblock, rblock, fblock, spin, sweepOther useful commands: who, gift, channels, bribe, sneak, steal, eat,drink, feed, quit, save, inventory, equipment If you need assistance, use helpline [message] or > [message] See also:  HELP HELPLINE~
+Topic:  Help for New People Description:Here's a few useful commands we use to function within PT:Directions for moving about: n, s, e, w, u, dShopping: buy <item>, sell <item>, listGetting information about your character: score, abilities, powers, affectsCommunication: say, emote, call, yellObject handling: get, drop, give, wear, remove Combat: cstop, cstand, cflip, croll, cjump, lblow, rblow, lgrab, rgrab,kick, skick, bite, lblock, rblock, fblock, spin, sweepOther useful commands: who, gift, channels, bribe, sneak, steal, eat,drink, feed, quit, save, inventory, equipment If you need assistance, use helpline [message] or > [message] See also:  HELP HELPLINE~
 E
 who~
 Topic: Getting Information About Other Players Syntax: finger <target>whois <target> Description:Both of these commands return the same details at the moment. Whilethe information is similar to that in the who list, the display willevolve over time to encompass more useful details.  ============================================================ Topic: Who's on? Syntax: who [<tribe>/<clan>/<kith>/available/staff] Description:The who command gives a list of who is on, and a small amount ofinformation about the person's character. The list can be sorted bytribe/race/kith, or by which people are members of staff, or by whois available for roleplaying. See also: WHOIS, FINGER~
@@ -587,7 +618,16 @@ M 0 H 100
 S
 #8291
 Inside the PT MUD Tutorial~
-Now, for some of the more racial specific commands.  This MUD has many{Crace{gs in it and each {Crace{g has very different commands as theirplaying style is unique from each other.  If you feel you've made yourcharacter the wrong way once you've gotten this far - just wait before you{Cdelete{g.  Go ahead and finish the tutorial out, before you finish you mayfind you are already playing the character you were looking for. {CHumans{g, {Cwerewolves{g, and {Cvampires{g are all currently available toplayers.  To the north you will find more information on {Chumans{g, to thesouth is information on {Cwerewolves{g, and {Cvampires{g are to the east. {x ~
+Now, for some of the more racial specific commands.  This MUD has many
+races in it and each race has very different commands as their playing style
+is unique from each other.  If you feel you've made your character the wrong
+way once you've gotten this far - just wait before you delete.  Go ahead and
+finish the tutorial out, before you finish you may find you are already
+playing the character you were looking for.  Humans, werewolves, and
+vampires are all currently available to players.  To the north you will find
+more information on humans, to the south is information on werewolves, and
+vampires are to the east.  
+~
 0 8 0
 E
 XNUMB1~
@@ -633,7 +673,17 @@ M 0 H 100
 S
 #8292
 Inside the PT MUD Tutorial~
-So you're a {CHuman{g, looks like you're just going to be eaten alive byeveryone else that has special {Cpowers{g - okay let THEM think that.  Butyou should know different.  {CHumans{g, unlike other races, are able to be{Cvote{gd or {Cnominate{gd into positions of office like {CJudges{g,{CAlderman{g,{C Mayor{g, and{C Police Chief{g - which is {Cappoint{ged intooffice by the {CMayor{g.  Humans also get{C numina{g which is all related towhat clan you're in.  If you choose "none" upon creating your character youare not going to be able to use this ability.  The clans available to{CHumans{g are: {CPentex{g, {CFBI{g, and the {CSociety of Leopold{g.  {x ~
+So you're a {CHuman{g, looks like you're just going to be eaten alive
+byeveryone else that has special {Cpowers{g - okay let THEM think that. 
+Butyou should know different.  {CHumans{g, unlike other races, are able to
+be{Cvote{gd or {Cnominate{gd into positions of office like {CJudges{g,
+{CAlderman{g, {C Mayor{g, and{C Police Chief{g - which is {Cappoint{ged
+intooffice by the {CMayor{g.  Humans also get{C numina{g which is all
+related towhat clan you're in.  If you choose "none" upon creating your
+character youare not going to be able to use this ability.  The clans
+available to{CHumans{g are: {CPentex{g, {CFBI{g, and the {CSociety of
+Leopold{g.  {x 
+~
 0 8 0
 E
 XNUMB1~
@@ -768,7 +818,20 @@ M 0 H 100
 S
 #8294
 Inside the PT MUD Tutorial~
-The darkness has always been your home, and the daylight has always beenthere to taunt you.  Meant to be an outcast race, you often look to societyand see the humans as an almost mirror reflection of who you really are. Are you truly so different?  They say you're the bad guy, but then againhumans have always been like blind sheep - whether you are the bad guy ornot.  {CVampires{g have through the centuries been plotting and scheming thelarger pictures of things man often barely glimpses.  While the {Cblood{gthat runs through your veins may not be your own - it still lends a longlife.  Armed with {Cfang{gs, {Cregeneration{g, and {Cdisciplines{g you arethat which goes bump in the night, that is as long as you can keep{Ctorpor{g at bay.  The {Cbloodline{gs available to {Cvampires{g are:{CBrujah{g, {CMalkavian{g, {CNosferatu{g, {CToreador{g and the {CVentrue{g. {x ~
+The darkness has always been your home, and the daylight has always
+beenthere to taunt you.  Meant to be an outcast race, you often look to
+societyand see the humans as an almost mirror reflection of who you really
+are.  Are you truly so different?  They say you're the bad guy, but then
+againhumans have always been like blind sheep - whether you are the bad guy
+ornot.  {CVampires{g have through the centuries been plotting and scheming
+thelarger pictures of things man often barely glimpses.  While the
+{Cblood{gthat runs through your veins may not be your own - it still lends a
+longlife.  Armed with {Cfang{gs, {Cregeneration{g, and {Cdisciplines{g you
+arethat which goes bump in the night, that is as long as you can
+keep{Ctorpor{g at bay.  The {Cbloodline{gs available to {Cvampires{g
+are:{CBrujah{g, {CMalkavian{g, {CNosferatu{g, {CToreador{g and the
+{CVentrue{g.  {x 
+~
 0 8 0
 E
 XNUMB1~

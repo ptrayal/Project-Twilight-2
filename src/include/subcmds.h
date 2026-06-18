@@ -73,6 +73,7 @@ DECLARE_INFL_FUN( judicial_pardon	);
 DECLARE_INFL_FUN( media_suppress	);
 DECLARE_INFL_FUN( media_promote		);
 DECLARE_INFL_FUN( media_articles	);
+DECLARE_INFL_FUN( media_submit		);
 DECLARE_INFL_FUN( economic_market	);
 DECLARE_INFL_FUN( economic_raise	);
 DECLARE_INFL_FUN( economic_trade	);

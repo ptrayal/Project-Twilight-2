@@ -133,6 +133,7 @@ typedef struct  research_data		RESEARCH_DATA;
 typedef struct  research_tier		RESEARCH_TIER;
 typedef struct  research_modifier	RESEARCH_MODIFIER;
 typedef struct  research_cooldown	RESEARCH_COOLDOWN;
+typedef struct  article_data		ARTICLE_DATA;
 
 typedef struct  change_data     CHANGE_DATA;
 
@@ -655,6 +656,19 @@ extern SURVEY_DATA *survey_last;
 /*
  * Stock Market — Tunable Parameters
  *
+ * STOCK_UPDATE_INTERVAL: Real-time seconds between price movements.
+ *   Default: 300 (5 minutes). Lower = more frequent price changes.
+ *   The stock_update() function runs every PULSE_TICK (60s) but only
+ *   moves prices when this interval has elapsed per stock.
+ *
+ * STOCK_MAX_CHANGE_PCT: Maximum price change per tick as percentage x100.
+ *   Default: 200 (2%). Caps how much a stock can move in one tick.
+ *   Set to 0 to disable the cap entirely.
+ *
+ * STOCK_SHOCK_CHANCE: Percent chance per tick of a "shock" event that
+ *   bypasses the cap, allowing a large swing (5-15%).
+ *   Default: 2 (2% chance per tick). Set to 0 to disable shocks.
+ *
  * STOCK_DIVIDEND_INTERVAL: Real-time seconds between dividend payouts.
  *   Default: 86400 (24 real hours). Lower = more frequent payouts.
  *
@@ -666,6 +680,9 @@ extern SURVEY_DATA *survey_last;
  *   0 = Bull Market only (default), 1 = Volatile, 2 = Bear Market.
  *   Only stocks in this phase pay dividends.
  */
+#define STOCK_UPDATE_INTERVAL       300
+#define STOCK_MAX_CHANGE_PCT        200
+#define STOCK_SHOCK_CHANCE          2
 #define STOCK_DIVIDEND_INTERVAL     86400
 #define STOCK_DIVIDEND_PCT          100
 #define STOCK_DIVIDEND_PHASE        0
@@ -698,12 +715,35 @@ struct newspaper
 {
     char    *name;
     sh_int  on_stands;
-    long    articles[MAX_ARTICLES];
+    int     articles[MAX_ARTICLES];
     int     cost;
     NEWSPAPER   *next;
 };
 
 extern NEWSPAPER *newspapers;
+
+/*
+ * Structure for newspaper articles.
+ * Articles are stored independently from the note system with stable IDs.
+ */
+#define ARTICLE_FILE    "../data/articles.xml"
+
+struct article_data
+{
+    int                 id;             /* stable unique ID, auto-incremented */
+    char *              headline;       /* article title */
+    char *              byline;         /* author/credit line */
+    char *              category;       /* section: Local, Crime, Business, etc. */
+    char *              body;           /* article text */
+    time_t              date_stamp;     /* when written */
+    int                 suppression;    /* 0=visible, >0=suppressed */
+    int                 approved;       /* 0=pending, 1=approved, -1=rejected */
+    char *              submitted_by;   /* player name if player-submitted */
+    ARTICLE_DATA *      next;
+};
+
+extern ARTICLE_DATA *article_list;
+extern int           top_article_id;
 
 
 /*
@@ -2187,6 +2227,7 @@ struct	pc_data
     char *		ignore_reject;
     char *		block_join;
     RESEARCH_COOLDOWN *	research_cooldowns;
+    RESEARCH_COOLDOWN *	research_discovered;
     /* @@@@@ insert character linked list here for accounts */
 };
 
@@ -2637,6 +2678,13 @@ struct research_modifier
     RESEARCH_MODIFIER * next;
 };
 
+/*
+ * RESEARCH_DISCOVERY_XP: Experience awarded the first time a player
+ *   discovers a hidden research topic. Awarded only once per topic.
+ *   Default: 3 XP. Set to 0 to disable discovery rewards.
+ */
+#define RESEARCH_DISCOVERY_XP   3
+
 struct research_data
 {
     char *              title;
@@ -2645,6 +2693,7 @@ struct research_data
     int                 ability;        /* ability index */
     int                 base_difficulty;
     int                 tier_count;
+    int                 hidden;         /* 0 = public, 1 = hidden */
     char *              failure_text;   /* Custom text for botches/failures */
     RESEARCH_MODIFIER * modifiers;
     RESEARCH_TIER *     tiers;

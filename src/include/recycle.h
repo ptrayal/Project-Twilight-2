@@ -188,4 +188,8 @@ void	free_research_cooldown args( (RC *cooldown) );
 #undef RM
 #undef RC
 
+/* article system recycling */
+ARTICLE_DATA	*new_article args( (void) );
+void		free_article args( (ARTICLE_DATA *article) );
+
 #endif

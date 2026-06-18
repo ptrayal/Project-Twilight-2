@@ -2193,6 +2193,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 		save_account( d->account );
 		d->repeat = 0;
 
+		ProtocolNoEcho( d, false );
+
 		account_check_weekly_reward( d->account );
 
 		d->connected = CON_ACCT_MENU;
@@ -2374,6 +2376,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 			}
 		}
 
+		ProtocolNoEcho( d, false );
 		d->connected = CON_ACCT_MENU;
 		show_account_hub( d );
 		return;
