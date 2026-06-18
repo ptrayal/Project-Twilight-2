@@ -248,8 +248,8 @@ void do_artedit( CHAR_DATA *ch, char *argument )
             return;
         }
 
-        send_to_char( "\tB  ID | Headline                                    | Category       | Status\tn\n\r", ch );
-        send_to_char( "\tY-----+---------------------------------------------+----------------+------------\tn\n\r", ch );
+        send_to_char( Format("\tB%5s \tY|\tn \tB%-40s \tY|\tn \tB%-15s \tY|\tn \tBStatus\tn\n\r", "ID", "Headline", "Category"), ch );
+        send_to_char( "\tY------+------------------------------------------+-----------------+-----------\tn\n\r", ch );
 
         for(art = article_list; art; art = art->next)
         {
@@ -265,7 +265,7 @@ void do_artedit( CHAR_DATA *ch, char *argument )
             else
                 status = "\tOPending\tn";
 
-            send_to_char( Format( "\tY[\tn%3d\tY]\tn %-43s \tY|\tn %-14s \tY|\tn %s\n\r",
+            send_to_char( Format( "%5d \tY|\tn %-40s \tY|\tn %-15s \tY|\tn %s\n\r",
                 art->id,
                 art->headline ? art->headline : "(no headline)",
                 art->category ? art->category : "(none)",

@@ -613,6 +613,7 @@ void boot_db()
         area_update();
         log_string( LOG_CONNECT, "Area Update run successfully." );
         load_notes();
+        load_articles();
         load_papers();
         log_string( LOG_CONNECT, "Load Papers run successfully." );
 
@@ -624,7 +625,6 @@ void boot_db()
         load_changes();
         //load_votes();
         load_stocks();
-        load_articles();
         load_research_topics();
         load_social_table();
 

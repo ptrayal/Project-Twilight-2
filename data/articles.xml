@@ -1,17 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <articles next_id="3">
   <article>
-    <id>2</id>
-    <headline>String of Break-Ins Near Waterfront</headline>
-    <byline>Staff Reporter</byline>
-    <category>Crime</category>
-    <body></body>
-    <date_stamp>1781772183</date_stamp>
-    <suppression>0</suppression>
-    <approved>1</approved>
-    <submitted_by></submitted_by>
-  </article>
-  <article>
     <id>1</id>
     <headline>Mayor Opens New Downtown Park</headline>
     <byline>Staff Reporter</byline>
@@ -20,6 +9,17 @@
 the heart of downtown.  
 </body>
     <date_stamp>1781772112</date_stamp>
+    <suppression>0</suppression>
+    <approved>1</approved>
+    <submitted_by></submitted_by>
+  </article>
+  <article>
+    <id>2</id>
+    <headline>String of Break-Ins Near Waterfront</headline>
+    <byline>Staff Reporter</byline>
+    <category>Crime</category>
+    <body></body>
+    <date_stamp>1781772183</date_stamp>
     <suppression>0</suppression>
     <approved>1</approved>
     <submitted_by></submitted_by>
