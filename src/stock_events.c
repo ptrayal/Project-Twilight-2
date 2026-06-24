@@ -255,10 +255,11 @@ void broadcast_stock_event(STOCKS *stock, int old_cost, int new_cost)
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), selected, stock->name);
     strncat(buf, "\n\r", sizeof(buf) - strlen(buf) - 1);
 
-    /* Broadcast to all connected, playing characters */
+    /* Broadcast to all connected, playing characters who have market news on */
     for(d = descriptor_list; d != NULL; d = d->next)
     {
-        if(d->connected == CON_PLAYING && d->character != NULL)
+        if(d->connected == CON_PLAYING && d->character != NULL
+                && !IS_SET(d->character->comm, COMM_NOMARKET))
         {
             send_to_char(buf, d->character);
         }

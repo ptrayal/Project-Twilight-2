@@ -1690,6 +1690,7 @@ struct	affect_data
 /* Unusual COMM flags */
 #define COMM_SURVEY		(Z)
 #define COMM_TIPS		(aa)
+#define COMM_NOMARKET		(bb)
 
 /* WIZnet flags */
 #define WIZ_ON			(A)

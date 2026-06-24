@@ -275,169 +275,69 @@ void do_channels( CHAR_DATA *ch, char *argument)
 {
     CheckCH(ch);
 
-    if (IS_SET(ch->comm, COMM_BRIEF))
+    send_to_char("\tBChannels\tn\n\r", ch);
+    send_to_char("\tY+-----------------+--------+\tn\n\r", ch);
+    send_to_char(Format("\tY|\tn \tB%-15s\tn \tY|\tn \tB%-6s\tn \tY|\tn\n\r", "Channel", "Status"), ch);
+    send_to_char("\tY+-----------------+--------+\tn\n\r", ch);
+
+    if (IS_ADMIN(ch))
     {
-        send_to_char("Channels and their status.  ::\n\r", ch);
-
-        if (IS_ADMIN(ch))
-        {
-            send_to_char("Immtalk channel ", ch);
-            if(!IS_SET(ch->comm, COMM_NOWIZ))
-                send_to_char("ON ::\n\r", ch);
-            else
-                send_to_char("OFF ::\n\r", ch);
-
-            send_to_char("Think channel ", ch);
-            if(!IS_SET(ch->comm, COMM_THINK_ON))
-                send_to_char("ON ::\n\r", ch);
-            else
-                send_to_char("OFF ::\n\r", ch);
-        }
-
-        send_to_char("OOC Channel ", ch);
-        if (!IS_SET(ch->comm, COMM_OOC_OFF))
-            send_to_char("ON ::\n\r", ch);
-        else
-            send_to_char("OFF ::\n\r", ch);
-
-        send_to_char("Discreet mode ", ch);
-        if (IS_SET(ch->comm, COMM_DISCREET))
-            send_to_char("ON ::\n\r", ch);
-        else
-            send_to_char("OFF ::\n\r", ch);
-
-        send_to_char("Quiet mode ", ch);
-        if (IS_SET(ch->comm, COMM_QUIET))
-            send_to_char("ON ::\n\r", ch);
-        else
-            send_to_char("OFF ::\n\r", ch);
-
-        send_to_char("Telephone/Deaf ", ch);
-        if (!IS_SET(ch->comm, COMM_NOPHONE))
-            send_to_char("ON ::\n\r", ch);
-        else
-            send_to_char("OFF ::\n\r", ch);
-
-        send_to_char("Yelling ", ch);
-        if (!IS_SET(ch->comm, COMM_NOGOSSIP))
-            send_to_char("ON ::\n\r", ch);
-        else
-            send_to_char("OFF ::\n\r", ch);
-
-        send_to_char("Tips ", ch);
-        if (IS_SET(ch->comm, COMM_TIPS))
-            send_to_char("ON ::\n\r", ch);
-        else
-            send_to_char("OFF ::\n\r", ch);
-
-        if(ch->played < 60 * 60 * 10 || IS_ADMIN(ch))
-        {
-            send_to_char("Helpline Available ::\n\r", ch);
-        }
-
-        if (!IS_NPC(ch) && ch->pcdata->security > 0)
-        {
-            send_to_char("Builder channel ON ::\n\r", ch);
-        }
+        send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Immtalk",
+            !IS_SET(ch->comm, COMM_NOWIZ) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+        send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Think",
+            !IS_SET(ch->comm, COMM_THINK_ON) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
     }
-    else
+
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "OOC",
+        !IS_SET(ch->comm, COMM_OOC_OFF) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Discreet",
+        IS_SET(ch->comm, COMM_DISCREET) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Quiet",
+        IS_SET(ch->comm, COMM_QUIET) ? " \tGON\tn  "  : " \tROFF\tn  "), ch);
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Telephone",
+        !IS_SET(ch->comm, COMM_NOPHONE) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Yelling",
+        !IS_SET(ch->comm, COMM_NOGOSSIP) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Tips",
+        IS_SET(ch->comm, COMM_TIPS) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+    send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn %s \tY|\tn\n\r", "Market News",
+        !IS_SET(ch->comm, COMM_NOMARKET) ? " \tGON\tn   " : " \tROFF\tn  "), ch);
+
+    if(ch->played < 60 * 60 * 10 || IS_ADMIN(ch))
     {
-        /* lists all channels and their status */
-        send_to_char("\tW|   \tYchannel\tW     | \tYstatus\tW|\tn\n\r", ch);
-        send_to_char("\tW|---------------|-------|\tn\n\r", ch);
-
-        if (IS_ADMIN(ch))
-        {
-            send_to_char("\tW|\tnImmtalk channel", ch);
-            if(!IS_SET(ch->comm, COMM_NOWIZ))
-                send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-            else
-                send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-            send_to_char("\tW|\tnThink channel  ", ch);
-            if(!IS_SET(ch->comm, COMM_THINK_ON))
-                send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-            else
-                send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-        }
-
-        send_to_char("\tW|\tnOOC Channel    ", ch);
-        if (!IS_SET(ch->comm, COMM_OOC_OFF))
-            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-        else
-            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-        send_to_char("\tW|\tnDiscreet mode  ", ch);
-        if (IS_SET(ch->comm, COMM_DISCREET))
-            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-        else
-            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-        send_to_char("\tW|\tnQuiet mode     ", ch);
-        if (IS_SET(ch->comm, COMM_QUIET))
-            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-        else
-            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-        send_to_char("\tW|\tnTelephone/Deaf ", ch);
-        if (!IS_SET(ch->comm, COMM_NOPHONE))
-            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-        else
-            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-        send_to_char("\tW|\tnYelling        ", ch);
-        if (!IS_SET(ch->comm, COMM_NOGOSSIP))
-            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-        else
-            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-        send_to_char("\tW|\tnTips           ", ch);
-        if (IS_SET(ch->comm, COMM_TIPS))
-            send_to_char("\tW|\tn \tGON\tn    \tW|\tn\n\r", ch);
-        else
-            send_to_char("\tW|\tn \tROFF\tn   \tW|\tn\n\r", ch);
-
-        if(ch->played < 60 * 60 * 10 || IS_ADMIN(ch))
-        {
-            send_to_char("\tW|\tnHelpline       \tW|\tn \tGON    \tW|\tn\n\r", ch);
-        }
-
-        if (!IS_NPC(ch) && ch->pcdata->security > 0)
-        {
-            send_to_char("\tW|\tnBuilder channel\tW|\tn \tGON    \tW|\tn\n\r", ch);
-        }
+        send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn  \tGON\tn    \tY|\tn\n\r", "Helpline"), ch);
     }
+
+    if (!IS_NPC(ch) && ch->pcdata->security > 0)
+    {
+        send_to_char(Format("\tY|\tn \tW%-15s\tn \tY|\tn  \tGON\tn    \tY|\tn\n\r", "Builder"), ch);
+    }
+
+    send_to_char("\tY+-----------------+--------+\tn\n\r", ch);
+
     send_to_char("\n\r", ch);
 
     if (ch->lines != PAGELEN)
     {
         if (ch->lines)
-        {
-            send_to_char(Format("You display %d lines of scroll.\n\r", ch->lines + 2), ch);
-        }
+            send_to_char(Format("\tWScroll:\tn %d lines.\n\r", ch->lines + 2), ch);
         else
-            send_to_char("Scroll buffering is off.\n\r", ch);
+            send_to_char("\tWScroll:\tn off.\n\r", ch);
     }
 
     if (ch->prompt != NULL)
-    {
-        send_to_char(Format("Your current prompt is: %s\n\r", ch->prompt), ch);
-    }
+        send_to_char(Format("\tWPrompt:\tn %s\n\r", ch->prompt), ch);
 
     if (IS_SET(ch->comm, COMM_NOSHOUT))
-        send_to_char("You cannot shout.\n\r", ch);
-
+        send_to_char("\tRPenalty:\tn You cannot shout.\n\r", ch);
     if (IS_SET(ch->comm, COMM_NOTELL))
-        send_to_char("You cannot use a phone.\n\r", ch);
-
+        send_to_char("\tRPenalty:\tn You cannot use a phone.\n\r", ch);
     if (IS_SET(ch->comm, COMM_NOCHANNELS))
-        send_to_char("You cannot use channels.\n\r", ch);
-
+        send_to_char("\tRPenalty:\tn You cannot use channels.\n\r", ch);
     if (IS_SET(ch->comm, COMM_NOEMOTE))
-        send_to_char("You cannot show emotions.\n\r", ch);
-
+        send_to_char("\tRPenalty:\tn You cannot show emotions.\n\r", ch);
     if (IS_SET(ch->comm, COMM_AFK))
-        send_to_char("You are AFK.\n\r", ch);
+        send_to_char("\tYStatus:\tn You are AFK.\n\r", ch);
 }
 
 /* Toggle comm flags */
@@ -491,6 +391,22 @@ void do_phone( CHAR_DATA *ch, char *argument)
 	{
 		send_to_char("You turn off your phone.\n\r",ch);
 		SET_BIT(ch->comm,COMM_NOPHONE);
+	}
+}
+
+void do_marketnews( CHAR_DATA *ch, char *argument)
+{
+	CheckCH(ch);
+
+	if (IS_SET(ch->comm, COMM_NOMARKET))
+	{
+		send_to_char("Market news broadcasts are now \tGON\tn.\n\r", ch);
+		REMOVE_BIT(ch->comm, COMM_NOMARKET);
+	}
+	else
+	{
+		send_to_char("Market news broadcasts are now \tROFF\tn.\n\r", ch);
+		SET_BIT(ch->comm, COMM_NOMARKET);
 	}
 }
 

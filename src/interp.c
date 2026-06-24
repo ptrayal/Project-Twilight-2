@@ -579,6 +579,7 @@ const	struct	cmd_type	cmd_table	[] =
 	{	"load",				do_load,			P_DEAD,	ST,	L_ALL,	1,	A|B|F,	0 },
 	{	"loaddice",			do_loaddice,		P_DEAD,	MA,	L_ALL,	1,	A|B|F,	0 },
 	{	"log_pc",			do_log,				P_DEAD,	MA,	L_ALL,	1,	A|B|E,	0 },
+	{	"marketnews",		do_marketnews,		P_DEAD,	0,	L_NRM,	1,	A|B|E,	0 },
 	{	"marry",			do_marry,			P_REST,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"memory",			do_memory,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },
 	{	"mob_find",			do_mfind,			P_DEAD,	WA,	L_NRM,	1,	A|B|E,	0 },

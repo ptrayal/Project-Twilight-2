@@ -276,6 +276,7 @@ DECLARE_DO_FUN( do_wwgift4_5	);
 DECLARE_DO_FUN( do_wwgift5_5	);
 DECLARE_DO_FUN(	do_map		);
 DECLARE_DO_FUN(	do_mark		);
+DECLARE_DO_FUN(	do_marketnews	);
 DECLARE_DO_FUN(	do_marry	);
 DECLARE_DO_FUN( do_meditate	);
 DECLARE_DO_FUN( do_melpominee1	);
