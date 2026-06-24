@@ -5061,7 +5061,7 @@ void do_freevnums(CHAR_DATA *ch, char *argument)
 
 	buffer = new_buf();
 
-	snprintf(buf, sizeof(buf), "Free slot ranges (inclusive):\n\r");
+	snprintf(buf, sizeof(buf), "\tBFree Vnum Ranges (inclusive):\tn\n\r");
 	add_buf( buffer, buf );
 
 	// First iteration - get minum vnum (done so we can have an arbitrary min-vnum.
@@ -5093,7 +5093,7 @@ void do_freevnums(CHAR_DATA *ch, char *argument)
 			// No area bigger than the last one.
 		if (vnum_next == -1) 
 		{
-			snprintf(buf, sizeof(buf), "%d onwards\r\n", vnum_max+1);
+			snprintf(buf, sizeof(buf), "\tW%d\tn onwards\n\r", vnum_max+1);
 			add_buf(buffer, buf);
 			break;
 		}
@@ -5184,8 +5184,11 @@ void do_ritedit( CHAR_DATA *ch, char *argument )
 			return;
 		}
 		ritedit_create(ch, argument);
-		if (ch->desc->pEdit != NULL)
+		if (ch->desc && ch->desc->pEdit != NULL)
+		{
 			ch->desc->editor = ED_RITUAL;
+			send_to_char(Format("Editing new ritual: %s\n\r", argument), ch);
+		}
 		return;
 	}
 
@@ -5218,6 +5221,13 @@ void do_ritedit( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
+	if (!ch->desc)
+	{
+		send_to_char("RiteEdit: No descriptor available.\n\r", ch);
+		return;
+	}
+
 	ch->desc->pEdit  = (void *)r;
 	ch->desc->editor = ED_RITUAL;
+	send_to_char(Format("Editing ritual: %s\n\r", r->name), ch);
 }

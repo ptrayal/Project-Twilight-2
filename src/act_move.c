@@ -4193,6 +4193,14 @@ void do_step(CHAR_DATA *ch, char *argument)
         }
     }
 
+    if(!IS_NPC(ch) && ch->pcdata && !ch->pcdata->tutorial_complete
+            && ch->in_room->vnum >= 8280 && ch->in_room->vnum <= 8320)
+    {
+        ch->pcdata->tutorial_complete = TRUE;
+        ch->exp += 5;
+        send_to_char("\n\r\tGCongratulations on completing the tutorial! (+5 XP)\tn\n\r\n\r", ch);
+    }
+
     char_from_room(ch);
     char_to_room(ch, location);
 
@@ -4364,9 +4372,10 @@ void do_newbie (CHAR_DATA *ch, char *argument)
     CheckCH(ch);
 
     do_step(ch, "Newbie School");
-    send_to_char("\n\rFrom here you can explore the features of Project Twilight.\n\r", ch);
-    send_to_char("Take some time to get acquainted with the commands and\n\r", ch);
-    send_to_char("peculiarities of our world.\n\r", ch);
+    send_to_char("\n\r\tBWelcome to the Project Twilight Tutorial!\tn\n\r", ch);
+    send_to_char("Walk through the rooms to learn about the game's features.\n\r", ch);
+    send_to_char("Each room covers a different topic with commands to try.\n\r", ch);
+    send_to_char("Type '\tWnorth\tn' to begin!\n\r", ch);
 }
 
 void do_pump(CHAR_DATA *ch, char *argument)

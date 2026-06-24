@@ -1843,11 +1843,14 @@ void do_shutdown( CHAR_DATA *ch, char *argument )
 
 	CheckCH(ch);
 
-	if (ch->invis_level < LEVEL_IMMORTAL)
+	if(IS_NULLSTR(argument) || str_cmp(argument, "confirm"))
 	{
-		snprintf( buf, sizeof(buf), "Shutdown by %s.", ch->name );
+		send_to_char("\tRWarning:\tn This will shut down the MUD immediately.\n\r", ch);
+		send_to_char("Type '\tWshutdown confirm\tn' to proceed.\n\r", ch);
+		return;
 	}
 
+	snprintf( buf, sizeof(buf), "Shutdown by %s.", ch->name );
 	append_file( ch, SHUTDOWN_FILE, buf );
 	strncat( buf, "\n\r" , sizeof(buf) - strlen(buf) - 1);
 
@@ -1866,7 +1869,7 @@ void do_shutdown( CHAR_DATA *ch, char *argument )
 		{
 			save_char_obj(vch);
 		}
-		// close_socket(d);
+		close_socket(d);
 	}
 
 	return;
@@ -4578,13 +4581,21 @@ void do_copyover (CHAR_DATA *ch, char * argument)
 {
 	FILE *fp;
 	DESCRIPTOR_DATA *d, *d_next;
-	char buf [100]={'\0'};
+	char buf [MSL]={'\0'};
 	char buf_port[20]={'\0'};
 	char buf_logfile[20]={'\0'};
 	char buf_control[20]={'\0'};
 	extern int port, control;
 
 	CheckCH(ch);
+
+	if(IS_NULLSTR(argument) || str_cmp(argument, "confirm"))
+	{
+		send_to_char("\tYWarning:\tn This will perform a warm reboot of the MUD.\n\r", ch);
+		send_to_char("All players will briefly disconnect and reconnect.\n\r", ch);
+		send_to_char("Type '\tWcopyover confirm\tn' to proceed.\n\r", ch);
+		return;
+	}
 
 	fp = fopen(COPYOVER_FILE, "w");
 
@@ -5803,6 +5814,8 @@ void do_telepath(CHAR_DATA *ch, char *argument)
 
 void do_backup(CHAR_DATA *ch, char *argument)
 {
+	int systemRet;
+
 	CheckCH(ch);
 
 	if(backup)
@@ -5811,12 +5824,13 @@ void do_backup(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	int systemRet = system("~/Project-Twilight-2/scripts/backup &");
+	systemRet = system("~/Project-Twilight-2/scripts/backup &");
 	if (systemRet == -1)
 	{
 		log_string(LOG_BUG, "Error in do_backup.  Unable to run backup command.");
+		send_to_char("\tRError:\tn Backup script failed to execute.\n\r", ch);
+		return;
 	}
-	// system("~/Project-Twilight-2/scripts/backup &");
 	send_to_char("Backup under way.\n\r", ch);
 	backup = TRUE;
 	wiznet("\tY[WIZNET]\tn $N starts a backup cycle.",	ch,NULL,WIZ_LOAD,WIZ_SECURE,3);
@@ -5824,6 +5838,8 @@ void do_backup(CHAR_DATA *ch, char *argument)
 
 void do_unpak(CHAR_DATA *ch, char *argument)
 {
+	int systemRet;
+
 	CheckCH(ch);
 
 	if(backup)
@@ -5832,12 +5848,13 @@ void do_unpak(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	int systemRet = system("~/Project-Twilight-2/scripts/unpak &");
+	systemRet = system("~/Project-Twilight-2/scripts/unpak &");
 	if (systemRet == -1)
 	{
 		log_string(LOG_BUG, "Error in do_unpak.  Unable to run unpak command.");
+		send_to_char("\tRError:\tn Unpak script failed to execute.\n\r", ch);
+		return;
 	}
-	// system("~/Project-Twilight-2/scripts/unpak &");
 	send_to_char("Unpak under way.\n\r", ch);
 	backup = TRUE;
 	wiznet("\tY[WIZNET]\tn $N starts an unpak cycle.",	ch,NULL,WIZ_LOAD,WIZ_SECURE,3);

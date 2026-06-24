@@ -438,6 +438,9 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 		}
 	}
 
+	if (ch->pcdata->tutorial_complete)
+		WriteNumber( fp, "TutorialDone", 1 );
+
     if (ch->dollars > 0)
     {
     	WriteNumber( fp, "Dollars", ch->dollars );
@@ -1083,6 +1086,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 	ch->pcdata->block_join		= NULL;
 	ch->pcdata->ignore_reject	= NULL;
 	ch->pcdata->research_discovered = NULL;
+	ch->pcdata->tutorial_complete = FALSE;
 	ch->pcdata->pwd				= NULL;
 	ch->pcdata->rpok_string		= str_dup( "Not Available" );
 	ch->pcdata->title			= NULL;
@@ -1838,6 +1842,12 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 			KEY( "TSex",	ch->pcdata->true_sex,   fread_number( fp ) );
 			KEY( "Tru",		ch->trust,		fread_number( fp ) );
 
+			if(!str_cmp(word, "TutorialDone"))
+			{
+				ch->pcdata->tutorial_complete = fread_number( fp ) ? TRUE : FALSE;
+				fMatch = TRUE;
+				break;
+			}
 
             KEY( "Titl", ch->pcdata->title,        fread_string( fp ) );
 			if(!str_cmp(word, "Totem"))

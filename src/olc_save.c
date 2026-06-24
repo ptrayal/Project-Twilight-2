@@ -1540,6 +1540,8 @@ void do_ritesave (CHAR_DATA *ch, char *argument)
 
 	closeReserve();
 
+	rename("rituals.xml", "rituals.xml.bak");
+
 	if (!(fp = fopen("rituals.xml", "w")))
 	{
 		log_string(LOG_BUG, "RiteSave: fopen rituals.xml");
@@ -1580,6 +1582,7 @@ void do_ritesave (CHAR_DATA *ch, char *argument)
 		for (step = 0; step < MAX_RITE_STEPS; step++)
 		{
 			if (r->actions[step] < 0) break;
+			if (r->actions[step] >= max_rite_actions) continue;
 			if (seq[0]) strncat(seq, " ", sizeof(seq) - strlen(seq) - 1);
 			strncat(seq, rite_actions[r->actions[step]].name, sizeof(seq) - strlen(seq) - 1);
 		}

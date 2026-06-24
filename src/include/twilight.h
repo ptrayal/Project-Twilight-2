@@ -2228,6 +2228,7 @@ struct	pc_data
     char *		block_join;
     RESEARCH_COOLDOWN *	research_cooldowns;
     RESEARCH_COOLDOWN *	research_discovered;
+    bool		tutorial_complete;
     /* @@@@@ insert character linked list here for accounts */
 };
 

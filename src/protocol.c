@@ -548,9 +548,13 @@ const char *ProtocolOutput( descriptor_t *apDescriptor, const char *apData, int 
    for ( ; i < MAX_OUTPUT_BUFFER && apData[j] != '\0' && !bTerminate && 
       (*apLength <= 0 || j < *apLength); ++j )
    {
-      if ( apData[j] == '\t' )
+      if ( apData[j] == '\t'
+         || (apData[j] == '\\' && apData[j+1] == 't') )
       {
          const char *pCopyFrom = NULL;
+
+         if ( apData[j] == '\\' )
+            j++;
 
          switch ( apData[++j] )
          {

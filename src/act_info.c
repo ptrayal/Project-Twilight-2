@@ -7039,11 +7039,9 @@ void do_snippets( CHAR_DATA *ch, char *argument )
 // This function is to check the length of an array to make sure we are sizing them correctly.
 void do_testarray (CHAR_DATA *ch, char *argument)
 {
-    ROOM_INDEX_DATA *pRoomIndex;
     CheckCH(ch);
 
-    send_to_char( Format("Length of pRoomIndex->exit: %d\n\r", (int)( sizeof(pRoomIndex->exit) / sizeof(pRoomIndex->exit[0]) )), ch);
-
+    send_to_char( Format("Exit array size: %d\n\r", MAX_EXITS), ch);
 }
 
 // Comparison function for qsort
