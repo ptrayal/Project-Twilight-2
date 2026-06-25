@@ -2048,7 +2048,7 @@ OBJ_DATA *make_newspapers()
             ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
             snprintf(key, sizeof(key), "art_body_%d", art->id);
             ed->keyword = str_dup(key);
-            ed->description = str_dup(art->body ? art->body : "");
+            ed->description = str_dup(!IS_NULLSTR(art->body) ? art->body : "(No content)");
             ed->next = obj->extra_descr;
             obj->extra_descr = ed;
 
@@ -2108,10 +2108,10 @@ int update_news_stands ()
 
 				for(objed=obj->extra_descr;objed;objed=objed->next)
 				{
-					/* Set extra descriptions for articles */
+					if(IS_NULLSTR(objed->keyword)) continue;
 					ALLOC_DATA(ed, EXTRA_DESCR_DATA, 1);
 					ed->keyword         = str_dup(objed->keyword);
-					ed->description     = str_dup(objed->description);
+					ed->description     = str_dup(!IS_NULLSTR(objed->description) ? objed->description : "(No content)");
 					LINK_SINGLE(ed, next, new_ob->extra_descr);
 				}
 

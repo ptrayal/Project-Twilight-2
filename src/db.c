@@ -1287,13 +1287,13 @@ void load_helps_xml(FILE *fp, int type)
         else if (xml_get_field(fp, line, "Syntax", content, sizeof(content)))
             { xml_unescape(content); pHelp->syntax = str_dup(content); }
         else if (xml_get_field(fp, line, "Desc", content, sizeof(content)))
-            { xml_unescape(content); pHelp->description = str_dup(content); }
+            { xml_unescape(content); if(content[0]) pHelp->description = str_dup(content); }
         else if (xml_get_field(fp, line, "See", content, sizeof(content)))
-            { xml_unescape(content); pHelp->see_also = str_dup(content); }
+            { xml_unescape(content); if(content[0]) pHelp->see_also = str_dup(content); }
         else if (xml_get_field(fp, line, "Web", content, sizeof(content)))
-            { xml_unescape(content); pHelp->website = str_dup(content); }
+            { xml_unescape(content); if(content[0]) pHelp->website = str_dup(content); }
         else if (xml_get_field(fp, line, "Unformatted", content, sizeof(content)))
-            { xml_unescape(content); pHelp->unformatted = str_dup(content); }
+            { xml_unescape(content); if(content[0]) pHelp->unformatted = str_dup(content); }
     }
 }
 

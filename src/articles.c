@@ -430,7 +430,12 @@ void load_articles( void )
         {
             fseek( fp, -(long)strlen(line), SEEK_CUR );
             content = read_xml_tag_content( fp, "body" );
-            if(content) art->body = str_dup( xml_unescape(content) );
+            if(content)
+            {
+                char *unesc = xml_unescape(content);
+                if(unesc && unesc[0] != '\0')
+                    art->body = str_dup( unesc );
+            }
         }
         else if((content = strstr( line, "<date_stamp>" )) != NULL)
         {
