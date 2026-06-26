@@ -560,32 +560,21 @@ QUEST_DATA *new_quest()
 
 void free_quest(QUEST_DATA *quest)
 {
-    // Validate input
     if (!quest)
-    {
-        log_string(LOG_ERR, "free_quest: Attempted to free a NULL QUEST_DATA.");
         return;
+
+    if (quest->obj != NULL)
+    {
+        extract_obj(quest->obj);
+        quest->obj = NULL;
     }
 
-    log_string(LOG_GAME, "free_quest: Freeing QUEST_DATA at memory location %p.", (void *)quest);
-
-    // Clear associations to other structures
-    quest->quest_flags = 0;
-    quest->time_limit = 0;
-    quest->quest_type = Q_NONE; // Reset quest type
-    quest->state = 0;
-
-    // Nullify pointers to prevent accidental usage
     quest->victim = NULL;
     quest->aggressor = NULL;
     quest->questor = NULL;
-    quest->obj = NULL;
     quest->next = NULL;
 
-    // Free the structure itself
     PURGE_DATA(quest);
-
-    log_string(LOG_GAME, "free_quest: Successfully freed QUEST_DATA.");
 }
 
 

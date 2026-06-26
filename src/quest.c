@@ -107,10 +107,10 @@ CHAR_DATA * evil_twin (CHAR_DATA *ch)
 CHAR_DATA * get_random_mob(CHAR_DATA *ch)
 {
     CHAR_DATA *mob = NULL;
-    /* 3000 is simply an arbitrarily chosen integer */
     int i = number_range(1, 3000);
     int safety = 0;
     int max_iterations = 10000;
+    int passes = 0;
 
     while(i > 0)
     {
@@ -125,6 +125,8 @@ CHAR_DATA * get_random_mob(CHAR_DATA *ch)
                 break;
             }
         }
+        if(++passes > 3)
+            return NULL;
     }
 
     /* Find an NPC that isn't the character, with safety limit */
@@ -376,25 +378,31 @@ void gen_quest (bool forced, CHAR_DATA *vch)
 		pquest->questor = vch;
 	}
 
-	pquest->quest_type = number_range(0, MAX_QUESTS);
-	/* Debug code: if(!str_cmp(pquest->questor->name, "Dsarky")) pquest->quest_type = 2; */
+	pquest->quest_type = number_range(0, MAX_QUESTS - 1);
 
 	pquest->quest_flags = gen_quest_flags();
 
 	pquest->victim = gen_quest_victim(pquest);
-	while(pquest->victim == pquest->questor)
-		pquest->victim = gen_quest_victim(pquest);
+	if(pquest->victim == NULL || pquest->victim == pquest->questor)
+	{
+		free_quest(pquest);
+		return;
+	}
 
 	pquest->aggressor = gen_quest_aggressor(pquest);
-	while(pquest->aggressor == pquest->questor
+	if(pquest->aggressor == NULL
+			|| pquest->aggressor == pquest->questor
 			|| pquest->aggressor == pquest->victim)
-		pquest->aggressor = gen_quest_aggressor(pquest);
+	{
+		free_quest(pquest);
+		return;
+	}
 
 	pquest->aggressor->quest = pquest;
 	pquest->victim->quest = pquest;
 
 	pquest->time_limit = gen_time_limit(pquest, 0);
-	pquest->obj = gen_quest_object();//pquest);
+	pquest->obj = gen_quest_object();
 	pquest->questor->quest = pquest;
 
 	LINK_SINGLE(pquest, next, quest_list);
@@ -430,6 +438,16 @@ void quest_none (CHAR_DATA *ch, int flag)
 {
 	QUEST_DATA *pq = ch->quest;
 
+	if(pq == NULL)
+		return;
+
+	if(pq->victim != NULL && pq->victim->quest == pq)
+		pq->victim->quest = NULL;
+	if(pq->aggressor != NULL && pq->aggressor->quest == pq)
+		pq->aggressor->quest = NULL;
+	if(pq->questor != NULL && pq->questor->quest == pq)
+		pq->questor->quest = NULL;
+
 	remove_quest(pq);
 	free_quest(pq);
 	ch->quest = NULL;
@@ -449,9 +467,13 @@ void quest_courier (CHAR_DATA *ch, int flag)
         SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
         if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
             SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
-        if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
+        if(ch->quest->obj != NULL
+                && ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
                 > can_carry_w(ch->quest->victim))
-            ch->quest->obj = 0;
+        {
+            extract_obj(ch->quest->obj);
+            ch->quest->obj = NULL;
+        }
         /*aggressor makes offer;*/
         if(ch->quest->aggressor != NULL)
         {
@@ -464,7 +486,7 @@ void quest_courier (CHAR_DATA *ch, int flag)
         if(ch->quest->aggressor != NULL)
         {
             send_to_char("You accept the courier job.\n\r", ch);
-            if(ch->quest->victim != NULL)
+            if(ch->quest->victim != NULL && ch->quest->obj != NULL)
             {
                 act("$N says, \"I need you to run this to $t.\"", ch, PERS( ch->quest->victim, ch ), ch->quest->aggressor, TO_CHAR, 1);
                 act("$N gives you $p.\n\r", ch, ch->quest->obj, ch->quest->aggressor, TO_CHAR, 1);
@@ -489,7 +511,9 @@ void quest_courier (CHAR_DATA *ch, int flag)
         }
         else send_to_char("You succeed.\n\r", ch);
         ch->exp++;
-        extract_obj(ch->quest->obj);
+        if(ch->quest->obj != NULL)
+            extract_obj(ch->quest->obj);
+        ch->quest->obj = NULL;
         quest_none(ch, 0);
         break;
     case 3 :
@@ -502,7 +526,9 @@ void quest_courier (CHAR_DATA *ch, int flag)
             }
         }
         else send_to_char("You fail to deliver the package.\n\r", ch);
-        extract_obj(ch->quest->obj);
+        if(ch->quest->obj != NULL)
+            extract_obj(ch->quest->obj);
+        ch->quest->obj = NULL;
         quest_none(ch, 0);
         break;
     }
@@ -585,9 +611,13 @@ void quest_thief (CHAR_DATA *ch, int flag)
         SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
         if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
             SET_BIT(ch->quest->obj->wear_flags, ITEM_TAKE);
-        if(ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
+        if(ch->quest->obj != NULL
+                && ch->quest->victim->carry_weight + get_obj_weight(ch->quest->obj)
                 > can_carry_w(ch->quest->victim))
-            ch->quest->obj = 0;
+        {
+            extract_obj(ch->quest->obj);
+            ch->quest->obj = NULL;
+        }
         /*aggressor makes offer;*/
         if(ch->quest->aggressor != NULL)
         {
@@ -600,7 +630,7 @@ void quest_thief (CHAR_DATA *ch, int flag)
         if(ch->quest->aggressor != NULL)
         {
             send_to_char("You accept the theft job.\n\r", ch);
-            if(ch->quest->victim != NULL)
+            if(ch->quest->victim != NULL && ch->quest->obj != NULL)
             {
                 char buf[MSL]={'\0'};
                 snprintf(buf, sizeof(buf), "$N says, \"I need you to steal %s from $t.\"", format_obj_to_char( ch->quest->obj, ch, TRUE ));
@@ -627,7 +657,9 @@ void quest_thief (CHAR_DATA *ch, int flag)
         }
         else send_to_char("You steal the item!\n\r", ch);
         ch->exp++;
-        extract_obj(ch->quest->obj);
+        if(ch->quest->obj != NULL)
+            extract_obj(ch->quest->obj);
+        ch->quest->obj = NULL;
         quest_none(ch, 0);
         break;
     case 3 :
@@ -640,7 +672,9 @@ void quest_thief (CHAR_DATA *ch, int flag)
             }
         }
         else send_to_char("You fail to acquire the item.\n\r", ch);
-        extract_obj(ch->quest->obj);
+        if(ch->quest->obj != NULL)
+            extract_obj(ch->quest->obj);
+        ch->quest->obj = NULL;
         quest_none(ch, 0);
         break;
     }
@@ -767,7 +801,12 @@ void do_random_at(CHAR_DATA *ch, char *argument)
 
 	if(IS_NULLSTR(argument))
 	{
-		/*gen_quest(TRUE, ch);*/
+		return;
+	}
+
+	if(mob == NULL)
+	{
+		send_to_char("Could not find a suitable target.\n\r", ch);
 		return;
 	}
 
