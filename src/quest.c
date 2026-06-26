@@ -178,17 +178,19 @@ OBJ_DATA * get_random_obj()
 {
 	OBJ_INDEX_DATA *pobj = NULL;
 	OBJ_DATA *obj = NULL;
-	/* 3000 is simply an arbitrarily chosen integer */
 	int i = number_range(1, 3000);
+	int passes = 0;
 
-	while (i>0)
+	while (i > 0)
 	{
 		for(obj = object_list; obj != NULL; obj = obj->next)
 		{
 			i--;
-			if(i<=0)
+			if(i <= 0)
 				break;
 		}
+		if(++passes > 3)
+			return NULL;
 	}
 
 	if(obj == NULL || obj->pIndexData == NULL)
@@ -203,10 +205,10 @@ OBJ_DATA * get_random_obj()
 ROOM_INDEX_DATA * random_room()
 {
 	ROOM_INDEX_DATA * rm = NULL;
-	/* 3000 is simply an arbitrarily chosen integer */
 	int i = number_range(1, 3000);
+	int passes = 0;
 
-	while (i>0)
+	while (i > 0)
 	{
 		for(rm = get_room_index(10000); rm != NULL; rm = rm->next)
 		{
@@ -215,9 +217,11 @@ ROOM_INDEX_DATA * random_room()
 					&& !IS_SET(rm->room_flags, ROOM_ADMIN)
 					&& !IS_SET(rm->room_flags, ROOM_NOWHERE))
 				i--;
-			if(i<=0)
+			if(i <= 0)
 				break;
 		}
+		if(++passes > 3)
+			return NULL;
 	}
 
 	return rm;
@@ -236,11 +240,8 @@ CHAR_DATA * get_questor()
 	for(ch = char_list; ch != NULL; ch = ch->next)
 	{
 		if(!IS_NPC(ch) && ch->quest == NULL
-				&& IS_SET(ch->act2, ACT2_RP_ING) && number_range(0, 1000) == 567)
+				&& IS_SET(ch->act2, ACT2_RP_ING) && number_range(0, 100) == 50)
 			return ch;
-		/* @@@@@ Test condition only. Remove.
-	if(!str_cmp(ch->name, "Dsarky") && ch->quest == NULL)
-	return ch; */
 	}
 
 	return NULL;
@@ -456,13 +457,20 @@ void quest_none (CHAR_DATA *ch, int flag)
 void quest_courier (CHAR_DATA *ch, int flag)
 {
     OBJ_DATA *new_obj;
+    OBJ_DATA *old_obj;
 
     switch(flag)
     {
     case 0 :
-        /*package item*/
-        new_obj = create_object(ch->quest->obj->pIndexData);
-        clone_object(ch->quest->obj, new_obj);
+        if(ch->quest->obj == NULL)
+        {
+            quest_none(ch, 0);
+            break;
+        }
+        old_obj = ch->quest->obj;
+        new_obj = create_object(old_obj->pIndexData);
+        clone_object(old_obj, new_obj);
+        extract_obj(old_obj);
         ch->quest->obj = new_obj;
         SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
         if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
@@ -600,13 +608,20 @@ void quest_hitman (CHAR_DATA *ch, int flag)
 void quest_thief (CHAR_DATA *ch, int flag)
 {
     OBJ_DATA *new_obj;
+    OBJ_DATA *old_obj;
 
     switch(flag)
     {
     case 0 :
-        /*package item*/
-        new_obj = create_object(ch->quest->obj->pIndexData);
-        clone_object(ch->quest->obj, new_obj);
+        if(ch->quest->obj == NULL)
+        {
+            quest_none(ch, 0);
+            break;
+        }
+        old_obj = ch->quest->obj;
+        new_obj = create_object(old_obj->pIndexData);
+        clone_object(old_obj, new_obj);
+        extract_obj(old_obj);
         ch->quest->obj = new_obj;
         SET_BIT(ch->quest->obj->extra2, OBJ_PACKAGED);
         if(!IS_SET(ch->quest->obj->wear_flags, ITEM_TAKE))
