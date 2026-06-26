@@ -3623,10 +3623,13 @@ void save_notes(int type)
 
 void load_notes(void)
 {
-	load_thread(NOTE_FILE,&note_list, NOTE_NOTE, 14*24*60*60);
-	load_thread(BG_FILE,&bg_list, NOTE_BACKGROUND, 14*24*60*60);
-	load_thread(KNOW_FILE,&know_list, NOTE_KNOWLEDGE, 14*24*60*60);
-	load_thread(NEWS_FILE,&news_list, NOTE_ARTICLE, 14*24*60*60);
+	time_t retention = NOTE_RETENTION_DAYS > 0
+	    ? (time_t)NOTE_RETENTION_DAYS * 24 * 60 * 60 : 0;
+
+	load_thread(NOTE_FILE,&note_list, NOTE_NOTE, retention);
+	load_thread(BG_FILE,&bg_list, NOTE_BACKGROUND, 0);
+	load_thread(KNOW_FILE,&know_list, NOTE_KNOWLEDGE, 0);
+	load_thread(NEWS_FILE,&news_list, NOTE_ARTICLE, 0);
 }
 
 void load_thread(char *name, NOTE_DATA **list, int type, time_t free_time)
@@ -3937,13 +3940,8 @@ void note_attach(CHAR_DATA *ch, int type)
         return;
     }
 
-    // Check if the character already has an attached note
     if (ch->pnote != NULL)
-    {
-        log_string(LOG_GAME, "note_attach: Character %s already has an attached note. Overwriting the existing note.", ch->name ? ch->name : "Unknown");
-        free_note(ch->pnote); // Free the existing note to prevent memory leaks
-        ch->pnote = NULL;
-    }
+        return;
 
     // Allocate a new note
     pnote = new_note();
@@ -4197,8 +4195,21 @@ void parse_note( CHAR_DATA *ch, char *argument, int type )
             {
                 if (!hide_note(ch, pnote))
                 {
-                    send_to_char( Format("From: %s\n\rTo: %s\n\rDate: %s\n\rMessage Number: [%3d]\n\rSubject Line:%s\n\r",
-                                         pnote->sender, pnote->to_list, pnote->date, vnum, pnote->subject), ch );
+                    {
+                        char vis[MSL];
+                        int vlen, pad;
+
+                        send_to_char("\tY+---------------------------------------------------------------------------+\tn\n\r", ch);
+                        snprintf(vis, sizeof(vis), "Message #%d", vnum);
+                        vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+                        send_to_char(Format("\tY|\tn \tBMessage #%d\tn%*s \tY|\tn\n\r", vnum, pad, ""), ch);
+                        send_to_char("\tY+---------------------------------------------------------------------------+\tn\n\r", ch);
+                        send_to_char(Format("\tY|\tn \tWFrom:\tn    %-64s \tY|\tn\n\r", pnote->sender ? pnote->sender : "(unknown)"), ch);
+                        send_to_char(Format("\tY|\tn \tWTo:\tn      %-64s \tY|\tn\n\r", pnote->to_list ? pnote->to_list : "(none)"), ch);
+                        send_to_char(Format("\tY|\tn \tWDate:\tn    %-64s \tY|\tn\n\r", pnote->date ? pnote->date : "(unknown)"), ch);
+                        send_to_char(Format("\tY|\tn \tWSubject:\tn %-64s \tY|\tn\n\r", pnote->subject ? pnote->subject : "(none)"), ch);
+                        send_to_char("\tY+---------------------------------------------------------------------------+\tn\n\r", ch);
+                    }
                     page_to_char( pnote->text, ch );
                     update_read(ch, pnote);
                     return;
@@ -4242,12 +4253,19 @@ void parse_note( CHAR_DATA *ch, char *argument, int type )
                 }
                 else
                 {
-                    send_to_char( Format("\tWFrom\tn: %s\n\r", pnote->sender), ch );
-                    send_to_char( Format("\tWTo\tn:   %s\n\r", pnote->to_list), ch );
-                    send_to_char( Format("\tWDate\tn: %s\n\r", pnote->date), ch );
-                    send_to_char( Format("\tWMessage Number\tn: [%3d]\n\r", vnum - 1), ch );
-                    send_to_char( Format("\tWSubject Line\tn: %s\n\r", pnote->subject), ch);
-                    send_to_char("\tW----------\tn\n\r", ch);
+                    char vis[MSL];
+                    int vlen, pad;
+
+                    send_to_char("\tY+---------------------------------------------------------------------------+\tn\n\r", ch);
+                    snprintf(vis, sizeof(vis), "Message #%d", vnum - 1);
+                    vlen = (int)strlen(vis); pad = 73 - vlen; if(pad < 0) pad = 0;
+                    send_to_char(Format("\tY|\tn \tBMessage #%d\tn%*s \tY|\tn\n\r", vnum - 1, pad, ""), ch);
+                    send_to_char("\tY+---------------------------------------------------------------------------+\tn\n\r", ch);
+                    send_to_char(Format("\tY|\tn \tWFrom:\tn    %-64s \tY|\tn\n\r", pnote->sender ? pnote->sender : "(unknown)"), ch);
+                    send_to_char(Format("\tY|\tn \tWTo:\tn      %-64s \tY|\tn\n\r", pnote->to_list ? pnote->to_list : "(none)"), ch);
+                    send_to_char(Format("\tY|\tn \tWDate:\tn    %-64s \tY|\tn\n\r", pnote->date ? pnote->date : "(unknown)"), ch);
+                    send_to_char(Format("\tY|\tn \tWSubject:\tn %-64s \tY|\tn\n\r", pnote->subject ? pnote->subject : "(none)"), ch);
+                    send_to_char("\tY+---------------------------------------------------------------------------+\tn\n\r", ch);
                 }
                 page_to_char( pnote->text, ch );
                 update_read(ch, pnote);
@@ -4259,27 +4277,70 @@ void parse_note( CHAR_DATA *ch, char *argument, int type )
         return;
     }
 
+    if ( !str_prefix( arg, "reply" ) && type == NOTE_NOTE )
+    {
+        if ( !is_number( argument ) )
+        {
+            send_to_char( "Reply to which note number?\n\r", ch );
+            return;
+        }
+
+        anum = atoi( argument );
+        vnum = 0;
+        for ( pnote = *list; pnote != NULL; pnote = pnote->next )
+        {
+            if ( is_note_to( ch, pnote ) && vnum++ == anum )
+            {
+                char subj[MIL];
+
+                note_attach( ch, type );
+
+                PURGE_DATA( ch->pnote->to_list );
+                ch->pnote->to_list = str_dup( pnote->sender ? pnote->sender : "someone" );
+
+                if ( pnote->subject && str_prefix( "Re: ", pnote->subject ) )
+                    snprintf( subj, sizeof(subj), "Re: %s", pnote->subject );
+                else
+                    snprintf( subj, sizeof(subj), "%s", pnote->subject ? pnote->subject : "(none)" );
+
+                PURGE_DATA( ch->pnote->subject );
+                ch->pnote->subject = str_dup( subj );
+
+                send_to_char( Format( "\tGReplying to %s.\tn\n\r", pnote->sender ), ch );
+                send_to_char( Format( "\tWTo:\tn      %s\n\r", ch->pnote->to_list ), ch );
+                send_to_char( Format( "\tWSubject:\tn %s\n\r", ch->pnote->subject ), ch );
+                send_to_char( "Type '\tWnote body\tn' to write your reply, then '\tWnote send\tn' to send it.\n\r", ch );
+                return;
+            }
+        }
+
+        send_to_char( Format("There aren't that many %s.\n\r", list_name), ch );
+        return;
+    }
+
     if ( !str_prefix( arg, "list" ) )
     {
         vnum = 0;
 
         if(type == NOTE_NOTE)
         {
-            send_to_char( "\tWMessage | From            | To          | Subject Line\tn\n\r", ch );
-            send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
+            send_to_char( "\tY+-------+-----------------+-------------+----------------------+\tn\n\r", ch );
+            send_to_char( "\tY|\tn \tB  #  \tn \tY|\tn \tBFrom\tn            \tY|\tn \tBTo\tn          \tY|\tn \tBSubject\tn              \tY|\tn\n\r", ch );
+            send_to_char( "\tY+-------+-----------------+-------------+----------------------+\tn\n\r", ch );
         }
 
         if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
         {
-            send_to_char( "\tW ID #   | Keywords\tn\n\r", ch);
-            send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
+            send_to_char( "\tY+-------+----------------------------------------------------+\tn\n\r", ch );
+            send_to_char( "\tY|\tn \tB  #  \tn \tY|\tn \tBKeywords\tn                                           \tY|\tn\n\r", ch );
+            send_to_char( "\tY+-------+----------------------------------------------------+\tn\n\r", ch );
         }
 
         if(type == NOTE_ARTICLE)
         {
-            send_to_char("\tWArticle | Author | Category | Subject\tn\n\r", ch);
-            send_to_char( "\tW------------------------------------------------------\tn\n\r", ch );
-
+            send_to_char( "\tY+------+-----------------+----------------+---------------------+\tn\n\r", ch );
+            send_to_char( "\tY|\tn \tB  #  \tn \tY|\tn \tBAuthor\tn          \tY|\tn \tBCategory\tn       \tY|\tn \tBSubject\tn             \tY|\tn\n\r", ch );
+            send_to_char( "\tY+------+-----------------+----------------+---------------------+\tn\n\r", ch );
         }
 
         for ( pnote = *list; pnote != NULL; pnote = pnote->next )
@@ -4288,15 +4349,28 @@ void parse_note( CHAR_DATA *ch, char *argument, int type )
             {
                 if(type == NOTE_NOTE)
                 {
-                    send_to_char( Format("\tY[%3d%s]  \tW|\tY %-15s \tW|\tY %-11s \tW|\tY %s\tn\n\r", vnum, hide_note(ch, pnote) ? " " : "N", pnote->sender, pnote->to_list, pnote->subject), ch );
+                    send_to_char( Format("\tY|\tn %4d%s\tY|\tn %-15s \tY|\tn %-11s \tY|\tn %-20s \tY|\tn\n\r",
+                        vnum,
+                        hide_note(ch, pnote) ? "  " : "\tGN\tn ",
+                        pnote->sender ? pnote->sender : "(unknown)",
+                        pnote->to_list ? pnote->to_list : "(none)",
+                        pnote->subject ? pnote->subject : "(none)"), ch );
                 }
                 else if(type == NOTE_BACKGROUND || type == NOTE_KNOWLEDGE)
                 {
-                    send_to_char( Format("\tY%3d%s    \tW|\tY %s\tn\n\r", vnum, hide_note(ch, pnote) ? " " : "N", pnote->to_list), ch );
+                    send_to_char( Format("\tY|\tn %4d%s\tY|\tn %-50s \tY|\tn\n\r",
+                        vnum,
+                        hide_note(ch, pnote) ? "  " : "\tGN\tn ",
+                        pnote->to_list ? pnote->to_list : "(none)"), ch );
                 }
                 else if(type == NOTE_ARTICLE)
                 {
-                    send_to_char( Format("\tY %6d \tW|\tY %s  \tW|\tY %s: %s %s\tn\n\r", vnum, pnote->sender, pnote->to_list, pnote->subject, pnote->successes ? " (\tYSuppressed\tn)" : ""), ch );
+                    send_to_char( Format("\tY|\tn %4d \tY|\tn %-15s \tY|\tn %-14s \tY|\tn %-19s%s \tY|\tn\n\r",
+                        vnum,
+                        pnote->sender ? pnote->sender : "(unknown)",
+                        pnote->to_list ? pnote->to_list : "(none)",
+                        pnote->subject ? pnote->subject : "(none)",
+                        pnote->successes ? " \tYS\tn" : "  "), ch );
                 }
                 vnum++;
             }
@@ -4465,7 +4539,7 @@ void parse_note( CHAR_DATA *ch, char *argument, int type )
         return;
     }
 
-    if ( !str_prefix( arg, "delete" ) && get_trust(ch) >= MAX_LEVEL - 1)
+    if ( !str_prefix( arg, "delete" ) )
     {
         if ( !is_number( argument ) )
         {
@@ -4479,13 +4553,21 @@ void parse_note( CHAR_DATA *ch, char *argument, int type )
         {
             if ( is_note_to( ch, pnote ) && vnum++ == anum )
             {
-                note_remove( ch, pnote, TRUE );
-                send_to_char( "Ok.\n\r", ch );
+                if ( get_trust(ch) >= MAX_LEVEL - 1
+                        || (!IS_NPC(ch) && pnote->sender && !str_cmp(ch->name, pnote->sender)) )
+                {
+                    note_remove( ch, pnote, TRUE );
+                    send_to_char( "\tGNote deleted.\tn\n\r", ch );
+                }
+                else
+                {
+                    send_to_char( "You can only delete notes you sent. Use '\tWnote remove\tn' to remove yourself from a note.\n\r", ch );
+                }
                 return;
             }
         }
 
-        send_to_char(Format("There aren't that many %s.", list_name), ch);
+        send_to_char(Format("There aren't that many %s.\n\r", list_name), ch);
         return;
     }
 

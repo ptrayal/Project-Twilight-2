@@ -627,6 +627,13 @@ struct spec_type
  * Data structure for notes.
  */
 
+/*
+ * NOTE_RETENTION_DAYS: How many days to keep player notes before
+ *   they are automatically discarded on boot. Default: 30 days.
+ *   Set to 0 to disable auto-deletion.
+ */
+#define NOTE_RETENTION_DAYS	30
+
 #define NOTE_NOTE	0
 #define NOTE_BACKGROUND	1
 #define NOTE_KNOWLEDGE	2
