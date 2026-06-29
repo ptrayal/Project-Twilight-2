@@ -395,6 +395,8 @@ DECLARE_DO_FUN(	do_pump		);
 DECLARE_DO_FUN(	do_purge	);
 DECLARE_DO_FUN(	do_put		);
 DECLARE_DO_FUN(	do_quaff	);
+DECLARE_DO_FUN(	do_quest	);
+DECLARE_DO_FUN(	do_questgen	);
 DECLARE_DO_FUN( do_quiet	);
 DECLARE_DO_FUN(	do_quit		);
 DECLARE_DO_FUN( do_quote	);

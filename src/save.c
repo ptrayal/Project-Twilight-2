@@ -441,6 +441,30 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	if (ch->pcdata->tutorial_complete)
 		WriteNumber( fp, "TutorialDone", 1 );
 
+	if (ch->quest != NULL && ch->quest->state > 0)
+	{
+		fprintf(fp, "QuestActive %d %ld %d %d %d %d\n",
+			ch->quest->quest_type,
+			ch->quest->quest_flags,
+			ch->quest->state,
+			ch->quest->time_limit,
+			ch->quest->victim ? (IS_NPC(ch->quest->victim) ? ch->quest->victim->pIndexData->vnum : 0) : 0,
+			ch->quest->aggressor ? (IS_NPC(ch->quest->aggressor) ? ch->quest->aggressor->pIndexData->vnum : 0) : 0);
+	}
+
+	{
+		QUEST_LOG_ENTRY *qle;
+		for(qle = ch->pcdata->quest_log; qle != NULL; qle = qle->next)
+		{
+			fprintf(fp, "QLog %d %ld %d %d %d %ld %s~ %s~ %s~\n",
+				qle->quest_type, qle->quest_flags, qle->result,
+				qle->xp_earned, qle->cash_earned, (long)qle->completed_on,
+				qle->employer ? qle->employer : "",
+				qle->target ? qle->target : "",
+				qle->bonus_item ? qle->bonus_item : "");
+		}
+	}
+
     if (ch->dollars > 0)
     {
     	WriteNumber( fp, "Dollars", ch->dollars );
@@ -1087,6 +1111,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool log_load, bool load_con
 	ch->pcdata->ignore_reject	= NULL;
 	ch->pcdata->research_discovered = NULL;
 	ch->pcdata->tutorial_complete = FALSE;
+	ch->pcdata->quest_log = NULL;
 	ch->pcdata->pwd				= NULL;
 	ch->pcdata->rpok_string		= str_dup( "Not Available" );
 	ch->pcdata->title			= NULL;
@@ -1700,6 +1725,86 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool log_load )
 			if ( !str_cmp( word, "Prompt" ) ) {
 				PURGE_DATA(ch->prompt);
 				ch->prompt = fread_string(fp);
+				fMatch = TRUE;
+				break;
+			}
+
+			break;
+
+		case 'Q':
+			if(!str_cmp(word, "QuestActive"))
+			{
+				QUEST_DATA *pq = new_quest();
+				if(pq)
+				{
+					int vic_vnum, agg_vnum;
+
+					pq->quest_type  = fread_number(fp);
+					pq->quest_flags = fread_number(fp);
+					pq->state       = fread_number(fp);
+					pq->time_limit  = fread_number(fp);
+					vic_vnum        = fread_number(fp);
+					agg_vnum        = fread_number(fp);
+					pq->questor     = ch;
+					pq->victim      = NULL;
+					pq->aggressor   = NULL;
+
+					if(vic_vnum > 0 && get_mob_index(vic_vnum))
+					{
+						pq->victim = create_mobile(get_mob_index(vic_vnum));
+						if(pq->victim)
+						{
+							char_to_room(pq->victim, get_room_index(ROOM_VNUM_START));
+							pq->victim->quest = pq;
+						}
+					}
+
+					if(agg_vnum > 0 && get_mob_index(agg_vnum))
+					{
+						pq->aggressor = create_mobile(get_mob_index(agg_vnum));
+						if(pq->aggressor)
+						{
+							char_to_room(pq->aggressor, get_room_index(ROOM_VNUM_START));
+							pq->aggressor->quest = pq;
+						}
+					}
+
+					ch->quest = pq;
+					LINK_SINGLE(pq, next, quest_list);
+				}
+				fMatch = TRUE;
+				break;
+			}
+
+			if(!str_cmp(word, "QLog"))
+			{
+				QUEST_LOG_ENTRY *qle = new_quest_log_entry();
+				if(qle)
+				{
+					char *tmp;
+
+					qle->quest_type   = fread_number(fp);
+					qle->quest_flags  = fread_number(fp);
+					qle->result       = fread_number(fp);
+					qle->xp_earned    = fread_number(fp);
+					qle->cash_earned  = fread_number(fp);
+					qle->completed_on = (time_t)fread_long(fp);
+
+					tmp = fread_string(fp);
+					if(!IS_NULLSTR(tmp)) qle->employer = tmp;
+					else PURGE_DATA(tmp);
+
+					tmp = fread_string(fp);
+					if(!IS_NULLSTR(tmp)) qle->target = tmp;
+					else PURGE_DATA(tmp);
+
+					tmp = fread_string(fp);
+					if(!IS_NULLSTR(tmp)) qle->bonus_item = tmp;
+					else PURGE_DATA(tmp);
+
+					qle->next         = ch->pcdata->quest_log;
+					ch->pcdata->quest_log = qle;
+				}
 				fMatch = TRUE;
 				break;
 			}

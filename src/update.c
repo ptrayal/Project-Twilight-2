@@ -915,6 +915,43 @@ void char_update( void )
 			ch->warrants--;
 		}
 
+		/*
+		 * Quest timer — decrement and check per-tick quest conditions.
+		 * Guard: player must remain in target_room; progress ticks up.
+		 * Bodyguard: player must be in same room as victim.
+		 * Rescue: no per-tick check; completion is on reaching the victim.
+		 */
+		if(!IS_NPC(ch) && ch->quest != NULL && ch->quest->state >= 1)
+		{
+			if(--ch->quest->time_limit <= 0)
+			{
+				(*quest_table[ch->quest->quest_type].q_fun)(ch, 3);
+			}
+			else if(ch->quest->quest_type == Q_GUARD && ch->quest->target_room != NULL)
+			{
+				if(ch->in_room == ch->quest->target_room)
+				{
+					ch->quest->progress++;
+					if(ch->quest->progress >= 30)
+						(*quest_table[ch->quest->quest_type].q_fun)(ch, 2);
+				}
+				else
+				{
+					(*quest_table[ch->quest->quest_type].q_fun)(ch, 3);
+				}
+			}
+			else if(ch->quest->quest_type == Q_BODYGUARD
+					&& ch->quest->victim != NULL)
+			{
+				if(ch->in_room == ch->quest->victim->in_room)
+				{
+					ch->quest->progress++;
+					if(ch->quest->progress >= 30)
+						(*quest_table[ch->quest->quest_type].q_fun)(ch, 2);
+				}
+			}
+		}
+
 		if(ch->hunter_vis > 40)
 		{
 		    /* Generate hunter (ACT2_TWILIGHT, ACT2_HUNTER) and set after ch */

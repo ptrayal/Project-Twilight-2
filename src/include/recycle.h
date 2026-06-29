@@ -192,4 +192,12 @@ void	free_research_cooldown args( (RC *cooldown) );
 ARTICLE_DATA	*new_article args( (void) );
 void		free_article args( (ARTICLE_DATA *article) );
 
+/* quest recycling */
+QUEST_DATA	*new_quest args( (void) );
+void		free_quest args( (QUEST_DATA *quest) );
+
+/* quest log recycling */
+QUEST_LOG_ENTRY	*new_quest_log_entry args( (void) );
+void		free_quest_log_entry args( (QUEST_LOG_ENTRY *entry) );
+
 #endif

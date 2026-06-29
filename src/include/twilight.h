@@ -1895,6 +1895,8 @@ struct quest_data
     int			quest_type;
     int			state;
     OBJ_DATA		*obj;
+    ROOM_INDEX_DATA	*target_room;   /* guard: room to defend, rescue: victim's location */
+    int			progress;       /* ticks of progress toward completion */
 };
 
 /* Quest types */
@@ -1916,6 +1918,27 @@ struct quest_data
 #define Q_DEADLY	F	/* Quest has good risk of player death	  */
 #define Q_HUNTER	G	/* Set hunter on player on quest complete */
 #define Q_ACCEPTED	H
+
+/*
+ * Quest log — completed quest history per player.
+ * MAX_QUEST_LOG: maximum entries stored. Oldest trimmed when exceeded.
+ */
+#define MAX_QUEST_LOG	50
+
+typedef struct quest_log_entry QUEST_LOG_ENTRY;
+struct quest_log_entry
+{
+    int                 quest_type;
+    long                quest_flags;
+    int                 result;         /* 2=success, 3=failed, -1=abandoned */
+    int                 xp_earned;
+    int                 cash_earned;
+    char *              employer;       /* name of the quest-giving NPC */
+    char *              target;         /* name of the quest target NPC */
+    char *              bonus_item;     /* name of bonus item awarded, NULL if none */
+    time_t              completed_on;
+    QUEST_LOG_ENTRY *   next;
+};
 
 /* Goal types */
 #define G_NONE		0
@@ -2237,6 +2260,7 @@ struct	pc_data
     RESEARCH_COOLDOWN *	research_cooldowns;
     RESEARCH_COOLDOWN *	research_discovered;
     bool		tutorial_complete;
+    QUEST_LOG_ENTRY *	quest_log;
     /* @@@@@ insert character linked list here for accounts */
 };
 

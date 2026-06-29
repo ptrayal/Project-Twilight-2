@@ -285,6 +285,8 @@ const	struct	cmd_type	cmd_table	[] =
 		{	"pullpin",		do_pullpin,		P_REST,		0,	L_NRM,	1,	A|B|H,	0 },
 		{	"put",			do_put,			P_REST,		0,	L_NRM,	1,	B|H,	0 },
 		{	"quaff",		do_quaff,		P_REST,		0,	L_NRM,	1,	B|H,	0 },
+		{	"quest",		do_quest,		P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },
+		{	"questgen",		do_questgen,	P_DEAD,		WA,	L_NRM,	1,	A|B|E,	0 },
 		{	"quiet",		do_quiet,		P_SLEEP,	0,	L_NRM,	1,	A|B|E,	0 },
 		{	"quit",			do_quit,		P_DEAD,		0,	L_NRM,	1,	A|B,	0 },
 		{	"racecommands",	do_racecmds,	P_DEAD,		0,	L_NRM,	1,	A|B|E,	0 },

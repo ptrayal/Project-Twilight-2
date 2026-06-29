@@ -552,6 +552,8 @@ QUEST_DATA *new_quest()
     quest->aggressor = NULL;
     quest->questor = NULL;
     quest->obj = NULL;
+    quest->target_room = NULL;
+    quest->progress = 0;
     quest->next = NULL;
 
     log_string(LOG_GAME, "new_quest: Successfully created new QUEST_DATA instance at %p.", (void *)quest);
@@ -2587,6 +2589,37 @@ void free_article(ARTICLE_DATA *article)
 	PURGE_DATA(article->body);
 	PURGE_DATA(article->submitted_by);
 	PURGE_DATA(article);
+}
+
+
+QUEST_LOG_ENTRY *new_quest_log_entry(void)
+{
+	QUEST_LOG_ENTRY *entry;
+
+	ALLOC_DATA(entry, QUEST_LOG_ENTRY, 1);
+	if(!entry) return NULL;
+
+	entry->quest_type = 0;
+	entry->quest_flags = 0;
+	entry->result = 0;
+	entry->xp_earned = 0;
+	entry->cash_earned = 0;
+	entry->employer = NULL;
+	entry->target = NULL;
+	entry->bonus_item = NULL;
+	entry->completed_on = 0;
+	entry->next = NULL;
+
+	return entry;
+}
+
+void free_quest_log_entry(QUEST_LOG_ENTRY *entry)
+{
+	if(!entry) return;
+	PURGE_DATA(entry->employer);
+	PURGE_DATA(entry->target);
+	PURGE_DATA(entry->bonus_item);
+	PURGE_DATA(entry);
 }
 
 
