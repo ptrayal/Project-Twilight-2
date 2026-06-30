@@ -3519,10 +3519,20 @@ void do_who( CHAR_DATA *ch, char *argument )
     nMatch = 0;
     buf[0] = '\0';
     output = new_buf();
+
+    send_to_char("\n\r", ch);
+    send_to_char("\tY|======================================================================|\tn\n\r", ch);
+    send_to_char("\tY|\tn    \tBName\tn        \tY|\tn \tBSpecies\tn \tY|\tn   \tBOnline Time\tn  \tY|\tn   \tBRole\tn    \tY|\tn \tBRP Available\tn \tY|\tn\n\r", ch);
+    send_to_char("\tY|======================================================================|\tn\n\r", ch);
+
     for ( d = descriptor_list; d != NULL; d = d->next )
     {
         CHAR_DATA *wch;
         char const *clan;
+        time_t laston_time;
+        double online_seconds;
+        int hours, minutes;
+        char online_time_str[20];
 
         /*
          * Check for match against restrictions.
@@ -3555,31 +3565,17 @@ void do_who( CHAR_DATA *ch, char *argument )
          * Figure out stuff to print.
         */
         clan = clan_table[wch->clan].who_name;
-        send_to_char("\n\r", ch);
 
-        // Time calculations
+        laston_time = wch->laston;
+        online_seconds = difftime(time(NULL), laston_time);
 
-        time_t laston_time = wch->laston; // Assume this is already a valid time_t
-        time_t current_time = time(NULL); // Get current time
-        double online_seconds = difftime(current_time, laston_time); // Calculate the difference
-
-        int hours = (int)(online_seconds / 3600);
-        int minutes = (int)((int)online_seconds % 3600 / 60); // Corrected line for minutes
-        char online_time_str[20];
+        hours = (int)(online_seconds / 3600);
+        minutes = (int)((int)online_seconds % 3600 / 60);
 
         if (online_seconds < 0)
-        {
-            snprintf(online_time_str, sizeof(online_time_str), "N/A"); // Handle negative time difference
-        }
+            snprintf(online_time_str, sizeof(online_time_str), "N/A");
         else
-        {
             snprintf(online_time_str, sizeof(online_time_str), "%02d hrs %02d mins", hours, minutes);
-        }
-
-        // Header
-        send_to_char("\tY|======================================================================|\tn\n\r", ch);
-        send_to_char("\tY|\tn    \tBName\tn        \tY|\tn \tBSpecies\tn \tY|\tn   \tBOnline Time\tn  \tY|\tn   \tBRole\tn    \tY|\tn \tBRP Available\tn \tY|\tn\n\r", ch);
-        send_to_char("\tY|======================================================================|\tn\n\r", ch);
 
         /*
          * Format it up.

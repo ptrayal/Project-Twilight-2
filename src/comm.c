@@ -4112,11 +4112,20 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 							do_function(ch, &do_restore, ch->name );
 
 						if(!IS_NPC(ch) && ch->pcdata
-								&& !ch->pcdata->tutorial_complete
-								&& get_room_index(8280) != NULL)
+								&& !ch->pcdata->tutorial_complete)
 						{
-							char_from_room(ch);
-							char_to_room(ch, get_room_index(8280));
+							if(get_obj_index(OBJ_VNUM_FLASHLIGHT) != NULL)
+							{
+								OBJ_DATA *light = create_object(get_obj_index(OBJ_VNUM_FLASHLIGHT));
+								if(light)
+									obj_to_char(light, ch);
+							}
+
+							if(get_room_index(8280) != NULL)
+							{
+								char_from_room(ch);
+								char_to_room(ch, get_room_index(8280));
+							}
 							send_to_char("\n\r\tYWelcome! Since this is your first time, let's walk through a quick orientation.\tn\n\r\n\r", ch);
 						}
 

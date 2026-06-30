@@ -1181,6 +1181,7 @@ struct	affect_data
 #define OBJ_VNUM_CENT_ONE	      4
 #define OBJ_VNUM_CENTS_SOME	      5
 #define OBJ_VNUM_COINS		      6
+#define OBJ_VNUM_FLASHLIGHT       7
 
 #define OBJ_VNUM_CORPSE_NPC	     10
 #define OBJ_VNUM_CORPSE_PC	     11
