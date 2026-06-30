@@ -207,6 +207,23 @@ E
 --USES~
 -2~
 Q 0
+#7
+flashlight~
+a small LED flashlight~
+A small LED flashlight lies here.~
+This compact LED flashlight features a durable, weather-resistant black
+aluminum body built for everyday reliability.  It utilizes energy-efficient
+LED technology to deliver a bright, long-lasting beam perfect for home use
+or emergencies.  
+~
+plastic~
+1 0 AO
+0 0 100 0 0 0
+0 0 100
+E
+--USES~
+-2~
+Q 2
 #10
 corpse npc~
 the corpse of %s~
@@ -735,10 +752,10 @@ E
 --USES~
 -2~
 E
-GRIMOIRE_RITUAL~
+RITELINK~
 Ritual of Introduction~
 E
-RITELINK~
+GRIMOIRE_RITUAL~
 Ritual of Introduction~
 Q 2
 #151

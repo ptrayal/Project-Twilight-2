@@ -27,13 +27,13 @@ FH 0 0 0
 AGHMV ABCDEFGHIJKQUV medium flesh
 A 0
 I 0
+Tr 0 **base**~ **do not delete**~
 Tr 0 has arrived~ say Welcome to Project Twilight!
 say I am the Archivist, your guide to Bal Harbor.
 say Take your time walking through these rooms. Each one covers a different topic.
 say Look at the \tChighlighted words\tn in each room for more detail.
 say When you are ready, head \tWnorth\tn to begin.
 ~
-Tr 0 **base**~ **do not delete**~
 #8281
 shopkeeper vendor merchant sal~
 Sal~
@@ -49,10 +49,10 @@ ABG 0 50 0 0 0 punch
 AHMV ABCDEFGHIJK medium flesh
 A G
 I 0
+Tr 0 **base**~ **do not delete**~
 Tr 0 has arrived~ say Welcome! Type '\tClist\tn' to see what I have for sale.
 say You can '\tCbuy\tn' and '\tCsell\tn' items here.
 ~
-Tr 0 **base**~ **do not delete**~
 #0
 
 
@@ -129,7 +129,7 @@ different topic with \tChighlighted commands\tn you can try.
 Type '\tWlook sign\tn' to read the welcome sign, then go \tWnorth\tn
 to begin the tutorial.
 ~
-0 0 0
+0 8 0
 E
 XNUMB1~
 Unnamed Room~
@@ -167,14 +167,14 @@ E
 XDUMB1~
 None~
 E
-look~
-Syntax: look - Shows the current room description, objects, and people. Syntax: look <target> - Look at an object, person, or keyword. Syntax: look in <container> - Look inside a container. The look command is your primary way of observing the world around you.~
+north~
+Type 'north' or just 'n' to move north. Other directions: south (s), east (e), west (w), up (u), down (d).~
 E
 exits~
 Syntax: exits - Shows a detailed list of available exits from the current room. The auto-exit display in brackets (e.g., [Exits: north south]) shows a compact version automatically when you enter a room.~
 E
-north~
-Type 'north' or just 'n' to move north. Other directions: south (s), east (e), west (w), up (u), down (d).~
+look~
+Syntax: look - Shows the current room description, objects, and people. Syntax: look <target> - Look at an object, person, or keyword. Syntax: look in <container> - Look inside a container. The look command is your primary way of observing the world around you.~
 D0
 none~
 (null)~
@@ -209,29 +209,29 @@ E
 XDUMB1~
 None~
 E
-say~
-Syntax: say <message> - Speaks in-character to everyone in the room. This is the most common form of in-character communication. Others in the room will see your character's name followed by your message.~
-E
-oocsay~
-Syntax: oocsay <message> - Speaks out-of-character to everyone in the room. Use this when you need to communicate something that is not part of the story, such as asking a game mechanics question.~
-E
-emote~
-Syntax: emote <action> - Performs a free-form action visible to the room. Example: 'emote leans against the wall' shows 'YourName leans against the wall.' Related commands: pmote (directed at a person), dmote (scene-setting), dpmote (directed scene-setting).~
-E
-pmote~
-Syntax: pmote <action using someone's name> - A directed emote. The target sees 'you' instead of their name. Example: 'pmote nods to Bob' - Bob sees 'YourName nods to you.'~
-E
-think~
-Syntax: think <thought> - Internal dialogue visible to those with certain supernatural powers (Auspex, etc.). Useful for adding depth to roleplay scenes.~
-E
-yell~
-Syntax: yell <message> - Shouts to everyone in the nearby area. Use sparingly - it is loud and disruptive.~
+channels~
+Syntax: channels - Lists all communication channels and their current status (on/off). You can toggle channels on and off to control what you hear.~
 E
 helpline~
 Syntax: helpline <message> - Sends a message heard by all online players. Use this if you need help and no one is in the room with you.~
 E
-channels~
-Syntax: channels - Lists all communication channels and their current status (on/off). You can toggle channels on and off to control what you hear.~
+yell~
+Syntax: yell <message> - Shouts to everyone in the nearby area. Use sparingly - it is loud and disruptive.~
+E
+think~
+Syntax: think <thought> - Internal dialogue visible to those with certain supernatural powers (Auspex, etc.). Useful for adding depth to roleplay scenes.~
+E
+pmote~
+Syntax: pmote <action using someone's name> - A directed emote. The target sees 'you' instead of their name. Example: 'pmote nods to Bob' - Bob sees 'YourName nods to you.'~
+E
+emote~
+Syntax: emote <action> - Performs a free-form action visible to the room. Example: 'emote leans against the wall' shows 'YourName leans against the wall.' Related commands: pmote (directed at a person), dmote (scene-setting), dpmote (directed scene-setting).~
+E
+oocsay~
+Syntax: oocsay <message> - Speaks out-of-character to everyone in the room. Use this when you need to communicate something that is not part of the story, such as asking a game mechanics question.~
+E
+say~
+Syntax: say <message> - Speaks in-character to everyone in the room. This is the most common form of in-character communication. Others in the room will see your character's name followed by your message.~
 D0
 none~
 (null)~
@@ -266,23 +266,23 @@ E
 XDUMB1~
 None~
 E
-description~
-Syntax: description (no arguments) - Opens the text editor to write your character's physical description. This is what others see when they look at you. Include details like build, hair, eyes, clothing style, and demeanor. Type your description, then type '@' on a blank line to finish.~
-E
-nature~
-Syntax: nature <archetype> - Sets your character's inner personality. Your nature is who you truly are inside, which may differ from how you present yourself. See 'help archetypes' for a list of available personality types.~
-E
-demeanor~
-Syntax: demeanor <archetype> - Sets how your character appears to others. Your demeanor is the face you show the world. It can change more easily than your nature. See 'help archetypes' for a list.~
-E
-rpavailable~
-Syntax: rpavailable [optional message] - Makes you visible on the RP-available list. Other players can see you with 'rpwho' or 'whorp' and travel to you with 'rpjoin'. Set a message describing what kind of RP you are looking for.~
+rpwho~
+Syntax: rpwho (or whorp) - Shows a list of players who are currently available for roleplaying, along with any message they have set about what they are looking for.~
 E
 rpmode~
 Syntax: rpmode - Toggles RP mode on and off. In RP mode, you are freed from hunger, thirst, and other out-of-character interruptions so you can focus on your scene.~
 E
-rpwho~
-Syntax: rpwho (or whorp) - Shows a list of players who are currently available for roleplaying, along with any message they have set about what they are looking for.~
+rpavailable~
+Syntax: rpavailable [optional message] - Makes you visible on the RP-available list. Other players can see you with 'rpwho' or 'whorp' and travel to you with 'rpjoin'. Set a message describing what kind of RP you are looking for.~
+E
+demeanor~
+Syntax: demeanor <archetype> - Sets how your character appears to others. Your demeanor is the face you show the world. It can change more easily than your nature. See 'help archetypes' for a list.~
+E
+nature~
+Syntax: nature <archetype> - Sets your character's inner personality. Your nature is who you truly are inside, which may differ from how you present yourself. See 'help archetypes' for a list of available personality types.~
+E
+description~
+Syntax: description (no arguments) - Opens the text editor to write your character's physical description. This is what others see when they look at you. Include details like build, hair, eyes, clothing style, and demeanor. Type your description, then type '@' on a blank line to finish.~
 D0
 none~
 (null)~
@@ -317,26 +317,26 @@ E
 XDUMB1~
 None~
 E
-get~
-Syntax: get <item> - Picks up an item from the ground. Syntax: get <item> <container> - Takes an item from inside a container. You can also use 'take' as an alternative to 'get'.~
-E
-drop~
-Syntax: drop <item> - Drops an item from your inventory onto the ground.~
-E
-wear~
-Syntax: wear <item> - Puts on a piece of clothing or armor. The item must be in your inventory. Some items can only be worn in specific locations (head, body, legs, etc.).~
-E
-wield~
-Syntax: wield <weapon> - Readies a weapon for combat. The weapon must be in your inventory.~
-E
-hold~
-Syntax: hold <item> - Holds an item in your hands. Useful for phones, lights, and other hand-held items.~
+equipment~
+Syntax: equipment - Lists all items you are currently wearing, wielding, or holding. Use 'inventory' to see items you are carrying but not wearing.~
 E
 inventory~
 Syntax: inventory - Lists all items you are carrying but not currently wearing. Use 'equipment' to see what you have worn or wielded.~
 E
-equipment~
-Syntax: equipment - Lists all items you are currently wearing, wielding, or holding. Use 'inventory' to see items you are carrying but not wearing.~
+hold~
+Syntax: hold <item> - Holds an item in your hands. Useful for phones, lights, and other hand-held items.~
+E
+wield~
+Syntax: wield <weapon> - Readies a weapon for combat. The weapon must be in your inventory.~
+E
+wear~
+Syntax: wear <item> - Puts on a piece of clothing or armor. The item must be in your inventory. Some items can only be worn in specific locations (head, body, legs, etc.).~
+E
+drop~
+Syntax: drop <item> - Drops an item from your inventory onto the ground.~
+E
+get~
+Syntax: get <item> - Picks up an item from the ground. Syntax: get <item> <container> - Takes an item from inside a container. You can also use 'take' as an alternative to 'get'.~
 D0
 none~
 (null)~
@@ -372,23 +372,23 @@ E
 XDUMB1~
 None~
 E
-list~
-Syntax: list [keeper] - Shows what a shopkeeper has for sale, including prices and wear locations.~
-E
-buy~
-Syntax: buy <item> [keeper] - Purchases an item from a shopkeeper. The cost is deducted from your cash on hand.~
-E
-sell~
-Syntax: sell <item> [keeper] - Sells an item from your inventory to a shopkeeper. Not all shops buy all types of items.~
-E
-stocks~
-Syntax: stocks - Displays the current stock market with ticker symbols, prices, trends, and your portfolio value. You can buy and sell stocks at any bank using the 'trade' command.~
+job~
+Syntax: job commands - Lists available job commands. Syntax: job apply <employer> <profession> - Apply for a job. Jobs provide income and experience. You need job energy to perform work tasks, which regenerates over time while resting or sleeping.~
 E
 trade~
 Syntax: trade buy <shares> <company> - Buy stock shares. Syntax: trade sell <shares> <company> - Sell stock shares. You must be at a bank to trade stocks.~
 E
-job~
-Syntax: job commands - Lists available job commands. Syntax: job apply <employer> <profession> - Apply for a job. Jobs provide income and experience. You need job energy to perform work tasks, which regenerates over time while resting or sleeping.~
+stocks~
+Syntax: stocks - Displays the current stock market with ticker symbols, prices, trends, and your portfolio value. You can buy and sell stocks at any bank using the 'trade' command.~
+E
+sell~
+Syntax: sell <item> [keeper] - Sells an item from your inventory to a shopkeeper. Not all shops buy all types of items.~
+E
+buy~
+Syntax: buy <item> [keeper] - Purchases an item from a shopkeeper. The cost is deducted from your cash on hand.~
+E
+list~
+Syntax: list [keeper] - Shows what a shopkeeper has for sale, including prices and wear locations.~
 D0
 none~
 (null)~
@@ -424,23 +424,23 @@ E
 XDUMB1~
 None~
 E
-time~
-Syntax: time - Displays the current in-game date and time, as well as the real server time. The game runs at 60x real time (1 real minute = 1 in-game hour).~
-E
-research~
-Syntax: research list - Shows available research topics. Syntax: research <topic> - Attempt to research a topic using your Intelligence and relevant abilities. Success reveals lore and in-character information. There is a 24-hour cooldown between attempts on the same topic.~
-E
-newspaper~
-You can buy newspapers from newsstand vendors around the city. Once you have one, type 'read' to see the front page, or 'read <number>' to read a specific article.~
-E
-step~
-Syntax: step - Shows a list of locations you can travel to. Syntax: step <location> - Teleports you to that location. The step command is a convenient way to travel between known areas quickly.~
+influences~
+The influence system lets you exert power over the city through Political, Media, Church, Economic, Police, and other channels. Type 'help influences' for details on how to build and use influence.~
 E
 taxi~
 Syntax: taxi - Shows a list of taxi destinations. Syntax: taxi <location> - Takes a taxi to that destination. Taxis cost money but can take you to additional locations beyond the step list.~
 E
-influences~
-The influence system lets you exert power over the city through Political, Media, Church, Economic, Police, and other channels. Type 'help influences' for details on how to build and use influence.~
+step~
+Syntax: step - Shows a list of locations you can travel to. Syntax: step <location> - Teleports you to that location. The step command is a convenient way to travel between known areas quickly.~
+E
+newspaper~
+You can buy newspapers from newsstand vendors around the city. Once you have one, type 'read' to see the front page, or 'read <number>' to read a specific article.~
+E
+research~
+Syntax: research list - Shows available research topics. Syntax: research <topic> - Attempt to research a topic using your Intelligence and relevant abilities. Success reveals lore and in-character information. There is a 24-hour cooldown between attempts on the same topic.~
+E
+time~
+Syntax: time - Displays the current in-game date and time, as well as the real server time. The game runs at 60x real time (1 real minute = 1 in-game hour).~
 D0
 none~
 (null)~
@@ -478,11 +478,11 @@ E
 XDUMB1~
 None~
 E
-combat~
-Project Twilight uses a combo-based combat system. Moves can be chained together for greater effect. Type 'help combos' for a complete list of moves and combinations. Remember: most conflicts are resolved through roleplay. The combat system is for situations where dice and mechanics are needed.~
-E
 combos~
 Combat moves include strikes (lblow, rblow, kick, skick, bite), grabs (lgrab, rgrab), blocks (lblock, rblock, fblock), and movement (cflip, croll, cjump, spin, sweep). Chain them together for combo effects. Use cstop to disengage and cstand to rebalance.~
+E
+combat~
+Project Twilight uses a combo-based combat system. Moves can be chained together for greater effect. Type 'help combos' for a complete list of moves and combinations. Remember: most conflicts are resolved through roleplay. The combat system is for situations where dice and mechanics are needed.~
 D0
 none~
 (null)~
@@ -517,17 +517,17 @@ E
 XDUMB1~
 None~
 E
-score~
-Syntax: score - Displays your full character sheet including attributes, abilities, health, experience, and other vital statistics.~
-E
-train~
-Syntax: train - Shows what attributes and abilities you can improve. Syntax: train <category> <attribute> - Spends experience to raise an attribute or ability. Use 'costcalc' to check costs before spending.~
+experience~
+Experience points (XP) are earned through roleplaying, jobs, and other activities. Spend them with 'train' (for attributes and abilities) or 'advance' (for supernatural powers). Type 'costcalc <stat>' to check costs.~
 E
 advance~
 Syntax: advance - Shows what supernatural powers you can improve. Syntax: advance <power> - Spends experience to raise a power. Vampires advance disciplines, werewolves advance gifts.~
 E
-experience~
-Experience points (XP) are earned through roleplaying, jobs, and other activities. Spend them with 'train' (for attributes and abilities) or 'advance' (for supernatural powers). Type 'costcalc <stat>' to check costs.~
+train~
+Syntax: train - Shows what attributes and abilities you can improve. Syntax: train <category> <attribute> - Spends experience to raise an attribute or ability. Use 'costcalc' to check costs before spending.~
+E
+score~
+Syntax: score - Displays your full character sheet including attributes, abilities, health, experience, and other vital statistics.~
 D0
 none~
 (null)~
@@ -609,11 +609,11 @@ E
 XDUMB1~
 None~
 E
-vote~
-Syntax: vote <player> <position> - Cast your vote for a candidate in a city election. Only mortals may vote, and you may only vote once per election.~
-E
 nominate~
 Syntax: nominate <player> <position> - Nominate a mortal for a position of office. Only mortals can hold city positions. Use 'nominees' to see current candidates.~
+E
+vote~
+Syntax: vote <player> <position> - Cast your vote for a candidate in a city election. Only mortals may vote, and you may only vote once per election.~
 D0
 none~
 (null)~
@@ -651,17 +651,17 @@ E
 XDUMB1~
 None~
 E
-transform~
-Syntax: transform <form> (also: shift, shapechange) - Changes your form between Human (homid), Crinos (war form), and Wolf. Each form has different strengths and limitations. See 'help crinos' and 'help wolf' for details.~
-E
-gifts~
-Syntax: gifts (or powers) - Shows your available supernatural gifts and their levels. Gifts are granted by your totem and can be advanced with experience.~
+rage~
+Rage is the gift of Gaia to her warriors. It allows supernatural speed and strength, and fuels the transformation between forms. But beware - too much rage can lead to frenzy.~
 E
 uwalk~
 Syntax: uwalk (also: sidestep) - Step sideways into the Umbra, the spirit realm. The Umbra is a mirror of the real world inhabited by spirits. Werewolves can traverse it naturally.~
 E
-rage~
-Rage is the gift of Gaia to her warriors. It allows supernatural speed and strength, and fuels the transformation between forms. But beware - too much rage can lead to frenzy.~
+gifts~
+Syntax: gifts (or powers) - Shows your available supernatural gifts and their levels. Gifts are granted by your totem and can be advanced with experience.~
+E
+transform~
+Syntax: transform <form> (also: shift, shapechange) - Changes your form between Human (homid), Crinos (war form), and Wolf. Each form has different strengths and limitations. See 'help crinos' and 'help wolf' for details.~
 D0
 none~
 (null)~
@@ -706,23 +706,23 @@ E
 XDUMB1~
 None~
 E
-blood~
-Vampires sustain themselves on blood. Your blood pool fuels your disciplines and keeps you from falling into torpor. Use 'feed' on mortals to replenish, and 'blood' to check your current level.~
-E
-disciplines~
-Syntax: disciplines (or discs, powers) - View your vampire powers and their levels. Each clan has three primary disciplines, but vampires may learn others. Advance them with experience using the 'advance' command.~
-E
-fangs~
-Syntax: fangs - Bares your fangs. A subtle intimidation tool during roleplay, revealing your true nature.~
-E
-torpor~
-Torpor is the deathlike sleep that claims a vampire when their blood pool is depleted. A vampire in torpor is helpless and vulnerable. Keep your blood pool replenished to avoid this fate.~
+regen~
+Syntax: regen - Spend blood to heal your wounds. Vampires can recover from injuries that would kill a mortal by expending vitae.~
 E
 feed~
 Syntax: feed <target> - Attempt to feed on a mortal to replenish your blood pool. Feeding is a core mechanic of vampire existence.~
 E
-regen~
-Syntax: regen - Spend blood to heal your wounds. Vampires can recover from injuries that would kill a mortal by expending vitae.~
+torpor~
+Torpor is the deathlike sleep that claims a vampire when their blood pool is depleted. A vampire in torpor is helpless and vulnerable. Keep your blood pool replenished to avoid this fate.~
+E
+fangs~
+Syntax: fangs - Bares your fangs. A subtle intimidation tool during roleplay, revealing your true nature.~
+E
+disciplines~
+Syntax: disciplines (or discs, powers) - View your vampire powers and their levels. Each clan has three primary disciplines, but vampires may learn others. Advance them with experience using the 'advance' command.~
+E
+blood~
+Vampires sustain themselves on blood. Your blood pool fuels your disciplines and keeps you from falling into torpor. Use 'feed' on mortals to replenish, and 'blood' to check your current level.~
 D0
 none~
 (null)~
